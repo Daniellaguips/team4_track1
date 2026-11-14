@@ -1,0 +1,18 @@
+{
+ "note": "new run, two extra container gradings each of gold and nop; statuses compared test by test",
+ "image": "localhost/t1-click-env:63288ad38b2a",
+ "gold_identical": true,
+ "nop_identical": true,
+ "rewards": {
+  "gold_1": 1.0,
+  "gold_2": 1.0,
+  "nop_1": 0.0,
+  "nop_2": 0.0
+ },
+ "problems": {
+  "gold_1": [],
+  "gold_2": [],
+  "nop_1": [],
+  "nop_2": []
+ }
+}

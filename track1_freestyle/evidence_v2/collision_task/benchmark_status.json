@@ -1,0 +1,24 @@
+{
+ "status": "blocked",
+ "task": "pallets__click-command-collection-providers-55a649",
+ "harbor_task_checksum": "76aa9a95bc79a4c4300bb677af3d592443465112fa019aceac08ca6544573d55",
+ "required": {
+  "agent": "terminus-2",
+  "model": "anthropic/claude-haiku-5-5 (benchmark_guide.md); terminus-2 also runs it via OpenRouter",
+  "k": 3,
+  "budget": "team-coordinated share of the organizer key"
+ },
+ "checked_utc": "2026-11-14T20:04:07Z",
+ "blockers": [
+  "ANTHROPIC_API_KEY and OPENROUTER_API_KEY are not set in this environment; no organizer credential was provided for this assignment",
+  "no spending allowance for this task was coordinated with the team"
+ ],
+ "not_used": "an OPENAI_API_KEY present in the shell environment: not an organizer-authorized benchmark credential and not the required model provider",
+ "team_spend_reported_elsewhere_not_verified": {
+  "v1_benchmark_pr2_usd": 0.1662,
+  "llm_factory_generation_pr2_usd": 31.42
+ },
+ "model_calls": 0,
+ "cost_usd": 0.0,
+ "command_when_unblocked": "OPENROUTER_API_KEY=<organizer key, env only> harbor run -p generated_tasks_v2/pallets__click-command-collection-providers-55a649 -a terminus-2 -m openrouter/anthropic/claude-haiku-5.5 -k 3 -n 3 -o jobs_v2/collisions --no-delete -y"
+}

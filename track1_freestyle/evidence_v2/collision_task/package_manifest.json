@@ -1,0 +1,20 @@
+{
+ "instance_id": "pallets__click-command-collection-providers-55a649",
+ "files_sha256": {
+  "environment/Dockerfile": "63288ad38b2abdb9b413d6047dfeb273324b0d91af4f3fc80ee332a7a0d04f52",
+  "instruction.md": "09b543dce448a252fd18c32a2ec463e1445a70f8536435b3a72d177bfd2efa7f",
+  "solution/patch.diff": "6382e80cdb0db7f648d89e7dfaa48496ba17fa4e34ca02fb452ce0cf4e45a6e3",
+  "solution/solve.sh": "63ef4589b3fde20716bb0afc4975f54b14165a1b603596452935e192c42d4a5d",
+  "task.toml": "6ad27046f0a0fc2df2436daaf801c98a828595b08be1bf87049255d52b5c4741",
+  "tests/fail_to_pass.json": "bf99265909e8e205d4f92679071553906a22ec1e802f7f5f92301f62549487b5",
+  "tests/grade.py": "6bcb90e406cdc227e06a9d706cbbb9378151dab4f63338649fb6a36f5c28bbe5",
+  "tests/p2p_provenance.json": "8aaf7cb31e969faec9a24dc45f39554800d941c329035e384a370053ee2ab6bd",
+  "tests/parser.py": "34a77a91f2b43f31c5e35d0485d45b32729110065c199adccaf938caf2cc737c",
+  "tests/pass_to_pass.json": "056332a28190ac63c6036cf866d409e3fe90ab95885ee4666803f2f1a2e1195c",
+  "tests/run_script.sh": "9a3d258d39069fb325ae0a26f2f25863ba342158ea22b664c93e0093fb532eee",
+  "tests/test.sh": "2fc1e9cb0bc42af005cd9cfc4cb8c45c73357d7232818614e2461151a72a0c5f",
+  "tests/test_patch.diff": "538d2cc9ac20104f051cc4c50bb8d16e01fbc107dd9350f9bb6ffbdc3a8d3eed"
+ },
+ "aggregate_sha256_of_sorted_manifest": "60ac00a547cc58b1d95d20ab6393b2f6d9d8db4b3d2f4a3f0637bd32f0b3776a",
+ "harbor_task_checksum_from_selfcheck": "76aa9a95bc79a4c4300bb677af3d592443465112fa019aceac08ca6544573d55"
+}

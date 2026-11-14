@@ -1,0 +1,15 @@
+{
+    "task": {
+        "path": "/tmp/t1v2/sc_copy/pallets__click-duration-param-type-9f8a40"
+    },
+    "trial_name": "pallets__click-duration-param-ty__DohNP2d",
+    "trials_dir": "/Users/shuooo/Documents/Documents - KyleShuo’s MacBook Air/RAM_course/Project/team4_track1/track1_freestyle/evidence_v2/integration/organizer_selfcheck_duration/sc/pallets__click-duration-param-type-9f8a40/nop/2026-11-14__14-45-35",
+    "agent": {
+        "name": "nop"
+    },
+    "environment": {
+        "type": "docker",
+        "delete": false
+    },
+    "job_id": "3ee8499b-506e-4b35-8a38-1a2e39ab4b41"
+}

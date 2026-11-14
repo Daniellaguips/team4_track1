@@ -1,0 +1,33 @@
+{
+ "pipeline": "track1-freestyle/click-blueprint-factory/1.0.0",
+ "tasks": [
+  {
+   "instance_id": "pallets__click-command-collection-providers-55a649",
+   "model": "none",
+   "wall_seconds": 66.0,
+   "model_calls": 0,
+   "attempts": 1,
+   "n_input_tokens": 0,
+   "n_output_tokens": 0,
+   "n_cache_tokens": 0,
+   "cost_usd": 0.0,
+   "first_pass_valid": false,
+   "run": "20261114T145647_v2_collisions",
+   "record": "runs_v2/20261114T145647_v2_collisions/candidates/pallets__click-command-collection-providers-55a649/record.json"
+  },
+  {
+   "instance_id": "pallets__click-command-collection-providers-55a649",
+   "model": "none",
+   "wall_seconds": 68.1,
+   "model_calls": 0,
+   "attempts": 1,
+   "n_input_tokens": 0,
+   "n_output_tokens": 0,
+   "n_cache_tokens": 0,
+   "cost_usd": 0.0,
+   "first_pass_valid": true,
+   "run": "20261114T150004_v2_collisions",
+   "record": "runs_v2/20261114T150004_v2_collisions/candidates/pallets__click-command-collection-providers-55a649/record.json"
+  }
+ ]
+}

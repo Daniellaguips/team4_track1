@@ -1,0 +1,1 @@
+cd /app && git apply /sol/gold.diff && git apply /sol/tests.diff && python -m pytest -q -p no:cacheprovider --color=no tests 2>&1 | tail -3

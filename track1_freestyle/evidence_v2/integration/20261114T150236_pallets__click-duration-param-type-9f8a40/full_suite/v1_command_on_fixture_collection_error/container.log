@@ -1,0 +1,7 @@
+exit=0
+--- stdout
+ERROR tests/test_duration_type.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+31000 deselected, 1 error in 1.71s
+
+--- stderr

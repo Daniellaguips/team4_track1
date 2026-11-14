@@ -1,0 +1,133 @@
+{
+ "task_copy_of": "generated_tasks/pallets__click-duration-param-type-9f8a40",
+ "versions": {
+  "engine": "docker",
+  "engine_version": "29.9.2",
+  "image": "localhost/t1-click-env:63288ad38b2a",
+  "python_host": "3.13.5"
+ },
+ "note": "new run, not historical evidence; cases with test_fixture=true are deliberate corruptions of isolated copies under T1_WORK, never of generated_tasks/",
+ "all_as_expected": true,
+ "cases": [
+  {
+   "case": "gold",
+   "test_fixture": false,
+   "expected": "accept",
+   "hardened": "accept",
+   "v1_logic": true,
+   "container_exit": null
+  },
+  {
+   "case": "nop_baseline",
+   "test_fixture": false,
+   "expected": "accept",
+   "hardened": "accept",
+   "v1_logic": true,
+   "container_exit": null
+  },
+  {
+   "case": "fixture_missing_f2p__nop",
+   "test_fixture": true,
+   "expected": "reject",
+   "hardened": "reject",
+   "v1_logic": "accept",
+   "container_exit": null
+  },
+  {
+   "case": "fixture_collection_error__nop",
+   "test_fixture": true,
+   "expected": "reject",
+   "hardened": "reject",
+   "v1_logic": "accept",
+   "container_exit": null
+  },
+  {
+   "case": "fixture_collection_error__gold",
+   "test_fixture": true,
+   "expected": "reject",
+   "hardened": "reject",
+   "v1_logic": "reject",
+   "container_exit": null
+  },
+  {
+   "case": "mutant_bounds_exclusive",
+   "test_fixture": false,
+   "expected": "killed",
+   "hardened": "killed",
+   "v1_logic": "killed",
+   "container_exit": null
+  },
+  {
+   "case": "fixture_mutant_syntax_error",
+   "test_fixture": true,
+   "expected": "invalid",
+   "hardened": "invalid",
+   "v1_logic": "killed",
+   "container_exit": null
+  },
+  {
+   "case": "fixture_mutant_patch_does_not_apply",
+   "test_fixture": true,
+   "expected": "invalid",
+   "hardened": "invalid",
+   "v1_logic": "survived",
+   "container_exit": null
+  },
+  {
+   "case": "full_suite__gold",
+   "test_fixture": false,
+   "expected": "accept",
+   "hardened": "accept",
+   "v1_logic": null,
+   "container_exit": 0
+  },
+  {
+   "case": "full_suite__fixture_failing_test",
+   "test_fixture": true,
+   "expected": "reject",
+   "hardened": "reject",
+   "v1_logic": null,
+   "container_exit": 1
+  },
+  {
+   "case": "full_suite__fixture_collection_error",
+   "test_fixture": true,
+   "expected": "reject",
+   "hardened": "reject",
+   "v1_logic": null,
+   "container_exit": 2
+  },
+  {
+   "case": "full_suite__fixture_gold_does_not_apply",
+   "test_fixture": true,
+   "expected": "reject",
+   "hardened": "reject",
+   "v1_logic": null,
+   "container_exit": 91
+  },
+  {
+   "case": "full_suite__fixture_tests_do_not_apply",
+   "test_fixture": true,
+   "expected": "reject",
+   "hardened": "reject",
+   "v1_logic": null,
+   "container_exit": 92
+  },
+  {
+   "case": "v1_full_suite_command__fixture_failing_test",
+   "test_fixture": true,
+   "expected": null,
+   "hardened": null,
+   "v1_logic": "reject",
+   "container_exit": 0
+  },
+  {
+   "case": "v1_full_suite_command__fixture_collection_error",
+   "test_fixture": true,
+   "expected": null,
+   "hardened": null,
+   "v1_logic": "accept",
+   "container_exit": 0
+  }
+ ]
+}

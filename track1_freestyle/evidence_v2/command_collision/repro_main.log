@@ -1,0 +1,43 @@
+# click commit e38188e9e205005d5af5f9e59df51904c984586a (main); Python 3.11.13; 2026-11-14T19:13:18Z
+$ PYTHONPATH=<click@e38188e9e205005d5af5f9e59df51904c984586a>/src python repro_command_collision.py
+click imported from /tmp/t1v2/wt_main/src/click/__init__.py
+## 1 first source wins; list_commands de-duplicates
+   get_command_deploy: 'A deploy'
+   invoke_deploy: (0, 'A:deploy')
+   list_commands: ['deploy', 'logs', 'status']
+   providers_visible_via_public_api: 'none (get_command returns one object, list_commands names only)'
+## 2 source order decides the winner
+   sources_ab: 'A deploy'
+   sources_ba: 'B deploy'
+## 3 collection-local command shadows every source
+   get_command_deploy: 'LOCAL deploy'
+## 4 same object registered in two sources
+   resolved_is_shared: True
+   listed_once: True
+## 5 hidden command in an earlier source shadows a visible later one
+   get_command_logs: 'A-HIDDEN logs'
+   logs_in_help: False
+   invoke_logs: (0, 'A-HIDDEN:logs')
+## 5b completion for 'l' (hidden winner suppresses the visible alternative)
+   completions: []
+## 6 add_source changes resolution immediately (no caching)
+   before: None
+   after: 'B logs'
+## 6b the sources list is aliased unless it is empty
+   non_empty_list_aliased: True
+   sees_later_append: 'B logs'
+   empty_list_aliased: False
+   sees_append_to_empty: None
+## 7 custom source overrides are consulted; listed-but-unresolvable names
+   get_command_deploy: 'LAZY deploy'
+   list_commands: ['deploy', 'ghost', 'status']
+   ghost_resolves: None
+   ghost_in_help: False
+## 8 chain mode: nested-group check only applies to the winning command
+   shadowed_group_ok: 'A deploy'
+   group_wins: "RuntimeError: Found the group 'deploy' as subcommand to another group  'cli' that is in chain mode. This is not supported."
+## 9 unknown command: suggestions only consider collection-local commands
+   invoke_deplo: (2, "Usage: cli [OPTIONS] COMMAND [ARGS]...\nTry 'cli --help' for help.\n\nError: No such command 'deplo'.")
+## 10 to_info_dict reports one entry per name
+   commands: {'deploy': 'A deploy', 'logs': 'B logs', 'status': 'A status'}
+exit=0

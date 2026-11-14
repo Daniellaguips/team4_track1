@@ -1,0 +1,23 @@
+{
+ "local_omitted": "ignores the collection's own commands",
+ "local_after_sources": "reports the collection's own command after the sources",
+ "sources_reversed": "walks the sources from last to first",
+ "active_provider_only": "returns only the provider that get_command would use",
+ "merges_same_object": "drops a provider whose command object was already reported",
+ "collision_by_provider_count": "treats any name with two providers as a collision, even the same object",
+ "collision_by_listing_groups": "counts the groups whose list_commands mention the name",
+ "hidden_filtered": "leaves hidden commands out of the report",
+ "cached_per_name": "memoises the provider list per name on the collection",
+ "reads_commands_mapping": "reads source.commands instead of calling source.get_command",
+ "applies_chain_check": "runs the chain-mode nested-group check like get_command",
+ "one_based_index": "numbers sources from 1",
+ "swallows_source_errors": "skips a source whose get_command raises",
+ "warns_on_collision": "emits a UserWarning for every collision",
+ "sorts_collision_names": "sorts collision names instead of following list_commands",
+ "expands_nested_collections": "reports the sources of a nested CommandCollection instead of the collection",
+ "mutable_record": "CommandProvider is a plain class with writable attributes",
+ "none_when_empty": "returns None instead of an empty list",
+ "list_commands_keeps_duplicates": "rewrites CommandCollection.list_commands and keeps duplicate names",
+ "chain_check_dropped": "drops the chain-mode check from CommandCollection.get_command",
+ "heavier_import": "builds the record with dataclasses, so `import click` loads a module it did not before"
+}

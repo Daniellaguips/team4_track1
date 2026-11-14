@@ -1,0 +1,18 @@
+{
+    "job_name": "2026-11-14__15-01-47",
+    "jobs_dir": "/Users/shuooo/Documents/Documents - KyleShuo’s MacBook Air/RAM_course/Project/team4_track1/track1_freestyle/evidence_v2/collision_task/selfcheck/pallets__click-command-collection-providers-55a649/nop",
+    "environment": {
+        "type": "docker",
+        "delete": false
+    },
+    "agents": [
+        {
+            "name": "nop"
+        }
+    ],
+    "tasks": [
+        {
+            "path": "track1_freestyle/generated_tasks_v2/pallets__click-command-collection-providers-55a649"
+        }
+    ]
+}

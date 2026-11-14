@@ -1,0 +1,8 @@
+exit=1
+--- stdout
+T1_PYTEST_EXIT=1
+=========================== short test summary info ============================
+FAILED tests/test_imports.py::test_light_imports - AssertionError: assert 'da...
+1 failed, 2457 passed, 24 skipped, 31000 deselected, 1 xfailed in 4.20s
+
+--- stderr

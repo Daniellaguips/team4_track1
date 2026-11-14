@@ -11,7 +11,7 @@ import json
 import random
 from pathlib import Path
 
-from .families import REGISTRY
+from .families import PLANNED, REGISTRY
 
 
 def knob_space(mod) -> list[dict]:
@@ -29,7 +29,7 @@ def load_ledger(path: Path) -> set[str]:
 def plan(n: int, seed: int, ledger: Path | None = None, families: list[str] | None = None) -> list[tuple[str, dict]]:
     rng = random.Random(seed)
     used = load_ledger(ledger) if ledger else set()
-    fams = families or list(REGISTRY)
+    fams = families or list(PLANNED)
     out: list[tuple[str, dict]] = []
     order = fams[:]
     rng.shuffle(order)

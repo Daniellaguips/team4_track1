@@ -1,0 +1,34 @@
+{
+ "main": "e38188e9e205005d5af5f9e59df51904c984586a",
+ "git": {
+  "get_command_providers|get_command_collisions|class CommandProvider": {
+   "base": [],
+   "main": [],
+   "commits_after_base_touching": []
+  }
+ },
+ "github_prs": [
+  {
+   "query": "CommandCollection collision",
+   "total": 0,
+   "items": []
+  },
+  {
+   "query": "command providers",
+   "total": 0,
+   "items": []
+  },
+  {
+   "query": "shadowed command",
+   "total": 1,
+   "items": [
+    {
+     "n": 3344,
+     "title": "fix: suggest unshadowed help option name in UsageError hint",
+     "state": "closed",
+     "merged": false
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,8 @@
+exit=2
+--- stdout
+T1_PYTEST_EXIT=2
+ERROR tests/test_duration_type.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+31000 deselected, 1 error in 1.78s
+
+--- stderr

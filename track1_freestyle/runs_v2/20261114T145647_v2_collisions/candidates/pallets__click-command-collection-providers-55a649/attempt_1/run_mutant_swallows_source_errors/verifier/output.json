@@ -1,0 +1,2024 @@
+{
+  "tests": [
+    {
+      "name": "tests/test_arguments.py::test_nargs_star",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_tup",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_tup_composite[opts0]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_tup_composite[opts1]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_tup_composite[opts2]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_tup_composite[opts3]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_mismatch_with_tuple_type",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_err",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bytes_args",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_file_args",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_path_allow_dash",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_file_atomics",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_stdout_default",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_envvar[2--None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_envvar[2-a-Takes 2 values but 1 was given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_envvar[2-a b-expect2]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_envvar[2-a b c-Takes 2 values but 3 were given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_envvar[-1-a b c-expect4]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_envvar[-1--expect5]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_envvar_only_if_values_empty",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_empty_nargs",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_missing_arg",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_required_argument[-False-]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_required_argument[  -False-  ]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_required_argument[foo-False-foo]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_required_argument[12-False-12_0]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_required_argument[12-False-12_1]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_required_argument[12.1-False-12.1]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_required_argument[value6-False-[]]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_required_argument[value7-False-()]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_required_argument[value8-False-set()]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_required_argument[value9-False-frozenset()]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_required_argument[value10-False-{}]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_required_argument[None-False-None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_required_argument[Sentinel.UNSET-True-None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_implicit_non_required",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_help",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_help_options_only_no_arguments_section",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_help_lists_undocumented_arguments",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_help_undocumented_arguments_only_no_section",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_help_deprecated_without_help_lists_all",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_help_empty_string_lists_all",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_get_help_record_never_none[None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_get_help_record_never_none[empty]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_get_help_record_never_none[documented]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_help_optional_metavar",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_deprecated_usage",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_metavar_marks_optional[kwargs0-FOO]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_metavar_marks_optional[kwargs1-FOO]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_metavar_marks_optional[kwargs2-[FOO]]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_metavar_marks_optional[kwargs3-[FOO]]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_metavar_marks_optional[kwargs4-[FOO]...]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_metavar_marks_optional[kwargs5-FOO...]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_metavar_marks_optional[kwargs6-FOO...]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_metavar_marks_optional[kwargs7-[FOO]...]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_deprecated_usage_help_record[True-(DEPRECATED)]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_deprecated_usage_help_record[use g instead-(DEPRECATED: use g instead)]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_deprecated_usage_help_record_without_help",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_deprecated_empty_help_no_leading_space[-True-(DEPRECATED)]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_deprecated_empty_help_no_leading_space[-USE B INSTEAD-(DEPRECATED: USE B INSTEAD)]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_deprecated_empty_help_no_leading_space[None-True-(DEPRECATED)]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_deprecated_empty_help_no_leading_space[None-USE B INSTEAD-(DEPRECATED: USE B INSTEAD)]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_deprecated_warning[True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_deprecated_warning[USE B INSTEAD]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_deprecated_required",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_eat_options",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_star_ordering",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nargs_specified_plus_star_ordering",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_good_defaults_for_nargs[argument_params0-args0-expected0]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_good_defaults_for_nargs[argument_params1-args1-expected1]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_good_defaults_for_nargs[argument_params2-args2-expected2]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_good_defaults_for_nargs[argument_params3-args3-expected3]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_good_defaults_for_nargs[argument_params4-args4-expected4]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_good_defaults_for_nargs[argument_params5-args5-expected5]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_good_defaults_for_nargs[argument_params6-args6-expected6]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_good_defaults_for_nargs[argument_params7-args7-expected7]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_good_defaults_for_nargs[argument_params8-args8-None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_good_defaults_for_nargs[argument_params9-args9-expected9]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_good_defaults_for_nargs[argument_params10-args10-expected10]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_good_defaults_for_nargs[argument_params11-args11-expected11]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_good_defaults_for_nargs[argument_params12-args12-expected12]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[Yo-Error: Invalid value for '[A]...': Value must be an iterable.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[-Error: Invalid value for '[A]...': Value must be an iterable.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[True-Error: Invalid value for '[A]...': Value must be an iterable.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[False-Error: Invalid value for '[A]...': Value must be an iterable.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[12-Error: Invalid value for '[A]...': Value must be an iterable.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[7.9-Error: Invalid value for '[A]...': Value must be an iterable.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default6-Error: Invalid value for '[A]...': Takes 2 values but 0 were given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[Sentinel.UNSET-Error: Missing argument 'A...'.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default8-Error: Invalid value for '[A]...': Takes 2 values but 0 were given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default9-Error: Invalid value for '[A]...': Takes 2 values but 1 was given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default10-Error: Invalid value for '[A]...': Takes 2 values but 3 were given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default11-Error: Invalid value for '[A]...': Takes 2 values but 0 were given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default12-Error: Invalid value for '[A]...': Takes 2 values but 1 was given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default13-Error: Invalid value for '[A]...': Takes 2 values but 3 were given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default14-Error: Invalid value for '[A]...': Takes 2 values but 0 were given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default15-Error: Invalid value for '[A]...': Takes 2 values but 1 was given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default16-Error: Invalid value for '[A]...': Takes 2 values but 3 were given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default17-Error: Invalid value for '[A]...': Takes 2 values but 0 were given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default18-Error: Invalid value for '[A]...': Takes 2 values but 1 was given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default19-Error: Invalid value for '[A]...': Takes 2 values but 3 were given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default20-Error: Invalid value for '[A]...': Takes 2 values but 0 were given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default21-Error: Invalid value for '[A]...': Takes 2 values but 1 was given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_bad_defaults_for_nargs[default22-Error: Invalid value for '[A]...': Takes 2 values but 3 were given.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_multiple_param_decls_not_allowed",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_multiple_not_allowed",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_subcommand_help",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_nested_subcommand_help",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_when_argument_decorator_is_used_multiple_times_cls_is_preserved",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_duplicate_names_warning[args_one0-args_two0]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_custom_class_can_override_type_cast_value_and_never_sees_unset[argument_kwargs0-pass_argv0]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_custom_class_can_override_type_cast_value_and_never_sees_unset[argument_kwargs1-pass_argv1]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_custom_class_can_override_type_cast_value_and_never_sees_unset[argument_kwargs2-pass_argv2]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_custom_class_can_override_type_cast_value_and_never_sees_unset[argument_kwargs3-pass_argv3]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_custom_class_can_override_type_cast_value_and_never_sees_unset[argument_kwargs4-pass_argv4]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_arguments.py::test_argument_custom_class_can_override_type_cast_value_and_never_sees_unset[argument_kwargs5-pass_argv5]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_basic_functionality",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_param_named_help[no-collision]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_param_named_help[argument]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_param_named_help[option]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_param_named_help[custom-flags]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_param_squatting_help_option_name",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_option_reusing_help_flag",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_repr",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_return_values",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_basic_group",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_group_commands_dict",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_group_from_list",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_string_option[args0-S:[no value]]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_string_option[args1-S:[42]]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_string_option[args2-Error: Option '--s' requires an argument.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_string_option[args3-S:[]]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_string_option[args4-S:[\\u2603]]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_int_option[args0-I:[84]]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_int_option[args1-I:[46]]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_int_option[args2-Error: Invalid value for '--i': 'x' is not a valid integer.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_uuid_option[args0-U:[ba122011-349f-423b-873b-9d6a79c688ab]]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_uuid_option[args1-U:[821592c1-c50e-4971-9cd6-e89dc6832f86]]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_uuid_option[args2-Error: Invalid value for '--u': 'x' is not a valid UUID.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_float_option[args0-F:[42.0]]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_float_option[--f=23.5-F:[23.5]]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_float_option[--f=x-Error: Invalid value for '--f': 'x' is not a valid float.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_switch[args0-True-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_switch[args1-False-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_switch[args2-None-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_switch[args3-Sentinel.UNSET-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_switch[args4-True-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_switch[args5-False-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_switch[args6-None-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_switch[args7-Sentinel.UNSET-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_switch[args8-True-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_switch[args9-False-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_switch[args10-None-None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_switch[args11-Sentinel.UNSET-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_flag[True-args0-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_flag[True-args1-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_flag[False-args2-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_flag[False-args3-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_flag[None-args4-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_flag[None-args5-None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_conversion[1-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_conversion[true-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_conversion[t-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_conversion[yes-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_conversion[y-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_conversion[on-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_conversion[0-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_conversion[false-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_conversion[f-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_conversion[no-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_conversion[n-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_boolean_conversion[off-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[True-args0-upper]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[True-args1-lower]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[False-args2-upper]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[False-args3-lower]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[None-args4-upper]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[None-args5-lower]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[Sentinel.UNSET-args6-upper]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[Sentinel.UNSET-args7-lower]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[True-args8-lower]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[True-args9-upper]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[upper-args10-upper]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[lower-args11-lower]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[uPPer-args12-uPPer]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[lOwEr-args13-lOwEr]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[ \\u1555( \\u141b )\\u1557 -args14- \\u1555( \\u141b )\\u1557 ]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[None-args15-None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[Sentinel.UNSET-args16-None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[True-args17-upper]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[False-args18-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[42-args19-42]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_flag_value_dual_options[12.3-args20-12.3]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_file_option",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_file_lazy_mode",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_path_option",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_choice_option",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_choice_argument",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_choice_argument_enum",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_choice_argument_custom_type",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_choice_argument_none",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_choice_argument_optional_metavar",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_datetime_argument_optional_metavar",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_datetime_option_default",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_datetime_option_custom",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_required_option",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_evaluation_order",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_hidden_option",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_hidden_command",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_hidden_group",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_summary_line",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_help_invalid_default",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_version_option_resolves_import_name_to_distribution",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_version_option_ambiguous_import_name_errors",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_version_option_unknown_package_errors",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_custom_version_option[args0]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_custom_version_option[args1]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_custom_version_option_receives_context",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_cast_multi_default[2-False-None-None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_cast_multi_default[2-False-default1-expect1]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_cast_multi_default[None-True-None-expect2]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_cast_multi_default[None-True-default3-expect3]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_cast_multi_default[2-True-None-expect4]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_cast_multi_default[2-True-default5-expect5]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_basic.py::test_cast_multi_default[-1-None-None-expect6]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_basic_chaining",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_chaining_help[args0-COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_chaining_help[args1-ROOT HELP]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_chaining_help[args2-SDIST HELP]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_chaining_help[args3-BDIST HELP]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_chaining_help[args4-SDIST HELP]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_chaining_with_options",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_no_command_result_callback[False-1]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_no_command_result_callback[True-[]]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_chaining_with_arguments",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_pipeline[args0-foo\\nbar-expect0]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_pipeline[args1-foo \\n bar-expect1]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_pipeline[args2-foo \\n bar-expect2]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_args_and_chain",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_group_arg_behavior",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_compat.py::test_lookup_precedence_is_unchanged",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_compat.py::test_list_commands_is_sorted_without_duplicates",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_compat.py::test_chain_mode_still_rejects_a_group_from_a_source",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_compat.py::test_hidden_winner_still_hides_the_name_in_help",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_compat.py::test_completion_is_unchanged",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_compat.py::test_duplicate_names_raise_no_warnings",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_provider_record",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_sources_reported_in_order",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_own_command_comes_first",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_unprovided_and_exact_names",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_first_provider_is_what_get_command_returns",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_repeated_registrations_are_not_merged",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_collisions_need_distinct_objects",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_listed_but_unresolvable_names_are_not_collisions",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_collisions_follow_list_commands_order",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_no_collisions",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_hidden_commands_are_reported",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_results_are_independent_snapshots",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_sources_with_custom_lookup",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_nested_collection_is_one_provider",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_chain_mode_groups_are_reported",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_no_warnings_and_nothing_changes",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_forward",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_forwarded_params_consistency",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_auto_shorthelp",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_command_no_args_is_help",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_default_maps",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_group_with_args[args0-2-Error: Missing command.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_group_with_args[args1-0-Show this message and exit.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_group_with_args[args2-0-obj=obj1\\nmove\\n]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_group_with_args[args3-2-Show this message and exit.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_custom_parser",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_object_propagation",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params0-42]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params1-15]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params2-expected2]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params3-None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params4-None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params5-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params6-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params7-3.14]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params8-expected8]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params9-expected9]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params10-None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params11-b]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params12-/tmp]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params13-False]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params14-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params15-0]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params16-secret]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_invoked_subcommand",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_subcommand_metavar_marks_optional[False-False-COMMAND [ARGS]...]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_subcommand_metavar_marks_optional[False-True-[COMMAND] [ARGS]...]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_subcommand_metavar_marks_optional[True-False-COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_subcommand_metavar_marks_optional[True-True-[COMMAND1] [ARGS]... [COMMAND2 [ARGS]...]...]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_aliased_command_canonical_name",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_group_add_command_name",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order0-declaration_order0-expected_order0]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order1-declaration_order1-expected_order1]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order2-declaration_order2-expected_order2]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order3-declaration_order3-expected_order3]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order4-declaration_order4-expected_order4]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order5-declaration_order5-expected_order5]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order6-declaration_order6-expected_order6]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order7-declaration_order7-expected_order7]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order8-declaration_order8-expected_order8]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order9-declaration_order9-expected_order9]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order10-declaration_order10-expected_order10]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order11-declaration_order11-expected_order11]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order12-declaration_order12-expected_order12]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order13-declaration_order13-expected_order13]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order14-declaration_order14-expected_order14]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order15-declaration_order15-expected_order15]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order16-declaration_order16-expected_order16]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order17-declaration_order17-expected_order17]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order18-declaration_order18-expected_order18]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order19-declaration_order19-expected_order19]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order20-declaration_order20-expected_order20]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order21-declaration_order21-expected_order21]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order22-declaration_order22-expected_order22]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order23-declaration_order23-expected_order23]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order24-declaration_order24-expected_order24]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order25-declaration_order25-expected_order25]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order26-declaration_order26-expected_order26]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order27-declaration_order27-expected_order27]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order28-declaration_order28-expected_order28]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order29-declaration_order29-expected_order29]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order30-declaration_order30-expected_order30]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order31-declaration_order31-expected_order31]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order32-declaration_order32-expected_order32]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_iter_params_for_processing[invocation_order33-declaration_order33-expected_order33]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_get_help_option_names[default]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_get_help_option_names[order-short-long]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_get_help_option_names[order-long-short]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_get_help_option_names[order-three]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_get_help_option_names[order-three-shuffled]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_get_help_option_names[dedupe-adjacent]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_get_help_option_names[dedupe-spread]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_get_help_option_names[conflict-long]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_get_help_option_names[conflict-short]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_get_help_option_names[conflict-flag-on]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_get_help_option_names[conflict-flag-off]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_get_help_option_names[all-removed]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_get_help_option_names[dedupe-and-conflict]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_help_param_priority",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_unprocessed_options",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_deprecated_in_help_messages[True-CLI HELP]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_deprecated_in_help_messages[True-None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_deprecated_in_help_messages[USE OTHER COMMAND INSTEAD-CLI HELP]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_deprecated_in_help_messages[USE OTHER COMMAND INSTEAD-None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_deprecated_empty_help_no_leading_space[-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_deprecated_empty_help_no_leading_space[-USE OTHER COMMAND INSTEAD]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_deprecated_empty_help_no_leading_space[None-True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_deprecated_empty_help_no_leading_space[None-USE OTHER COMMAND INSTEAD]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_deprecated_help_text_is_not_translated",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_deprecated_in_invocation[True]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_deprecated_in_invocation[USE OTHER COMMAND INSTEAD]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_command_parse_args_collects_option_prefixes",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_group_parse_args_collects_base_option_prefixes",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_group_invoke_collects_used_option_prefixes",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_abort_exceptions_with_disabled_standalone_mode[EOFError]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_abort_exceptions_with_disabled_standalone_mode[KeyboardInterrupt]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_unknown_command",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_suggest_possible_commands[pause-Did you mean 'push'?]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_commands.py::test_suggest_possible_commands[decline-(Did you mean one of: 'declare', 'refine'?)]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_basic_functionality",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_wrapping_long_options_strings",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_wrapping_long_command_name",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_empty_help_lines",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_usage_error",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_usage_error_metavar_missing_arg",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_usage_error_metavar_bad_arg",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_usage_error_nested",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_usage_error_no_help",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_usage_custom_help",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_usage_error_help_hint[help_names0-extra_options0-Try 'cli foo --help' for help.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_usage_error_help_hint[help_names1-extra_options1-Try 'cli foo --help' for help.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_usage_error_help_hint[help_names2-extra_options2-Try 'cli foo -h' for help.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_usage_error_help_hint[help_names3-extra_options3-None]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_usage_error_help_hint[help_names4-extra_options4-Try 'cli foo --man' for help.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_usage_error_help_hint[help_names5-extra_options5-Try 'cli foo --help' for help.]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_custom_type_metavar",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_truncating_docstring",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_truncating_docstring_no_help",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_removing_multiline_marker",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_global_show_default",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_formatting_with_options_metavar_empty",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_help_formatter_write_text",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_wrap_text_visible_width[styled-initial-indent-does-not-break-body]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_wrap_text_visible_width[styled-body-wraps-on-visible-width]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_wrap_text_visible_width[styled-long-word-breaks-on-visible-width]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_wrap_text_visible_width[colon-truecolor-body-wraps-on-visible-width]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_wrap_text_visible_width[mouse-sequence-is-zero-width]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_write_usage_styled_prefix_keeps_options_on_one_line",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_help_formatter_write_usage[empty-args-default-prefix]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_help_formatter_write_usage[empty-args-custom-prefix]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_help_formatter_write_usage[empty-args-indented]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_help_formatter_write_usage[empty-args-long-prog]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_help_formatter_write_usage[with-args-default-prefix]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_help_formatter_write_usage_without_args_styled_prefix",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_command_write_usage_no_args[empty-options-metavar-no-params]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_formatting.py::test_command_write_usage_no_args[none-options-metavar-no-params]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[Func ParamType]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[UNPROCESSED ParamType]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[STRING ParamType]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[Choice ParamType]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[DateTime ParamType]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[INT ParamType]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[IntRange ParamType]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[FLOAT ParamType]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[FloatRange ParamType]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[Bool ParamType]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[UUID ParamType]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[File ParamType]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[Path ParamType]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[Tuple ParamType]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[Option]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[Flag Option]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_parameter[Argument]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_command[Command]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_command[Group]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_command[Nested Group]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_context",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_paramtype_no_name",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_param_to_info_dict_help[None-option]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_param_to_info_dict_help[None-argument]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_param_to_info_dict_help[empty-option]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_param_to_info_dict_help[empty-argument]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_param_to_info_dict_help[single-line-option]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_param_to_info_dict_help[single-line-argument]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_param_to_info_dict_help[multi-line-option]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_param_to_info_dict_help[multi-line-argument]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[no-help-option]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[no-help-argument]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[help-option]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[help-argument]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[custom-label-option]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[custom-label-argument]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_argument_to_info_dict_nargs",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_info_dict.py::test_command_to_info_dict_multiple_arguments",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_normalization.py::test_option_normalization",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_normalization.py::test_choice_normalization",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_normalization.py::test_command_normalization",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_command",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_group",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_nested_group[args0--expect0]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_nested_group[args1--expect1]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_nested_group[args2--expect2]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_nested_group[args3---expect3]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_nested_group[args4--expect4]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_nested_group[args5---expect5]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_group_command_same_option",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_chained",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_help_option",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_argument_order",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_argument_default",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_type_choice",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_choice_special_characters",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_choice_conflicting_prefix",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_option_count",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_option_optional",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_path_types[type0-file]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_path_types[type1-file]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_path_types[type2-dir]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_absolute_path",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_option_flag",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_flag_option_with_nargs_option",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_option_custom",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_option_multiple",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_option_nargs",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_argument_nargs",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_double_dash",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_hidden",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_add_different_name",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_completion_item_data",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_full_source[bash]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_full_source[zsh]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_full_source[fish]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_full_source_powershell",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_full_complete[bash-env0-plain,a\\nplain,b\\n]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_full_complete[bash-env1-plain,b\\n]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_full_complete[zsh-env2-plain\\na\\n_\\nplain\\nb\\nbee\\n]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_full_complete[zsh-env3-plain\\nb\\nbee\\n]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_full_complete[fish-env4-plain,a\\nplain,b\\tbee\\n]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_full_complete[fish-env5-plain,b\\tbee\\n]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_full_complete[fish-env6-plain,b\\tbee\\n]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_full_complete[powershell-env7-plain\\na\\n_\\nplain\\nb\\nbee\\n]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_full_complete[powershell-env8-plain\\nb\\nbee\\n]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_source_uses_lf_line_endings",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_zsh_full_complete_with_colons[env0-plain\\na\\n_\\nplain\\nb\\nbee\\nplain\\nc\\\\:d\\ncee:dee\\nplain\\nc:e\\n_\\n]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_zsh_full_complete_with_colons[env1-plain\\nc\\\\:d\\ncee:dee\\nplain\\nc:e\\n_\\n]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_zsh_full_complete_with_colons[env2-plain\\nc\\\\:d\\ncee:dee\\nplain\\nc:e\\n_\\n]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_context_settings",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_choice_case_sensitive[False-expect0]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_choice_case_sensitive[True-expect1]",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_add_completion_class",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_add_completion_class_with_name",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_add_completion_class_decorator",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_files_closed",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_fish_format_completion_escapes_help",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_shell_completion.py::test_powershell_format_completion_escapes_help",
+      "status": "PASSED"
+    },
+    {
+      "name": "tests/test_chain.py::test_group_chaining",
+      "status": "SKIPPED"
+    },
+    {
+      "name": "tests/test_command_collection_providers.py::test_errors_propagate",
+      "status": "FAILED"
+    }
+  ]
+}

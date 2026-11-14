@@ -46,6 +46,12 @@ class Draft:
     novelty_probes: list[str]
     novelty_queries: list[str]
     axes: dict[str, str]
+    # Newly authored tests that pin existing behaviour: they pass at base and under gold, so they
+    # are graded as pass-to-pass (with "authored_compatibility" provenance), never as F2P.
+    compat_test_files: dict[str, str] = dataclasses.field(default_factory=dict)
+    # Pre-existing upstream tests that coverage curation cannot find but the feature can break
+    # (e.g. import-time contracts). Added to the upstream regression P2P set.
+    declared_p2p: list[str] = dataclasses.field(default_factory=list)
 
     def knob_hash(self) -> str:
         blob = json.dumps({"family": self.family, "knobs": self.knobs}, sort_keys=True)

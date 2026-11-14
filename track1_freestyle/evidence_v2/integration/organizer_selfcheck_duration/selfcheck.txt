@@ -1,0 +1,11 @@
+$ SELFCHECK_OUT=track1_freestyle/evidence_v2/integration/organizer_selfcheck_duration/sc PATH=<find shim>:<harbor 0.25.0 venv>:$PATH bash organizer/Track1-Coding/harness/selfcheck.sh /tmp/t1v2/sc_copy/pallets__click-duration-param-type-9f8a40
+harbor 0.25.0 | docker 29.9.2 | 2026-11-14T19:45:16Z
+# selfcheck output: /Users/shuooo/Documents/Documents - KyleShuo’s MacBook Air/RAM_course/Project/team4_track1/track1_freestyle/evidence_v2/integration/organizer_selfcheck_duration/sc
+
+== pallets__click-duration-param-type-9f8a40 ==
+  oracle  reward=1.0   F2P=16/16 P2P=37/37
+  nop     reward=0.0   F2P=0/16 P2P=37/37
+  ✓ mechanically sound
+
+ALL SOUND
+selfcheck exit=0

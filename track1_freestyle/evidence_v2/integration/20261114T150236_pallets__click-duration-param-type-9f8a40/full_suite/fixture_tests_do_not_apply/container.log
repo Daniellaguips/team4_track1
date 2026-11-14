@@ -1,0 +1,7 @@
+exit=92
+--- stdout
+T1_STAGE_FAIL=apply_tests
+
+--- stderr
+error: patch failed: tests/conftest.py:1
+error: tests/conftest.py: patch does not apply

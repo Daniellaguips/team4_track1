@@ -15,13 +15,21 @@ from .families import REGISTRY
 MAX_ATTEMPTS = 2
 
 
-def f2p_ids(draft) -> list[str]:
+def _test_ids(files: dict[str, str]) -> list[str]:
     ids = []
-    for path, body in sorted(draft.test_files.items()):
+    for path, body in sorted(files.items()):
         for n in ast.parse(body).body:
             if isinstance(n, ast.FunctionDef) and n.name.startswith("test_"):
                 ids.append(f"{path}::{n.name}")
     return ids
+
+
+def f2p_ids(draft) -> list[str]:
+    return _test_ids(draft.test_files)
+
+
+def authored_p2p_ids(draft) -> list[str]:
+    return _test_ids(draft.compat_test_files)
 
 
 def code_version() -> str:
@@ -44,12 +52,13 @@ def run_candidate(family: str, knobs: dict, out_dir: Path, run_dir: Path, cov: d
               "generator": "deterministic blueprint (no LLM)", "model": "none", "model_calls": 0,
               "n_input_tokens": 0, "n_output_tokens": 0, "n_cache_tokens": 0,
               "base_commit": config.BASE_COMMIT, "code_version": code_version(),
+              "blueprint_origin": getattr(mod, "ORIGIN", None),
               "attempts": [], "repairs": [], "human_edits_after_generation": []}
     # raw first-pass artefacts
     raw = cdir / "raw_draft"
     raw.mkdir()
     (raw / "instruction.md").write_text(draft.instruction)
-    for p, b in draft.test_files.items():
+    for p, b in {**draft.test_files, **draft.compat_test_files}.items():
         (raw / Path(p).name).write_text(b)
 
     drop_p2p: set[str] = set()
@@ -64,13 +73,22 @@ def run_candidate(family: str, knobs: dict, out_dir: Path, run_dir: Path, cov: d
             base_tree = repo.export_base(Path(str(adir / "base_tree")))
             touched = curate.touched_symbols(gold, draft.focus_symbols, base_tree)
             shutil.rmtree(base_tree, ignore_errors=True)
-            p2p, why = curate.select_p2p(cov, touched, set(draft.test_files))
-            p2p = [n for n in p2p if n not in drop_p2p]
+            p2p, why = curate.select_p2p(cov, touched, set(draft.test_files) | set(draft.compat_test_files))
+            if draft.declared_p2p:
+                why["declared_by_blueprint"] = draft.declared_p2p
+            upstream = [n for n in sorted(set(p2p) | set(draft.declared_p2p)) if n not in drop_p2p]
+            authored = authored_p2p_ids(draft)
+            p2p = upstream + authored
             (adir / "p2p_rationale.json").write_text(json.dumps(why, indent=1))
             f2p = f2p_ids(draft)
-            pkg = package.write(draft, gold, test_patch, f2p, p2p, adir / "package")
+            provenance = {"upstream_regression": upstream, "authored_compatibility": authored}
+            if authored:
+                (adir / "p2p_provenance.json").write_text(json.dumps(provenance, indent=1))
+            pkg = package.write(draft, gold, test_patch, f2p, p2p, adir / "package", provenance)
 
             res.append(gates.structure(pkg))
+            if authored:
+                res.append(gates.test_categories(draft, f2p, upstream, authored, cov, test_patch))
             res.append(gates.base_health(cov))
             res.append(gates.grounding(draft, gold, touched))
             res.append(gates.novelty(draft, adir))
@@ -79,36 +97,43 @@ def run_candidate(family: str, knobs: dict, out_dir: Path, run_dir: Path, cov: d
 
             g = container.grade(pkg, gold, adir / "run_gold")
             n = container.grade(pkg, None, adir / "run_nop")
-            res.append(gates.gold_gate(g))
-            res.append(gates.nop_gate(n, f2p))
+            res.append(gates.gold_gate(g, f2p, p2p))
+            res.append(gates.nop_gate(n, f2p, p2p))
 
             # Auto-repair: a curated P2P test that is not green at base is a curation fault, not a
             # task fault: drop it and re-run. A P2P test green at base but red under gold is a gold
-            # regression and rejects the candidate.
-            bad_base = [x for x in p2p if n.get("statuses", {}).get(x) != "PASSED"]
+            # regression and rejects the candidate. Authored compatibility tests are never dropped:
+            # one that is not green at base is an authoring fault and rejects the candidate.
+            bad_base = [x for x in upstream if n.get("statuses", {}).get(x) != "PASSED"]
+            bad_authored = [x for x in authored if n.get("statuses", {}).get(x) != "PASSED"]
             gold_regr = [x for x in p2p if x not in bad_base and g.get("statuses", {}).get(x) != "PASSED"]
-            if bad_base and attempt < MAX_ATTEMPTS:
+            if bad_authored:
+                reason = f"authored compatibility tests not green at base: {bad_authored[:5]}"
+            elif bad_base and attempt < MAX_ATTEMPTS:
                 drop_p2p |= set(bad_base)
                 record["repairs"].append({"attempt": attempt, "action": "drop non-green P2P", "tests": bad_base})
                 verdict, reason = "retry", "P2P not green at base"
                 raise _Retry()
-            if gold_regr:
+            if gold_regr and not reason:
                 reason = f"gold regresses curated tests: {gold_regr[:5]}"
 
             muts = {}
             for m in draft.mutants:
                 muts[m.name] = container.grade(pkg, repo.mutant_patch(draft, m), adir / f"run_mutant_{m.name}")
-            res.append(gates.mutation_gate(muts))
+            res.append(gates.mutation_gate(muts, f2p, p2p, authored))
             (adir / "mutants.json").write_text(json.dumps(
                 {m.name: m.description for m in draft.mutants}, indent=1))
 
             _dump(adir, "gold.diff", gold)
             _dump(adir, "tests.diff", test_patch)
-            full = container.run(
-                "cd /app && git apply /sol/gold.diff && git apply /sol/tests.diff && "
-                "python -m pytest -q -p no:cacheprovider --color=no tests 2>&1 | tail -3",
-                mounts={str(adir.resolve()): "/sol:ro"})
-            res.append(gates.full_suite_gate(full))
+            fdir = adir / "full_suite"
+            fdir.mkdir(exist_ok=True)
+            full = container.run(container.full_suite_script(),
+                                 mounts={str(adir.resolve()): "/sol:ro", str(fdir.resolve()): "/out"})
+            (fdir / "container.log").write_text(f"exit={full.returncode}\n--- stdout\n{full.stdout[-20000:]}\n"
+                                                f"--- stderr\n{full.stderr[-20000:]}")
+            flog = fdir / "pytest.log"
+            res.append(gates.full_suite_gate(full, flog.read_text(errors="replace") if flog.exists() else None))
             failed = [r["gate"] for r in res if not r["ok"]]
             if not failed and not reason:
                 verdict, reason = "accepted", "all gates passed"

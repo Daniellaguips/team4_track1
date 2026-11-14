@@ -1,0 +1,99 @@
+{
+ "gate": "mutation",
+ "ok": false,
+ "kind": "container",
+ "detail": {
+  "killed": {
+   "bounds_exclusive": true,
+   "fixture_syntax_error": false,
+   "fixture_patch_does_not_apply": false
+  },
+  "score": "1/3",
+  "verdicts": {
+   "bounds_exclusive": "killed",
+   "fixture_syntax_error": "invalid",
+   "fixture_patch_does_not_apply": "invalid"
+  },
+  "per_mutant": {
+   "bounds_exclusive": {
+    "verdict": "killed",
+    "problems": [],
+    "non_verdict_tests": {},
+    "killed_by": {
+     "f2p": [
+      "tests/test_duration_type.py::test_bounds_inclusive"
+     ]
+    },
+    "f2p_failed": [
+     "tests/test_duration_type.py::test_bounds_inclusive"
+    ],
+    "failed_by_import_or_syntax_error": {},
+    "p2p_failed": [],
+    "reward": 0.9375,
+    "f2p_passed": 15,
+    "f2p_total": 16,
+    "p2p_passed": 37,
+    "p2p_total": 37,
+    "secs": 2.8
+   },
+   "fixture_syntax_error": {
+    "verdict": "invalid",
+    "problems": [
+     "parser produced no test records",
+     "no pytest summary line (crashed, killed, or never ran)"
+    ],
+    "non_verdict_tests": {
+     "tests/test_duration_type.py::test_exported_and_basic_conversion": "MISSING",
+     "tests/test_duration_type.py::test_components_sum_on_command_line": "MISSING",
+     "tests/test_duration_type.py::test_surrounding_whitespace_is_stripped": "MISSING",
+     "tests/test_duration_type.py::test_invalid_grammar": "MISSING",
+     "tests/test_duration_type.py::test_invalid_message_uses_unstripped_text": "MISSING",
+     "tests/test_duration_type.py::test_repeated_unit_is_invalid": "MISSING",
+     "tests/test_duration_type.py::test_component_order": "MISSING",
+     "tests/test_duration_type.py::test_digits_only": "MISSING",
+     "tests/test_duration_type.py::test_int_default_follows_digits_rule": "MISSING",
+     "tests/test_duration_type.py::test_timedelta_passthrough": "MISSING"
+    },
+    "killed_by": {},
+    "f2p_failed": [],
+    "failed_by_import_or_syntax_error": {},
+    "p2p_failed": [],
+    "reward": 0.0,
+    "f2p_passed": 0,
+    "f2p_total": 16,
+    "p2p_passed": 0,
+    "p2p_total": 37,
+    "secs": 0.8
+   },
+   "fixture_patch_does_not_apply": {
+    "verdict": "invalid",
+    "problems": [
+     "stage failed before tests ran: apply_patch",
+     "no grading result (no grading_details.json)"
+    ],
+    "non_verdict_tests": {
+     "tests/test_duration_type.py::test_exported_and_basic_conversion": "MISSING",
+     "tests/test_duration_type.py::test_components_sum_on_command_line": "MISSING",
+     "tests/test_duration_type.py::test_surrounding_whitespace_is_stripped": "MISSING",
+     "tests/test_duration_type.py::test_invalid_grammar": "MISSING",
+     "tests/test_duration_type.py::test_invalid_message_uses_unstripped_text": "MISSING",
+     "tests/test_duration_type.py::test_repeated_unit_is_invalid": "MISSING",
+     "tests/test_duration_type.py::test_component_order": "MISSING",
+     "tests/test_duration_type.py::test_digits_only": "MISSING",
+     "tests/test_duration_type.py::test_int_default_follows_digits_rule": "MISSING",
+     "tests/test_duration_type.py::test_timedelta_passthrough": "MISSING"
+    },
+    "killed_by": {},
+    "f2p_failed": [],
+    "failed_by_import_or_syntax_error": {},
+    "p2p_failed": [],
+    "reward": null,
+    "f2p_passed": null,
+    "f2p_total": null,
+    "p2p_passed": null,
+    "p2p_total": null,
+    "secs": 0.2
+   }
+  }
+ }
+}

@@ -1,0 +1,42 @@
+{
+ "what": "REPORTED evidence copied read-only from an open teammate PR; NOT independently verified by this branch",
+ "pr": "https://github.com/tianluoboding/team4_track1/pull/2",
+ "pr_state_at_fetch": "OPEN (not merged)",
+ "head_ref": "team4-submission-ready",
+ "head_sha": "934bf44c89623548e02ede57f74333be0aed4025",
+ "fetched_utc": "2026-11-14T19:29:13Z",
+ "fetched_via": "gh api repos/.../contents/<path>?ref=<head_sha> (no git fetch/pull, working tree untouched)",
+ "files": {
+  "benchmark_results_openrouter.json": "track1_submission/team4_Track1/bench/benchmark_results_openrouter.json",
+  "selfcheck_docker.txt": "track1_submission/team4_Track1/evidence/docker/selfcheck_docker.txt"
+ },
+ "reported_summary": {
+  "agent": "terminus-2",
+  "model": "openrouter/anthropic/claude-haiku-5.5",
+  "k": 3,
+  "harbor": "0.26.0",
+  "engine": "docker",
+  "rollouts": 15,
+  "reward_1.0": 15,
+  "resolve_at_3": {
+   "pallets__click-duration-param-type-9f8a40": "3/3",
+   "pallets__click-group-command-abbreviations-583fa0": "3/3",
+   "pallets__click-help-command-sections-56c8e3": "3/3",
+   "pallets__click-option-conflicts-with-921c06": "3/3",
+   "pallets__click-prompt-max-attempts-ac2a26": "3/3"
+  },
+  "total_cost_usd_reported": 0.1662
+ },
+ "not_present_in_pr": [
+  "per-rollout trajectory/<iid>/<model>/rollout_N/ directories",
+  "result.json with agent_info.model_info",
+  "verifier/reward.json per rollout"
+ ],
+ "rechecked": {
+  "head_sha": "8394b349fe1d1487906e3fb3e38d925a1aa50d89",
+  "pr_state": "OPEN (not merged)",
+  "how": "git fetch origin refs/pull/2/head into refs/remotes/pr2/head; detached worktree outside the repo",
+  "benchmark_json_generated_tasks_and_docker_evidence_changed_since_934bf44c": false,
+  "generated_tasks_blob_compare_vs_local": "IDENTICAL (60 files)"
+ }
+}
