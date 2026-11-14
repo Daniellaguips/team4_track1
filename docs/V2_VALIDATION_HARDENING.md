@@ -37,9 +37,54 @@ New evidence lives only in `track1_freestyle/evidence_v2/`.
 - **Nop = 0.0 and mutation kills** (historical): the feature tests fail on the untouched base, and
   each listed wrong implementation fails at least one feature test. These are properties of the
   tests.
-- **Neither shows difficulty.** No model benchmark has run. V1 difficulty (resolve@k) is unknown.
+- **Neither shows difficulty.** Gold and nop/mutation results say nothing about how hard a task is
+  for a model. That needs a benchmark (below).
 - Nothing in section 2 was re-run on this branch. Re-classifying the *saved* outputs with the new
   gates (section 5) reads historical files offline; it is not a re-execution.
+
+### 2a. Benchmark and Docker evidence, by provenance
+
+An earlier draft of this document said "no model benchmark has run". That was true of the
+evidence on this branch when it was written, but it is now outdated. The evidence falls into
+three tiers.
+
+**Historical (unchanged, kept as-is).** The V1 records on this branch were written when no
+benchmark had been run. The V1 README marks the benchmark as blocked (no API key on the original
+host), and V1 validation ran on rootless Podman because Docker was unavailable. Those files are
+not edited; they are accurate records of that point in time.
+
+**Reported by a teammate, not independently verified.**
+[PR #2](https://github.com/tianluoboding/team4_track1/pull/2) is open and not merged (head
+`team4-submission-ready` @ `934bf44c89623548e02ede57f74333be0aed4025`). It reports:
+
+| Reported item | Value (from `track1_submission/team4_Track1/bench/benchmark_results_openrouter.json`) |
+|---|---|
+| Agent / model | `terminus-2` / `openrouter/anthropic/claude-haiku-5.5` |
+| Harness | Harbor 0.26.0, engine `docker`, k = 3 |
+| Result | resolve@3 = 3/3 on all five V1 tasks; 15 of 15 rollouts reward 1.0; reported total cost $0.17 |
+| Docker validation | `evidence/docker/selfcheck_docker.txt`: oracle 1.0, nop 0.0, full P2P on all five tasks, `ALL SOUND` |
+
+I read these files read-only through the GitHub API at that head SHA (no fetch, pull or merge) and
+copied them to `track1_freestyle/evidence_v2/external/pr2/` with their source paths and sha256. I
+did not rerun the benchmark or the Docker self-check. The PR contains the summary JSON only. It has
+no per-rollout `trajectory/<iid>/<model>/rollout_N/` directories, no `result.json` with
+`agent_info.model_info` and no per-rollout `reward.json`, so neither the individual rollouts nor the
+exact model identity can be checked from the PR contents. The model was routed through OpenRouter.
+Whether that matches the guide's required model id (`anthropic/claude-haiku-5-5`) should be
+confirmed from the rollout `result.json` files if they exist.
+
+**Independently verified on this branch.** One fact links the report to these tasks. All 60 files
+of the five packages in PR #2 (`track1_submission/team4_Track1/generated_tasks/`) have the same git
+blob hashes as the local `track1_freestyle/generated_tasks/`
+(`evidence_v2/external/pr2/generated_tasks_blob_compare.txt`). The reported benchmark is therefore
+about exactly the V1 packages preserved here. This branch does not change those packages or their
+`grade.py`/`parser.py`, so the hardened factory gates cannot change the reported rewards. Nothing
+else in the table above is verified by me.
+
+**Implication if the report holds.** Under the benchmark guide's labels, resolve@3 = 3/3 is
+"trivial". The V1 tasks are mechanically sound but easy for the benchmark model. This is a
+difficulty finding, and it does not contradict the validity findings in this document: valid tests
+and easy tasks are independent properties.
 
 ## 3. Defects confirmed in V1 (cited at `v1-preservation-point`)
 
@@ -195,6 +240,12 @@ on this branch.** Specifically unverified:
 - the new `/out` bind mount under Docker Desktop or rootless Podman;
 - a full `python -m factory generate` run with the hardened gates.
 
+PR #2 reports a Docker run of the organizer `selfcheck.sh` on the five V1 packages (section 2a). If
+that report holds, it confirms that the V1 packages work under Docker. It does not exercise this
+branch's code: `selfcheck.sh` runs Harbor with each package's own `grade.py`, not the factory gates
+in `factory/gates.py`/`container.py`. The three items above therefore remain unverified. The
+daemon was rechecked at the end of this session and was still not reachable.
+
 Commands, once an engine works (writes only to `evidence_v2/integration/<timestamp>_<task>/` and a
 scratch copy under `$T1_WORK`):
 
@@ -213,7 +264,9 @@ SELFCHECK_OUT=evidence_v2/integration/harbor_selfcheck \
 
 ## 7. What these checks cannot establish
 
-- **Difficulty.** Nothing here measures model performance. resolve@k is unknown for every task.
+- **Difficulty.** Nothing on this branch measures model performance. The only difficulty evidence
+  is the benchmark reported in PR #2 (resolve@3 = 3/3 on all five V1 tasks; section 2a), which I
+  have not independently verified.
 - **That a nop FAILED means "feature absent".** The gate guarantees each F2P was collected and
   failed in its own call, while the P2P set (same click import, same harness) is green. The gold run
   shows the same tests pass once the gold patch is applied. Together these are strong

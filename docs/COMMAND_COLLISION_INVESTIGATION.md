@@ -139,6 +139,7 @@ proposed API name.
 | stevedore 5.10.0 | `conflict_resolver` for entry points sharing a name: `error_on_conflict` raises `MultipleMatches`, `ignore_conflicts` warns and takes the last, custom callables | closest prior art for a collision **policy** | operates on entry-point extensions, not Click groups; default is to warn | released source + tests read |
 | pluggy 1.7.0 | `ValueError` on registering a duplicate plugin name | strict duplicate registration | plugin manager, not command lookup | released source read |
 | Python `argparse` (3.11+) | `ArgumentError: conflicting subparser` for a duplicate sub-command name in one parser (3.8 accepted it) | strict duplicate detection for sub-commands | single parser at registration time; no multi-source precedence | executed on 3.8.6 and 3.11.13 |
+| Team-internal: [PR #2](https://github.com/tianluoboding/team4_track1/pull/2) `track1_llm_factory` (open, head `934bf44c`) | 15 design records across five families: response-file argv expansion, help sections, config value source (`ParameterSource.CONFIG`), invocation ledger, types | none. The `sources` family is about parameter **value** sources, not command sources. `CommandCollection` appears only in the two help-sections designs (4 mentions). They say help sections work with its merged `list_commands`, and that a collection uses its own section overrides and order rather than its sources'. That is help-layout compatibility, not lookup or collision behaviour | different features; no command-lookup diagnostics. A future help-sections task and this candidate would both touch `CommandCollection` help, so they should not be packaged against conflicting assumptions | every `design.json` in the PR read via the GitHub API at the head SHA and grepped for `CommandCollection`, `get_command`, `list_commands`, `add_source`, `shadow`; matched lines read (verified) |
 | CKAN [#5329](https://github.com/ckan/ckan/pull/5329), signet commit `5a82b3d`, fastapi-cli [#421](https://github.com/fastapi/fastapi-cli/pull/421) (open) | application-level detection of duplicate plugin command names at entry-point load time (error / `duplicate_name` status / warning) | same user need | app-specific loaders, not a Click API; fastapi-cli is an unmerged proposal | web search results only; not inspected beyond the summaries |
 
 ### Novelty status
@@ -160,6 +161,14 @@ proposed API name.
   listed-but-unresolvable names, custom `get_command`, no chain side effects, and no caching. The
   click-repl case shows that downstream code does get the order wrong. Whether this is hard enough
   for a model is unknown and must not be claimed without a benchmark.
+- **Reported calibration point (not independently verified).** PR #2 reports that Claude Haiku
+  (terminus-2, k=3) solved all five V1 tasks 3/3 (15/15 rollouts; see
+  `docs/V2_VALIDATION_HARDENING.md` section 2a). Those tasks are rule-dense specs of similar size
+  that change one Click area each. A diagnostics-only `CommandCollection` task is in the same size
+  class, so if the report holds, the prior expectation is that it would also be easy. This makes
+  the triviality risk concrete. Before investing in packaging, the test plan's gold prototype
+  should be benchmarked cheaply (k=3) or the scope reconsidered with the team. It is not a reason
+  to pad the spec with artificial rules.
 
 **Decision:** no drop-in equivalent or other blocking novelty issue was found, so a specification
 draft is justified. Two risks carry forward and are not resolved by more searching: the

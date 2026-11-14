@@ -159,7 +159,11 @@ the task image, which this branch has not done.
 ## 7. Implementation challenges (no difficulty claim)
 
 These are places where a reasonable implementation can go wrong. Whether a model actually does is
-unknown until benchmarked.
+unknown until benchmarked. The only benchmark evidence for this factory so far is reported, not
+independently verified: [PR #2](https://github.com/tianluoboding/team4_track1/pull/2) reports
+Haiku resolve@3 = 3/3 on all five V1 tasks. That is a warning sign for a task of comparable size.
+A k=3 benchmark of the packaged task is an acceptance criterion before it replaces any V1 task, and
+the list below must not be read as evidence of difficulty.
 
 - Local lookup must use the base `Group` lookup. Calling `self.get_command` would return the winner
   from any source and also triggers the chain check (M2/M11).
