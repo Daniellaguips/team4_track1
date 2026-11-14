@@ -3,7 +3,7 @@
 A reusable pipeline that turns `pallets/click` at a pinned commit into Harbor 0.25 feature tasks,
 validates each one through nine gates, and records full provenance. This submission contains the
 pipeline, the 5 generated packages, their validation evidence, a freshly generated demo task, and a
-benchmark runner whose execution was **blocked** (no organizer model key on this host).
+real Haiku benchmark of all 5 tasks (see Benchmark).
 
 | | |
 |---|---|
@@ -22,7 +22,7 @@ benchmark runner whose execution was **blocked** (no organizer model key on this
 | Organizer `check_structure.py` | 5/5 pass (`evidence/check_structure.txt`) |
 | Organizer `selfcheck.sh`, real Harbor 0.25.0 | 5/5 oracle 1.0, nop 0.0, P2P full — `ALL SOUND` (`evidence/selfcheck.txt`) |
 | Fresh task demo | generated and validated (`demo_tasks/`, `evidence/demo_*`) |
-| Benchmark (terminus-2, `anthropic/claude-haiku-5-5`, k=3) | **blocked: no `ANTHROPIC_API_KEY`**; runner implemented, not executed; **difficulty unproven** |
+| Benchmark (terminus-2, Claude Haiku 5.5 via OpenRouter, k=3) | **run: resolve@3 = 3/3 on all 5 tasks (15/15 resolved)**; tasks are sound but not hard for Haiku; see Benchmark |
 
 ## Submission layout
 
@@ -100,9 +100,37 @@ BENCH_BUDGET_USD=60 HARBOR_ENV=podman .venv/bin/python bench/run_benchmark.py ge
 rollouts (resolved = reward 1.0, not pass@k), excludes and re-runs infrastructure failures
 (reward null, environment/API/rate-limit/truncation errors; agent timeouts count as misses), keeps
 every rollout, writes `trajectory/<iid>/claude-haiku-5-5/rollout_N/` and stops at the budget. On
-this host it recorded `bench/benchmark_status.json: blocked` and exited 3. **No resolve@k number in
-this submission is real; none is reported.** It was also never run end to end, so a first real run
-may surface integration problems (e.g. terminus-2 setup in the task image).
+the original host it recorded `bench/benchmark_status.json: blocked` and exited 3 (no organizer key
+there). The real numbers below were produced afterwards with Harbor directly.
+
+### Measured results (run by Daniella with the team's organizer OpenRouter key)
+
+The runner above was blocked on the original host, so the benchmark was run directly with Harbor on a
+second machine (macOS, **Docker**, Harbor 0.26.0), against these exact `generated_tasks/` packages:
+
+```bash
+export OPENROUTER_API_KEY=...       # organizer key, environment only
+harbor run -p generated_tasks/<iid> -a terminus-2 -m openrouter/anthropic/claude-haiku-5.5 \
+  -k 3 -n 3 -o jobs/<iid> --no-delete -y
+```
+
+| Task | resolve@3 | F2P (each rollout) |
+|---|---|---|
+| duration-param-type-9f8a40 | 3/3 | all pass |
+| group-command-abbreviations-583fa0 | 3/3 | all pass |
+| help-command-sections-56c8e3 | 3/3 | all pass |
+| option-conflicts-with-921c06 | 3/3 | all pass |
+| prompt-max-attempts-ac2a26 | 3/3 | all pass |
+
+15/15 graded rollouts resolved (reward 1.0); 0 infrastructure failures; `result.json` of every rollout
+confirms the model `anthropic/claude-haiku-5.5`. Benchmark spend: about $0.17 (about $0.011 per rollout).
+**Finding:** the tasks are mechanically sound but Haiku solves them reliably. From the trajectories,
+Haiku reads little existing code, writes the feature in one pass, turns the spec's rule list and
+examples into its own quick checks, and iterates with pytest until green. Rule-dense specs alone do
+not create difficulty; integration across modules, preserved existing behavior, subclass hooks and
+state across invocations are the levers we expect to matter (not yet implemented in these
+blueprints). `bench/run_benchmark.py` hardcodes `anthropic/claude-haiku-5-5` + `ANTHROPIC_API_KEY`;
+with an OpenRouter key use the command above.
 
 ## The five tasks
 
@@ -160,14 +188,14 @@ in `p2p_rationale.json`.
 
 ## Cost and time
 
-No model was called: 0 tokens, $0 of the OpenRouter and Anthropic allocations. Per-task wall time
+Generation called no model: 0 tokens, $0. The benchmark used about $0.17 of the OpenRouter allocation. Per-task wall time
 in `pipeline_run.json` (41–66 s, excluding the shared one-time image build ≈20 s and coverage
 index ≈35 s). Build window used: ≈11:16–12:20 local for the pipeline, tasks and validation.
 
 ## Limitations
 
-- **No benchmark** → hardness is not demonstrated. Specs are deliberately rule-dense, but a model of
-  claude-haiku-5-5's class may well solve some of them.
+- **Hardness is low:** Haiku 5.5 resolved all 5 tasks 3/3 (see Benchmark). The tasks are valid and
+  fair, but not hard for this model.
 - No LLM generation: new *capabilities* require a human to write a blueprint; the factory produces
   new *variants* (20 knob vectors) automatically. The demo task differs from a batch task in one
   rule (default-section position).
@@ -175,7 +203,8 @@ index ≈35 s). Build window used: ≈11:16–12:20 local for the pipeline, task
   user-land `AliasedGroup` recipe related to the abbreviation task (recorded in its axes note).
 - The fairness lint is heuristic; it was backed by reading every generated spec once.
 - `CommandCollection.list_commands` got no P2P test from coverage curation.
-- Validated with rootless Podman (Harbor `-e podman`), not Docker. The Dockerfile unpacks
+- Gates/selfcheck were validated with rootless Podman (Harbor `-e podman`); all 15 benchmark trials
+  then built and ran these task images under **Docker** (Harbor 0.26.0) without changes. The Dockerfile unpacks
   `tmux`/`less` .debs without maintainer scripts so it also builds without subuid mappings.
 - `network_mode = "public"` (benchmark agents need egress per the guide); answers are not reachable
   over the network since the features do not exist upstream.
@@ -189,4 +218,11 @@ index ≈35 s). Build window used: ≈11:16–12:20 local for the pipeline, task
 
 ## Team
 
-Single contributor (AI coding agent operating on the user's workspace); no other members.
+Team **team4** (5 members, in person). Each member, please add or correct your line:
+
+- **Kyle Tian**: blueprint factory, 5 tasks, gates and validation evidence (built with an AI coding
+  agent operating on his workspace).
+- **Daniella**: plan (co-written with Claude and Codex, independently rated by Claude Fable 5.2
+  and Codex), the Haiku benchmark of all 5 tasks via the organizer OpenRouter key, hardness research,
+  and a separate LLM-driven generator path (not part of this package).
+- **TODO**: remaining three members.

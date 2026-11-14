@@ -5,7 +5,7 @@ Click-based task generation and validation prototype for the Innodata Hackathon.
 ## Contents
 
 - `track1_freestyle/`: implementation, five generated tasks, development candidates, demo task, validation evidence, run logs, and resource records.
-- `track1_submission/`: the supplied submission folder and ZIP snapshot. `TeamName` remains a placeholder in these original artifacts.
+- `track1_submission/`: the submission folder `team4_Track1/` and `team4_Track1.zip` (validated: `validate_submission.py` → 0 errors).
 - `organizer/`: Track 1 instructions, harness, worked example, general event brief, and presentation template. Track 2 materials are excluded.
 
 ## Current status
@@ -18,4 +18,4 @@ See [implementation instructions](track1_freestyle/README.md), [variation strate
 
 ## Archive integrity
 
-The first import (`945f5f5`) contained a truncated `track1_submission/TeamName_Track1.zip` (786,432 bytes) and many empty or missing files. Commits `88ea287` and `ee74c0e` replaced both folders with the complete originals from the Erdos machine. `TeamName_Track1.zip` is now 3,584,863 bytes, passes `unzip -t`, and passes `harness/validate_submission.py` with 0 errors.
+The first import (`945f5f5`) contained a truncated `track1_submission/TeamName_Track1.zip` (786,432 bytes) and many empty or missing files. Commits `88ea287` and `ee74c0e` replaced both folders with the complete originals from the Erdos machine. `TeamName_Track1.zip` is now 3,584,863 bytes, passes `unzip -t`, and passes `harness/validate_submission.py` with 0 errors. It has since been renamed to `team4_Track1.zip` (team name: team4) and rebuilt with the updated README; the rebuilt ZIP also passes `validate_submission.py` with 0 errors.
