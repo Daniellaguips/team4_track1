@@ -92,7 +92,7 @@ def make_patch(edits, test_files: dict[str, str] | None = None) -> tuple[str, Pa
 def gold_and_test_patches(draft) -> tuple[str, str]:
     gold, t1 = make_patch(draft.gold_edits)
     shutil.rmtree(t1, ignore_errors=True)
-    tests, t2 = make_patch([], draft.test_files)
+    tests, t2 = make_patch([], {**draft.test_files, **draft.compat_test_files})
     shutil.rmtree(t2, ignore_errors=True)
     return gold, tests
 

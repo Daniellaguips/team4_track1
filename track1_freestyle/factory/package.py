@@ -66,7 +66,10 @@ def instance_id(draft) -> str:
     return f"{config.INSTANCE_PREFIX}-{draft.slug}-{draft.knob_hash()}"
 
 
-def write(draft, gold: str, test_patch: str, f2p: list[str], p2p: list[str], out: Path) -> Path:
+def write(draft, gold: str, test_patch: str, f2p: list[str], p2p: list[str], out: Path,
+          provenance: dict | None = None) -> Path:
+    """``provenance`` (written only for drafts with authored compatibility tests) splits
+    ``pass_to_pass.json`` into upstream regression tests and newly authored ones; grade.py ignores it."""
     iid = instance_id(draft)
     pkg = out / iid
     if pkg.exists():
@@ -84,6 +87,8 @@ def write(draft, gold: str, test_patch: str, f2p: list[str], p2p: list[str], out
     (pkg / "tests" / "test_patch.diff").write_text(test_patch)
     (pkg / "tests" / "fail_to_pass.json").write_text(json.dumps(f2p, indent=2) + "\n")
     (pkg / "tests" / "pass_to_pass.json").write_text(json.dumps(p2p, indent=2) + "\n")
+    if draft.compat_test_files:
+        (pkg / "tests" / "p2p_provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
     files = sorted({n.split("::")[0] for n in p2p} | set(draft.test_files))
     (pkg / "tests" / "run_script.sh").write_text(
         RUN_SCRIPT.format(files="\n".join(f'  "{f}"' for f in files)))

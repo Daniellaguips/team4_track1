@@ -46,6 +46,9 @@ class Draft:
     novelty_probes: list[str]
     novelty_queries: list[str]
     axes: dict[str, str]
+    # Newly authored tests that pin existing behaviour: they pass at base and under gold, so they
+    # are graded as pass-to-pass (with "authored_compatibility" provenance), never as F2P.
+    compat_test_files: dict[str, str] = dataclasses.field(default_factory=dict)
 
     def knob_hash(self) -> str:
         blob = json.dumps({"family": self.family, "knobs": self.knobs}, sort_keys=True)

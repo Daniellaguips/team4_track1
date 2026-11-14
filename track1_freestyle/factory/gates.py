@@ -97,7 +97,7 @@ def fairness(draft, f2p: list[str]) -> dict:
     norm_ins = re.sub(r"\s+", " ", ins)
     req_ids = set(re.findall(r"\*\*R(\d+)\b", ins))
     problems, used = [], set()
-    tree = ast.parse("\n".join(draft.test_files.values()))
+    tree = ast.parse("\n".join([*draft.test_files.values(), *draft.compat_test_files.values()]))
     for fn in [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name.startswith("test_")]:
         doc = ast.get_docstring(fn) or ""
         ids = set(re.findall(r"R(\d+)", doc))
@@ -181,11 +181,12 @@ _COMMON_KW = {"type", "default", "input", "catch_exceptions", "is_flag", "hidden
 def isolation(pkg: Path, draft, gold: str) -> dict:
     ins = (pkg / "instruction.md").read_text()
     problems = []
-    tnames = re.findall(r"def (test_\w+)", "\n".join(draft.test_files.values()))
+    all_tests = {**draft.test_files, **draft.compat_test_files}
+    tnames = re.findall(r"def (test_\w+)", "\n".join(all_tests.values()))
     for n in tnames:
         if n in ins:
             problems.append(f"instruction names test {n}")
-    for f in draft.test_files:
+    for f in all_tests:
         if f in ins or Path(f).name in ins:
             problems.append(f"instruction names test file {f}")
     for w in ("patch.diff", "fail_to_pass", "pass_to_pass", "solve.sh", "grade.py"):
@@ -201,7 +202,7 @@ def isolation(pkg: Path, draft, gold: str) -> dict:
         problems.append("Dockerfile copies files from the package context")
     probe = container.run(
         "test ! -e /solution && test ! -e /tests && "
-        + " && ".join(f"test ! -e /app/{f}" for f in draft.test_files)
+        + " && ".join(f"test ! -e /app/{f}" for f in all_tests)
         + " && test $(git -C /app rev-list --count HEAD) = 1 && git -C /app status --porcelain | wc -l")
     if probe.returncode != 0 or probe.stdout.strip() != "0":
         problems.append(f"image probe failed: exit={probe.returncode} out={probe.stdout.strip()[:200]}")
@@ -375,35 +376,76 @@ def nop_gate(r: dict, f2p: list[str], p2p: list[str]) -> dict:
                 p2p_not_passed={n: s for n, s in c["p2p"].items() if s != "PASSED"})
 
 
-def mutant_verdict(r: dict, f2p: list[str], p2p: list[str]) -> dict:
-    """killed: a healthy run in which a collected feature test FAILED. invalid: the run cannot be
-    read as a behavioural verdict (patch did not apply, import/syntax/collection error, crash)."""
+def mutant_verdict(r: dict, f2p: list[str], p2p: list[str], authored: list[str] | tuple = ()) -> dict:
+    """killed: a healthy run in which a collected F2P or P2P test FAILED behaviourally (the grader
+    cannot give such a run 1.0). invalid: the run cannot be read as a behavioural verdict (patch did
+    not apply, import/syntax/collection error, crash). ``authored`` names the P2P ids that are newly
+    authored compatibility tests, so ``killed_by`` can tell them apart from upstream regression tests."""
     c = classify_run(r, f2p, p2p)
     bad = {n: s for n, s in {**c["f2p"], **c["p2p"]}.items() if s not in ("PASSED", "FAILED")}
     exc = failure_exceptions(r.get("pytest_log"))
     failed = sorted(n for n, s in c["f2p"].items() if s == "FAILED")
-    broken = {n: sorted(exc.get(_failure_key(n), set()) & IMPORT_CLASS) for n in failed}
+    p2p_failed = sorted(n for n, s in c["p2p"].items() if s == "FAILED")
+    broken = {n: sorted(exc.get(_failure_key(n), set()) & IMPORT_CLASS) for n in failed + p2p_failed}
     broken = {n: e for n, e in broken.items() if e}
-    behavioural = [n for n in failed if n not in broken]
+    killed_by = {"f2p": [n for n in failed if n not in broken],
+                 "p2p_authored": [n for n in p2p_failed if n not in broken and n in authored],
+                 "p2p_upstream": [n for n in p2p_failed if n not in broken and n not in authored]}
     if c["problems"] or bad:
         v = "invalid"
-    elif behavioural:
+    elif any(killed_by.values()):
         v = "killed"
     elif broken:
         v = "invalid"
     else:
         v = "survived"
     return {"verdict": v, "problems": c["problems"], "non_verdict_tests": dict(list(bad.items())[:10]),
-            "f2p_failed": failed, "f2p_failed_by_import_or_syntax_error": broken,
-            "p2p_failed": sorted(n for n, s in c["p2p"].items() if s == "FAILED"), **_summ(r)}
+            "killed_by": {k: x for k, x in killed_by.items() if x},
+            "f2p_failed": failed, "failed_by_import_or_syntax_error": broken,
+            "p2p_failed": p2p_failed, **_summ(r)}
 
 
-def mutation_gate(results: dict[str, dict], f2p: list[str], p2p: list[str]) -> dict:
-    per = {m: mutant_verdict(r, f2p, p2p) for m, r in results.items()}
+def mutation_gate(results: dict[str, dict], f2p: list[str], p2p: list[str],
+                  authored: list[str] | tuple = ()) -> dict:
+    per = {m: mutant_verdict(r, f2p, p2p, authored) for m, r in results.items()}
     killed = {m: v["verdict"] == "killed" for m, v in per.items()}
     return _res("mutation", all(killed.values()) and bool(killed), "container",
                 killed=killed, score=f"{sum(killed.values())}/{len(killed)}",
                 verdicts={m: v["verdict"] for m, v in per.items()}, per_mutant=per)
+
+
+def test_categories(draft, f2p: list[str], upstream: list[str], authored: list[str], cov: dict,
+                    test_patch: str) -> dict:
+    """The three test categories stay what they claim to be: F2P ids come only from the feature
+    test files; authored compatibility ids come only from the compatibility files and are graded as
+    P2P; upstream P2P ids are pre-existing tests (in no file the test patch creates or edits, and
+    PASSED in the base-commit suite run). Whether each test really fails or passes at base is
+    checked by the nop gate."""
+    problems = []
+    feature, compat = set(draft.test_files), set(draft.compat_test_files)
+    patched = set(re.findall(r"^\+\+\+ b/(\S+)", test_patch, re.M))
+    fname = lambda n: n.split("::", 1)[0]  # noqa: E731
+    if feature & compat:
+        problems.append(f"files are both feature and compatibility tests: {sorted(feature & compat)}")
+    for label, ids, allowed in (("F2P", f2p, feature), ("authored P2P", authored, compat)):
+        stray = [n for n in ids if fname(n) not in allowed]
+        if stray:
+            problems.append(f"{label} ids outside their files: {stray[:5]}")
+    if compat and not authored:
+        problems.append("compatibility files declare no test functions")
+    for a, b, label in ((f2p, upstream, "F2P/upstream"), (f2p, authored, "F2P/authored"),
+                        (upstream, authored, "upstream/authored")):
+        if set(a) & set(b):
+            problems.append(f"{label} overlap: {sorted(set(a) & set(b))[:5]}")
+    not_preexisting = [n for n in upstream if fname(n) in patched]
+    if not_preexisting:
+        problems.append(f"upstream P2P ids in files the test patch adds or edits: {not_preexisting[:5]}")
+    not_green = [n for n in upstream if cov["status"].get(n) != "PASSED"]
+    if not_green:
+        problems.append(f"upstream P2P ids not PASSED in the base suite run: {not_green[:5]}")
+    return _res("test_categories", not problems, "static", problems=problems,
+                counts={"f2p": len(f2p), "p2p_upstream": len(upstream), "p2p_authored": len(authored)},
+                note="authored compatibility tests are graded as pass-to-pass but are not upstream tests")
 
 
 def full_suite_gate(p: subprocess.CompletedProcess, log: str | None) -> dict:

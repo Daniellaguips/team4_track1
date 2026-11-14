@@ -259,7 +259,7 @@ def test_mutant_lazy_import_syntax_error_is_invalid(grade):
         "the failure is a call-phase FAILED, so V1 counted it as a kill"
     v = gates.mutant_verdict(r, F2P, P2P)
     assert v["verdict"] == "invalid"
-    assert v["f2p_failed_by_import_or_syntax_error"] == {n: ["SyntaxError"] for n in F2P}
+    assert v["failed_by_import_or_syntax_error"] == {n: ["SyntaxError"] for n in F2P}
 
 
 def test_mutant_lazy_import_behavioural_failure_is_killed(grade):
