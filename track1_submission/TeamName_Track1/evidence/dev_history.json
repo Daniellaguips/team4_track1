@@ -1,0 +1,142 @@
+{
+ "note": "development-phase candidates (before the code freeze used by runs/*_batch5). Not counted as first-pass yield of the submitted batch; reported for transparency.",
+ "candidates": [
+  {
+   "run": "20261114T113637_dev1",
+   "instance_id": "pallets__click-duration-param-type-0e7568",
+   "family": "duration",
+   "knobs": {
+    "units": "dhms",
+    "order": "descending",
+    "bare_number": "seconds"
+   },
+   "status": "rejected",
+   "failed_gates": [
+    "fairness_lint"
+   ],
+   "reason": "failed gates: ['fairness_lint']",
+   "code_version": "a02d7935fc6b764c4f1b151acc7dde418f5e2aae",
+   "fix_applied_to_pipeline": "fairness lint too literal (template+number) -> lint now accepts spec templates filled with digits (pipeline fix)"
+  },
+  {
+   "run": "20261114T114902_dev2_abbrev",
+   "instance_id": "pallets__click-group-command-abbreviations-f29899",
+   "family": "abbrev",
+   "knobs": {
+    "ambiguity": "alphabetical",
+    "hidden": "excluded"
+   },
+   "status": "rejected",
+   "failed_gates": [
+    "fairness_lint",
+    "nop"
+   ],
+   "reason": "failed gates: ['fairness_lint', 'nop']",
+   "code_version": "a8fa9d414e4bdf74f87cbeaf653047167802558b",
+   "fix_applied_to_pipeline": "one F2P test passed at base -> merged into a test that uses the new kwarg (blueprint fix); lint quoting fix"
+  },
+  {
+   "run": "20261114T114902_dev2_attempts",
+   "instance_id": "pallets__click-prompt-max-attempts-701650",
+   "family": "attempts",
+   "knobs": {
+    "empty": "counts",
+    "exhausted": "abort"
+   },
+   "status": "rejected",
+   "failed_gates": [
+    "grounding",
+    "fairness_lint",
+    "nop"
+   ],
+   "reason": "grounding: src/click/termui.py: anchor occurs 2 times (need exactly 1): '    raise Abort()\\n'",
+   "code_version": "a8fa9d414e4bdf74f87cbeaf653047167802558b",
+   "fix_applied_to_pipeline": "mutant anchor ambiguous -> anchor made unique (blueprint fix)"
+  },
+  {
+   "run": "20261114T114902_dev2_conflicts",
+   "instance_id": "pallets__click-option-conflicts-with-c50d1d",
+   "family": "conflicts",
+   "knobs": {
+    "report": "first",
+    "sources": "commandline"
+   },
+   "status": "rejected",
+   "failed_gates": [
+    "fairness_lint",
+    "mutation"
+   ],
+   "reason": "failed gates: ['fairness_lint', 'mutation']",
+   "code_version": "a8fa9d414e4bdf74f87cbeaf653047167802558b",
+   "fix_applied_to_pipeline": "equivalent mutant (no_dedup under report=first) -> replaced by reports_last_pair (blueprint fix); lint fix"
+  },
+  {
+   "run": "20261114T114902_dev2_sections",
+   "instance_id": "pallets__click-help-command-sections-85cb7e",
+   "family": "sections",
+   "knobs": {
+    "default": "first",
+    "order": "first_seen"
+   },
+   "status": "accepted",
+   "failed_gates": [],
+   "reason": "all gates passed",
+   "code_version": "a8fa9d414e4bdf74f87cbeaf653047167802558b"
+  },
+  {
+   "run": "20261114T115310_dev3_abbrev",
+   "instance_id": "pallets__click-group-command-abbreviations-f29899",
+   "family": "abbrev",
+   "knobs": {
+    "ambiguity": "alphabetical",
+    "hidden": "excluded"
+   },
+   "status": "accepted",
+   "failed_gates": [],
+   "reason": "all gates passed",
+   "code_version": "ab3b7038d8072a3ae6a0512f9c89f896760e3ba3"
+  },
+  {
+   "run": "20261114T115310_dev3_attempts",
+   "instance_id": "pallets__click-prompt-max-attempts-701650",
+   "family": "attempts",
+   "knobs": {
+    "empty": "counts",
+    "exhausted": "abort"
+   },
+   "status": "rejected",
+   "failed_gates": [
+    "nop"
+   ],
+   "reason": "failed gates: ['nop']",
+   "code_version": "ab3b7038d8072a3ae6a0512f9c89f896760e3ba3",
+   "fix_applied_to_pipeline": "one F2P test passed at base -> uses new kwarg explicitly (blueprint fix)"
+  },
+  {
+   "run": "20261114T115310_dev3_conflicts",
+   "instance_id": "pallets__click-option-conflicts-with-c50d1d",
+   "family": "conflicts",
+   "knobs": {
+    "report": "first",
+    "sources": "commandline"
+   },
+   "status": "accepted",
+   "failed_gates": [],
+   "reason": "all gates passed",
+   "code_version": "ab3b7038d8072a3ae6a0512f9c89f896760e3ba3"
+  },
+  {
+   "run": "20261114T115444_dev4_attempts",
+   "instance_id": "pallets__click-prompt-max-attempts-701650",
+   "family": "attempts",
+   "knobs": {
+    "empty": "counts",
+    "exhausted": "abort"
+   },
+   "status": "accepted",
+   "failed_gates": [],
+   "reason": "all gates passed",
+   "code_version": "ddeb3d49236104d74ab51e0e6083a2798648bdc2"
+  }
+ ]
+}

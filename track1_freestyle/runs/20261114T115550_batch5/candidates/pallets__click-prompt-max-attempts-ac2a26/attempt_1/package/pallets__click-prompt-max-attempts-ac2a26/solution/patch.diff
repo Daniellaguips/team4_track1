@@ -1,0 +1,149 @@
+diff --git a/src/click/core.py b/src/click/core.py
+index e4b6b57..1f23e59 100644
+--- a/src/click/core.py
++++ b/src/click/core.py
+@@ -2988,6 +2988,7 @@ class Option(Parameter):
+         confirmation_prompt: bool | str = False,
+         prompt_required: bool = True,
+         hide_input: bool = False,
++        prompt_max_attempts: int | None = None,
+         is_flag: bool | None = None,
+         flag_value: t.Any = UNSET,
+         multiple: bool = False,
+@@ -3025,6 +3026,15 @@ class Option(Parameter):
+         self.prompt = prompt_text
+         self.confirmation_prompt = confirmation_prompt
+         self.prompt_required = prompt_required
++        if prompt_max_attempts is not None and (
++            isinstance(prompt_max_attempts, bool)
++            or not isinstance(prompt_max_attempts, int)
++            or prompt_max_attempts < 1
++        ):
++            raise ValueError(
++                "prompt_max_attempts must be a positive integer or None."
++            )
++        self.prompt_max_attempts = prompt_max_attempts
+         self.hide_input = hide_input
+         self.hidden = hidden
+ 
+@@ -3531,7 +3541,9 @@ class Option(Parameter):
+             # get [Y/n] or [y/N] depending on the truthy value of the default.
+             else:
+                 default = bool(default)
+-            return confirm(self.prompt, default)
++            return confirm(
++                self.prompt, default, max_attempts=self.prompt_max_attempts
++            )
+ 
+         # If show_default is given, provide this to `prompt` as well,
+         # otherwise we use `prompt`'s default behavior
+@@ -3549,6 +3561,7 @@ class Option(Parameter):
+             show_choices=self.show_choices,
+             confirmation_prompt=self.confirmation_prompt,
+             value_proc=lambda x: self.process_value(ctx, x),
++            max_attempts=self.prompt_max_attempts,
+             **prompt_kwargs,
+         )
+ 
+diff --git a/src/click/termui.py b/src/click/termui.py
+index 8fe0085..7b7bbbb 100644
+--- a/src/click/termui.py
++++ b/src/click/termui.py
+@@ -147,6 +147,7 @@ def prompt(
+     show_default: bool | str = True,
+     err: bool = False,
+     show_choices: bool = True,
++    max_attempts: int | None = None,
+ ) -> str: ...
+ 
+ 
+@@ -162,6 +163,7 @@ def prompt(
+     show_default: bool | str = True,
+     err: bool = False,
+     show_choices: bool = True,
++    max_attempts: int | None = None,
+ ) -> V: ...
+ 
+ 
+@@ -176,6 +178,7 @@ def prompt(
+     show_default: bool | str = True,
+     err: bool = False,
+     show_choices: bool = True,
++    max_attempts: int | None = None,
+ ) -> V:
+     """Prompts a user for input.  This is a convenience function that can
+     be used to prompt a user for input later.
+@@ -232,6 +235,9 @@ def prompt(
+ 
+     """
+ 
++    _check_max_attempts(max_attempts)
++    failed = _attempt_counter(max_attempts)
++
+     def prompt_func(text: str) -> str:
+         f = hidden_prompt_func if hide_input else visible_prompt_func
+         try:
+@@ -273,6 +279,7 @@ def prompt(
+         except UsageError as e:
+             message = _mask_hidden_input(e.message, value) if hide_input else e.message
+             echo(_("Error: {message}").format(message=message), err=err)
++            failed()
+             continue
+         if not confirmation_prompt:
+             return result
+@@ -284,6 +291,30 @@ def prompt(
+         if value == value2:
+             return result
+         echo(_("Error: The two entered values do not match."), err=err)
++        failed()
++
++
++def _check_max_attempts(value: int | None, name: str = "max_attempts") -> None:
++    if value is None:
++        return
++    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
++        raise ValueError(f"{name} must be a positive integer or None.")
++
++
++def _give_up(limit: int) -> t.NoReturn:
++    raise UsageError(_("Gave up after {n} invalid attempts.").format(n=limit))
++
++
++def _attempt_counter(max_attempts: int | None) -> t.Callable[[], None]:
++    failures = 0
++
++    def failed() -> None:
++        nonlocal failures
++        failures += 1
++        if max_attempts is not None and failures >= max_attempts:
++            _give_up(max_attempts)
++
++    return failed
+ 
+ 
+ def confirm(
+@@ -293,6 +324,7 @@ def confirm(
+     prompt_suffix: str = ": ",
+     show_default: bool = True,
+     err: bool = False,
++    max_attempts: int | None = None,
+ ) -> bool:
+     """Prompts for confirmation (yes/no question).
+ 
+@@ -318,6 +350,8 @@ def confirm(
+     .. versionadded:: 4.0
+         Added the ``err`` parameter.
+     """
++    _check_max_attempts(max_attempts)
++    failed = _attempt_counter(max_attempts)
+     prompt = _build_prompt(
+         text,
+         prompt_suffix,
+@@ -338,6 +372,7 @@ def confirm(
+             rv = default
+         else:
+             echo(_("Error: invalid input"), err=err)
++            failed()
+             continue
+         break
+     if abort and not rv:

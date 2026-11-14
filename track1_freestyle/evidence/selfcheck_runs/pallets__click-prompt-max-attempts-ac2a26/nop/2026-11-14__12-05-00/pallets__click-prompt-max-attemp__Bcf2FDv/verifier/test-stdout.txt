@@ -1,0 +1,1 @@
+Parsed 972 test results -> /logs/verifier/output.json

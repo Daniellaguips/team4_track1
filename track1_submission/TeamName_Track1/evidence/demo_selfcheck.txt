@@ -1,0 +1,9 @@
+# selfcheck output: /u/erdos/csga2/yt35/project/track1_freestyle/evidence/demo_selfcheck_runs
+
+== pallets__click-help-command-sections-ffd69f ==
+  oracle  reward=1.0   F2P=10/10 P2P=37/37
+  nop     reward=0.0   F2P=0/10 P2P=37/37
+  ✓ mechanically sound
+
+ALL SOUND
+SELFCHECK_EXIT=0
