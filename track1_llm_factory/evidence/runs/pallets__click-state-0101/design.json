@@ -1,0 +1,170 @@
+{
+ "feature": "Invocation-scoped deprecation policy: choose how deprecated commands and parameters are reported ('always' | 'once' | 'silent' | 'error'), with a per-run notice log shared by the whole Context tree",
+ "summary": "Every deprecation notice click prints (deprecated command in Command.invoke, deprecated option/argument in Parameter.handle_parse_result) is routed through a new overridable Context.notify_deprecation(kind, name, message). A per-context deprecation_policy is inherited by value from parent to child. One notice log and one 'already shown' set are shared by reference across the context tree. The policy decides whether a notice is printed every time, printed once per (kind, name), silenced, or turned into a UsageError. The notices are exposed as Context.deprecation_notices. A new click.deprecation_policy_option decorator sets the policy from the command line, and CliRunner/Result expose a policy argument and a per-call notice log. The default policy 'always' keeps every existing behavior byte-identical.",
+ "public_api": [
+  "click.Context(..., deprecation_policy=None, notice_log=None)  # two new keywords appended after show_default",
+  "click.Context.deprecation_policy  # property with validating setter",
+  "click.Context.deprecation_notices  # tuple snapshot of (kind, name, outcome)",
+  "click.Context.notify_deprecation(kind, name, message)",
+  "click.deprecation_policy_option(*param_decls, **kwargs)",
+  "click.testing.CliRunner(deprecation_policy=None)",
+  "click.testing.CliRunner.invoke(..., deprecation_policy=None, **extra)",
+  "click.testing.Result.deprecations"
+ ],
+ "keywords": [
+  "deprecated",
+  "deprecation_policy",
+  "notify_deprecation",
+  "notice_log",
+  "deprecation_notices",
+  "handle_parse_result",
+  "Command.invoke",
+  "context_class",
+  "_make_sub_context",
+  "CliRunner.invoke",
+  "Result",
+  "human_readable_name",
+  "param_type_name",
+  "resilient_parsing"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "Context.__init__ gains two keywords appended after `show_default`: `deprecation_policy: str | None = None` and `notice_log: list | None = None`. The valid policy names are exactly 'always', 'once', 'silent' and 'error' (case-sensitive). Validation of `deprecation_policy` runs first, and only when the value is not None. Any other value, including 1, 'ONCE' and '', raises the error below. The effective policy of a context is chosen in this order: (1) the explicit non-None `deprecation_policy` argument, (2) the parent's current effective policy read at construction time (inherited BY VALUE), (3) 'always' for a root. `Context.deprecation_policy` is a property returning the effective policy. Its setter accepts only the four valid names and raises the same ValueError for anything else, including None, so None is valid in the constructor but not in the setter. Assigning changes only that context. Contexts created afterwards with that context as parent inherit the new value. Children that already exist keep the value they inherited. Passing `deprecation_policy` through `Command.context_settings` works under the existing rule that explicit extras to `make_context` win over context_settings.",
+   "inputs": "Context(cmd, deprecation_policy=<str|None>); ctx.deprecation_policy = <str>; Command.context_settings={'deprecation_policy': 'once'}",
+   "output": "ctx.deprecation_policy is one of the four names. Root default is 'always'. A child with no explicit value equals its parent's value at the moment the child was created.",
+   "errors": "ValueError(\"Invalid deprecation policy {value!r}. Choose from 'always', 'once', 'silent', 'error'.\") e.g. for value 'ONCE' the message is \"Invalid deprecation policy 'ONCE'. Choose from 'always', 'once', 'silent', 'error'.\" The same error is raised by the setter, including for None.",
+   "precedence": "Explicit child argument > parent's current value > 'always'. make_context extras > context_settings (existing rule, unchanged). The deprecation_policy_option callback (R6) runs after construction and therefore overrides all of these for its own context.",
+   "bounds": "Four valid names only; no aliases, no normalization, no strip.",
+   "state": "Policy is stored per context and copied by value at construction. A later change on a parent never reaches already-created children. A change made in a group callback does reach subcommand contexts, because Group.invoke creates them after running the group callback, both in non-chain and in chain mode."
+  },
+  {
+   "id": "R2",
+   "text": "Each Context tree shares ONE notice log (a list) and ONE 'shown' set of (kind, name) keys, both held by reference like `meta`. A non-root context obtains both from its `parent` object, never through constructor keywords, so legacy Context subclasses whose __init__ only forwards some kwargs still work. For a root context (parent is None): `notice_log=None` creates a new empty list; a list argument is adopted BY IDENTITY (not copied); the 'shown' set is always a NEW empty set for every root, even when the same list object is adopted by two roots. For a non-root context a `notice_log` argument is validated (R-error below) and then ignored; the tree's existing list keeps receiving entries. `Context.deprecation_notices` returns a NEW tuple on every access, a snapshot of the shared list, holding entries `(kind, name, outcome)` in recording order. It is empty when nothing was recorded. Validation order in __init__: policy first, then notice_log. Contexts created by ctx.invoke(Command), `_make_sub_context`, `make_context(parent=...)`, nested groups and chained groups all share the state.",
+   "inputs": "Context(cmd, notice_log=[]); child contexts built with parent=ctx; ctx.deprecation_notices",
+   "output": "tuple of 3-tuples of str (kind, name, outcome) where kind is 'command', 'option' or 'argument' and outcome is 'shown', 'skipped' or 'raised'; `ctx.deprecation_notices` is the same content from any context of the tree.",
+   "errors": "TypeError(\"'notice_log' must be a list or None.\") for any other value, e.g. a tuple or True, and also for a non-root context.",
+   "precedence": "Validation (R1 policy first, then notice_log) always runs before adoption or sharing. Root adoption by identity beats creating a new list. For a non-root context, the tree's existing list beats the argument.",
+   "bounds": "Snapshot is read-only: mutating the returned tuple is impossible; appending to the adopted list from outside is visible in later snapshots.",
+   "state": "The 'shown' set is per root context, never per command, process or module. Two roots adopting the same list share entries in that list but NOT the shown set."
+  },
+  {
+   "id": "R3",
+   "text": "New public method `Context.notify_deprecation(kind, name, message)` is the single code path through which click reports a deprecation. `kind` and `name` are str or None (name may be None for an unnamed command); `message` is the already formatted plain notice text, e.g. \"DeprecationWarning: The command 'old' is deprecated.\" Its behavior, evaluated on the context it is called on, is: (a) if `self.resilient_parsing` is True the notice is echoed exactly as before (`echo(style(message, fg='red'), err=True)`), nothing is recorded, the shown set is untouched, and the policy is ignored, so even 'silent' and 'error' print and never raise; (b) policy 'always': echo, record outcome 'shown', add the key to the shown set; (c) policy 'once': if the key is already in the shown set, do not echo and record outcome 'skipped'; otherwise echo, record 'shown' and add the key; (d) policy 'silent': do not echo, record 'skipped', do NOT add the key; (e) policy 'error': record 'raised', do NOT add the key, then raise UsageError(message_below, self). The method returns None. Recording means appending `(kind, name, outcome)` to the shared log.",
+   "inputs": "ctx.notify_deprecation('option', 'OLD', 'DeprecationWarning: ...')",
+   "output": "None. Possible stderr line (red styled text; stripped in CliRunner output) and exactly one appended log entry, except in resilient parsing, where there is no entry.",
+   "errors": "UsageError(\"Deprecated {kind} {name!r} is not allowed (deprecation policy 'error').\", ctx) e.g. \"Deprecated command 'old' is not allowed (deprecation policy 'error').\" Standalone exit code 2; stderr contains the usage block and `Error: <that message>`.",
+   "precedence": "resilient_parsing (a) beats every policy, so 'error' never raises while completing or in help-time resilient parsing. The 'error' policy beats the existing printing, so nothing is echoed when it raises.",
+   "bounds": "Exactly one log entry per call outside resilient parsing; none in resilient parsing.",
+   "state": "The entry is appended before UsageError is raised, so a 'raised' entry stays in the log (no rollback). The shown set only changes on outcome 'shown'."
+  },
+  {
+   "id": "R4",
+   "text": "Notice identity for the 'once' policy is the pair of plain strings `(kind, name)`, never object identity. For a deprecated command, kind='command' and name=Command.name (not the info_name, not an alias). For a deprecated parameter, kind=`param.param_type_name` ('option' or 'argument') and name=`param.human_readable_name`, so an Argument is keyed by its UPPERCASE metavar-style name such as 'OLD' (or its explicit metavar) and an Option by its Python name such as 'old'. Consequences: an option 'old' on a group and an option 'old' on a subcommand are the SAME key; an option 'old' and an argument 'old' differ; a command named 'old' and an option 'old' differ. The key is added to the shown set on every outcome 'shown', whichever policy printed it, and never on 'skipped' or 'raised'. Interactions: a notice printed under 'always' in one context makes a later 'once' context in the same tree skip it; a notice that was only silenced under 'silent' is still printable later by a 'once' or 'always' context; a notice rejected by 'error' is still printable later.",
+   "inputs": "tree where policies differ per context, for example group policy 'always' and subcommand policy 'once', same deprecated option name on both",
+   "output": "group parse: ('option','old','shown'); subcommand parse: ('option','old','skipped') and no stderr line for it.",
+   "errors": "none",
+   "precedence": "The shown set (filled by any policy) takes part in the 'once' decision (R3c) of any later context of the tree, regardless of the policy that filled it.",
+   "bounds": "The key comparison is exact string equality: no case folding, no trimming.",
+   "state": "A deprecated chained command used twice (`g a a`) yields ('command','a','shown') then ('command','a','skipped') under 'once'."
+  },
+  {
+   "id": "R5",
+   "text": "Call sites. In `Command.invoke(ctx)` the existing notice \"DeprecationWarning: The command {name!r} is deprecated.{extra_message}\" is still built by the same code (same text, same conditions: only when `self.deprecated` is truthy, at the same position before the callback), but instead of echoing directly it calls `ctx.notify_deprecation('command', self.name, message)`. In `Parameter.handle_parse_result` the existing notice \"DeprecationWarning: The {param_type} {name!r} is deprecated.{extra_message}\" is built by the same code under the SAME unchanged condition (`self.deprecated and value is not UNSET and source < ParameterSource.DEFAULT_MAP`), inside the same `augment_usage_errors` block, and calls `ctx.notify_deprecation(self.param_type_name, self.human_readable_name, message)`. The policy used is the one of the context passed in (the command's own context for a command notice, the context whose command owns the parameter for a parameter notice), never the parent's. When the policy is 'error' for a parameter, the UsageError aborts handle_parse_result: the parameter source was already set (existing order), `ctx.params` receives NO value for that parameter, later parameters are not processed and the command callback never runs. When it is 'error' for a command, the callback is not run.",
+   "inputs": "deprecated command invoked; deprecated option passed on the command line or via envvar; deprecated option left at its default or given by default_map",
+   "output": "Notice text is byte-identical to before. A parameter notice is triggered only for COMMANDLINE, ENVIRONMENT or PROMPT sources; DEFAULT_MAP and DEFAULT sources give no notice and no log entry.",
+   "errors": "Under policy 'error': UsageError per R3 with kind 'command', 'option' or 'argument'; exit code 2.",
+   "precedence": "The unchanged emission condition decides whether notify_deprecation is called at all. Only then do R3/R4 policy rules apply. Notices raised for parameters happen during parsing and therefore before the command's own 'command' notice (which happens in invoke). In chain mode every chained command's parameter notices come before any chained command's command notice.",
+   "bounds": "One call per notice site per trigger. A deprecated Group notifies as a Command when its group callback path runs `super().invoke(ctx)`; with no subcommand and invoke_without_command=False ('Missing command.') there is no command notice.",
+   "state": "Order for `g sub` with deprecated g, sub and an option on sub: command g notice, then option notice (sub parse), then command sub notice."
+  },
+  {
+   "id": "R6",
+   "text": "New decorator `click.deprecation_policy_option(*param_decls, **kwargs)` (decorators.py, exported from click/__init__.py as `deprecation_policy_option`), modeled on version_option. Default declaration is '--deprecations'. It builds an option via `option(...)` using kwargs.setdefault for `type=Choice(['always','once','silent','error'])` (Choice imported inside the function, not at module level), `expose_value=False`, `is_eager=True` and `help='How to report use of deprecated commands and parameters.'`. Any `callback` in kwargs is replaced by the built-in callback. The built-in callback does nothing when the value is None or `ctx.resilient_parsing` is True; otherwise it executes `ctx.deprecation_policy = value`. No default is set, so omitting the option leaves the inherited policy untouched. The option affects ONLY the context it is declared on at the moment its callback runs. Children created later inherit it per R1; the parent and already-created contexts are unaffected.",
+   "inputs": "@click.deprecation_policy_option() on a group or a command; CLI `--deprecations once`; invalid choice `--deprecations loud`",
+   "output": "`--deprecations once` sets ctx.deprecation_policy to 'once' for that context and for contexts created after the callback.",
+   "errors": "Invalid choice produces the standard click Choice BadParameter (exit code 2), unchanged click behavior; no new message.",
+   "precedence": "The option value overrides the Context kwarg, the inherited value and context_settings for its own context (because it runs after construction). It is eager, so it runs in invocation order among eager parameters: a deprecated eager option processed BEFORE it in the same parse still uses the old policy, and any non-eager deprecated parameter of the same context uses the new one. On a subcommand it never changes the group's already-reported notices.",
+   "bounds": "The callback is never run when the parser is resilient (completion), and the policy setter is not called in that case.",
+   "state": "A group with `--deprecations error` makes all later subcommand contexts inherit 'error'; a subcommand declaring `--deprecations silent` overrides only itself."
+  },
+  {
+   "id": "R7",
+   "text": "testing.py: `CliRunner.__init__` gains `deprecation_policy: str | None = None` (stored as `self.deprecation_policy`, validated with the R1 ValueError when not None, raised from __init__). `CliRunner.invoke` gains the named parameter `deprecation_policy: str | None = None` placed before `**extra`, so the name is no longer forwarded through `**extra`. The effective policy is the invoke argument when it is not None, else `self.deprecation_policy`. The invoke argument is validated with the same ValueError BEFORE isolation is set up, and it is raised directly even when catch_exceptions is True. When the effective policy is not None, invoke creates a NEW empty list for that call and calls `cli.main(args=..., prog_name=..., deprecation_policy=<effective>, notice_log=<that list>, **extra)`; if `extra` already contains a `notice_log` key, the runner's list replaces it. This beats context_settings on the command (extras win, existing rule). When the effective policy is None, neither keyword is passed, `extra` is forwarded untouched, and the command behaves exactly as before.",
+   "inputs": "CliRunner(deprecation_policy='once'); runner.invoke(cli, args, deprecation_policy='error'); runner.invoke(cli, args)",
+   "output": "The call runs the root context with the chosen policy and a fresh list.",
+   "errors": "ValueError per R1 for an invalid invoke argument or constructor argument, raised before the command runs and not wrapped in Result.",
+   "precedence": "invoke argument > runner attribute > not set. The value passed to main > Command.context_settings. An explicit `deprecation_policy` passed by the child context or by the command's own option (R6) still overrides this at their own contexts.",
+   "bounds": "An explicit invoke argument of None means 'use the runner's value', not 'disable'.",
+   "state": "A fresh list per invoke call; nothing is kept on the runner between calls."
+  },
+  {
+   "id": "R8",
+   "text": "`Result` gains the keyword argument `deprecations` (default `()`), appended after `exc_info` so existing positional construction is unchanged, and the attribute `Result.deprecations`: the tuple of entries of that call's list, captured in the `finally` block of CliRunner.invoke after fd-capture merging, so entries recorded before a SystemExit, a usage error ('raised' entry included) or an unexpected exception are present. When the effective policy of the call is None, `Result.deprecations == ()` even if notices were printed, because no log was handed to the root context. `Result.__repr__` is byte-identical to before.",
+   "inputs": "runner.invoke(cli, ['--old'], deprecation_policy='error')",
+   "output": "Result.deprecations == (('option', 'old', 'raised'),) with exit_code 2 and the error text in result.stderr / result.output.",
+   "errors": "none",
+   "precedence": "Captured after the command ends (success or failure); the 'error' policy's UsageError still leaves the entry in the result (no rollback, see R3).",
+   "bounds": "Tuple of 3-tuples of str in recording order.",
+   "state": "Per call; see R9."
+  },
+  {
+   "id": "R9",
+   "text": "Reset and isolation: state exists only on Context trees. Two successive `CliRunner.invoke` calls with the same runner and same command object return independent `Result.deprecations`, and under 'once' the second call prints the notice again (the shown set is per root context and never cached on the command, runner, module or the adopted list). Two successive `cmd.make_context(...)` calls give independent roots. Handing one list to two roots makes the entries accumulate in that list but each root starts with a fresh shown set, so 'once' prints again in the second root. A child context built with `parent=ctx` always shares ctx's list and shown set, even for a custom `context_class` whose __init__ forwards `parent`. Reusing ONE Context object for several separate invocations is not reset: entries accumulate and the shown set persists. `Context.close()` and leaving the `with ctx:` block never clear the log or the shown set. A policy assigned to a context (R1 setter, R6 option) is never carried over to a different root.",
+   "inputs": "runner.invoke(cli, args, deprecation_policy='once') twice; make_context twice; two roots with notice_log=same_list",
+   "output": "second invoke: Result.deprecations again starts with ('..','..','shown') and the notice is printed again; same_list contains entries from both roots.",
+   "errors": "none",
+   "precedence": "Per-root creation of the shown set beats adoption of a shared list (R2).",
+   "bounds": "Snapshots taken before a later notice do not change (tuples are immutable).",
+   "state": "No module-level or class-level mutable state is added anywhere."
+  },
+  {
+   "id": "R10",
+   "text": "ROUTE MATRIX (policy, shared state and notices across entry points). main(): SAME as R3-R5, the policy comes from the `deprecation_policy` extra / context_settings, the log from `notice_log`; there is no named parameter, so passing them to main works only as Context extras. CliRunner.invoke: DIFFERENT, it owns the named `deprecation_policy` parameter, hands a fresh list to main and fills `Result.deprecations` (R7/R8); with effective policy None it passes nothing and `Result.deprecations == ()`. ctx.invoke(callback=Command): DIFFERENT/N-A for notices: Context.invoke bypasses the other command's parse_args, handle_parse_result and Command.invoke, so it triggers no parameter notice, no command notice, no log entry and no policy check even if the callee or its parameters are deprecated; the sub-context it creates (via `_make_sub_context`) inherits the caller's policy by value and shares its log and shown set, so notices raised inside the callee callback land in the same log. ctx.invoke(plain function): N/A, no sub-context, no notice. ctx.forward: SAME as ctx.invoke (it delegates to invoke); no 'forward'-specific entry exists. Nested groups (non-chain): SAME, one shared log, policy inherited by value at each sub-context creation, dedup across levels by (kind, name). chain=True groups: SAME, with one ordering difference: every chained subcommand is parsed and made before any is invoked, so all parameter notices of all chained commands are recorded before all command notices; chained contexts inherit the group's policy as it is after the group callback ran.",
+   "inputs": "each route",
+   "output": "as in the matrix; for chain `g a b` with deprecated parameters on a and b and deprecated commands a and b: entries order is option(a), option(b), command(a), command(b) (preceded by command(g) when g is deprecated).",
+   "errors": "none beyond R1-R3",
+   "precedence": "Route-specific outcomes above override the general R5 call-site statement only for ctx.invoke / ctx.forward, where no notice is triggered at all.",
+   "bounds": "The matrix covers main, CliRunner.invoke, ctx.invoke (Command and function), ctx.forward, nested groups and chain=True groups, with no other routes.",
+   "state": "ctx.invoke / ctx.forward callees share state with the caller; every other route creates state only at its own root."
+  },
+  {
+   "id": "R11",
+   "text": "Extension points. `notify_deprecation` is the only place that echoes, records or raises for deprecations, and the call sites in R5 call it on the context named there, so a user `context_class` subclass that overrides `notify_deprecation` (with or without calling super) observes every notice of its own context in order, with the exact arguments `(kind, name, message)`, including notices raised inside resilient parsing (the override is called; only the base method decides to ignore the policy and not record). An override that does not call super prints nothing, records nothing, never raises UsageError for policy 'error', and leaves the shared log and shown set unchanged. Sub-contexts created by `ctx.invoke(Command)` and `Group` handling are built with `type(self)` / the command's own `context_class`, so a custom class is preserved on that route; a subcommand with a different context_class gets its own class but still shares the tree state through `parent`. A user subclass of Command that overrides `invoke` or `parse_args` and calls super triggers the same notices through the base implementation; one that does not call super triggers none.",
+   "inputs": "class Spy(Context): def notify_deprecation(self, kind, name, message): ... ; Command(context_class=Spy)",
+   "output": "Spy receives (kind, name, message) once per trigger.",
+   "errors": "none",
+   "precedence": "A subclass override takes precedence over the base policy logic of R3 on that context only; the parent's or children's base contexts keep following R3.",
+   "bounds": "message passed to the hook is the plain unstyled text, without ANSI codes.",
+   "state": "A subclass that calls super participates in the shared tree state exactly like the base class."
+  },
+  {
+   "id": "R12",
+   "text": "Backward compatibility (everything not stated above is unchanged). With no new keyword used, no `deprecation_policy_option` and no runner policy, the effective policy is 'always', and these stay byte-identical to the previous behavior: the stderr text and ordering of deprecation notices (same message text, red style via the same echo/style call), help output including the '(DEPRECATED)' labels, usage errors, exit codes, return values, ctx.params, parameter sources, callback order, `Context.to_info_dict` and `Command.to_info_dict` (no new key), `Result` positional construction and repr, `CliRunner.invoke` return values when no policy is set, and the set of module-level imports of every click module (new imports must be function-local). The only changes visible without opting in are the new public attributes and methods themselves plus the log entries recorded invisibly in 'always' mode. No new warnings are emitted (pytest runs with filterwarnings=error). The positional order of existing Context.__init__ parameters is unchanged; the new keywords are last.",
+   "inputs": "any existing test of deprecated commands, options and arguments",
+   "output": "unchanged",
+   "errors": "none new",
+   "precedence": "Where R3-R5 would alter an existing observable (printing, exit code), they do so only when the effective policy is not 'always' or when resilient_parsing is False and the policy is 'once' with a repeated key; under 'always' the printed result is identical to before.",
+   "bounds": "Under 'always' every trigger prints, including repeated triggers of the same key.",
+   "state": "No state is retained between invocations beyond the Context tree."
+  }
+ ],
+ "traps": [
+  "The dedup key is the pair of strings (kind, name), not object identity: the same-named option on a group and on its subcommand is one key, an Argument is keyed by its uppercase human_readable_name (or its metavar), and an option, an argument and a command with the same spelling are three different keys.",
+  "The shown set is created per root Context, never cached on the command, the runner, the module or the adopted list: two CliRunner.invoke calls, or two roots sharing one notice_log list, each print a 'once' notice again.",
+  "The policy is inherited by VALUE at child construction: a change on the parent after a child exists never reaches that child, while a change made inside a group callback does reach subcommand and chained contexts created afterwards. The setter rejects None although the constructor accepts it.",
+  "Only outcome 'shown' adds a key to the shown set: 'silent' and 'error' never do, while a notice printed under 'always' DOES make a later 'once' context skip it.",
+  "resilient_parsing beats every policy: it prints exactly as before, records nothing, never marks the key as shown and never raises under 'error'.",
+  "The 'error' policy records its 'raised' entry BEFORE raising and leaves ctx.params without that parameter, with the parameter source already set; the entry therefore remains in Result.deprecations.",
+  "ctx.invoke and ctx.forward bypass parse_args, handle_parse_result and Command.invoke, so they never trigger notices even for deprecated callees, yet their sub-contexts share the tree state.",
+  "In chain mode every chained command is parsed before any is invoked, so all parameter notices precede all command notices.",
+  "CliRunner.invoke now owns the `deprecation_policy` name (it is no longer forwarded through **extra) and replaces any `notice_log` in extra only when the effective policy is not None; with None, extra is untouched and Result.deprecations is ()."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ]
+}

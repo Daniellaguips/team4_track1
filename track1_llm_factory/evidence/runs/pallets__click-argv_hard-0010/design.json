@@ -1,0 +1,176 @@
+{
+ "feature": "Opt-in @response-file argument expansion (per-Context, token-settled, completion-aware)",
+ "summary": "A Context can be opted into response-file expansion. While a context parses its argument list, a token '@path' is replaced in place by the tokens read from the file at that path. The feature is off by default and the enablement flag is inherited down the context tree. '--' stops expansion for the rest of the list. '@@x' is an escape. Each token is examined at most once per invocation, so nested groups, chained commands and the group re-parse used for command lookup never expand twice. Expansion errors are usage errors, and resilient parsing leaves failing tokens literal. A context tree exposes an invocation-scoped log of the files read. Shell completion treats the words before the cursor as if they had been expanded by a real parse.",
+ "public_api": [
+  "click.Context(..., response_files: bool | None = None)",
+  "click.Context.response_files (resolved bool attribute)",
+  "click.Context.response_files_used (read-only property returning a new list[str] on every access)",
+  "context_settings={'response_files': True} on any Command",
+  "main(..., response_files=True) / make_context(..., response_files=True) via the existing **extra forwarding",
+  "click.expand_response_files(args: Sequence[str]) -> list[str] (new top-level export, stateless, no Context needed)"
+ ],
+ "keywords": [
+  "response_files",
+  "response_files_used",
+  "expand_response_files",
+  "context_settings",
+  "context_class",
+  "parse_args",
+  "no_args_is_help",
+  "resolve_command",
+  "resilient_parsing",
+  "shell_complete",
+  "_resolve_incomplete",
+  "chain",
+  "UsageError",
+  "make_context"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "Opt-in and enablement. Context accepts a new keyword response_files (bool or None, default None). ctx.response_files is always a bool. It resolves, highest precedence first, to: (1) an explicit non-None value given to Context(...), including values passed through main(...) / make_context(...) extra keyword arguments; (2) Command.context_settings['response_files'] of the command that owns that context (as today, context_settings applies only to that command's own context); (3) the parent context's resolved value; (4) False. An explicit False on a sub-context disables expansion for that context even if the parent is True, and an explicit True enables it even if the parent is False. A Command whose context_class is a Context subclass that adds its own keyword arguments and forwards the remaining keywords to Context.__init__ honours response_files exactly as the base class does, including in its sub-contexts. When no context in an invocation resolves to True, behavior is byte-identical to before this feature. Tokens like '@f' and '@@f' reach the parser untouched, no file is opened or checked for existence, ctx.to_info_dict() has exactly the same keys and values as before, help and usage text are unchanged, and ctx.response_files_used is [].",
+   "inputs": "response_files=None|True|False on Context/main/make_context; context_settings; parent context; Context subclasses",
+   "output": "ctx.response_files bool as resolved above; disabled contexts do not examine tokens themselves (but see R7 for tokens already handled by an ancestor)",
+   "errors": "none",
+   "precedence": "explicit Context/main/make_context argument > Command.context_settings > parent context > False. Interaction with R7: a disabled context may still receive tokens that an enabled ancestor already expanded or settled, and does not re-expand them.",
+   "bounds": "None means 'inherit', False means 'disabled'; they are not interchangeable.",
+   "state": "ctx.response_files is fixed at context construction; it does not change later."
+  },
+  {
+   "id": "R2",
+   "text": "Token syntax. When a context with expansion enabled examines an argument list, every element is examined left to right, including option values and tokens in command-name position. For a token t: (a) if t starts with '@@', the token becomes t[1:] (one leading '@' removed) and no file is read; (b) otherwise, if t == '@', it stays '@'; (c) otherwise, if t starts with '@' (and has length >= 2), the remainder t[1:] is a file path and the token is replaced, at its position and in order, by the tokens produced by reading that file under R3-R5; (d) otherwise the token is unchanged. A token that merely contains '@' elsewhere, such as '--name=@f' or 'a@b', is never expanded. The standalone function click.expand_response_files(args) applies R2-R5 to the sequence unconditionally (it needs no Context and ignores all enablement flags), returns a new list, does not mutate its argument, writes no log and settles nothing. Its failures raise click.UsageError with ctx None and the messages in R6 (it has no resilient mode).",
+   "inputs": "list of str tokens",
+   "output": "new list with expanded tokens spliced in place; e.g. with f containing 'a\\nb\\n': ['x','@f','y'] -> ['x','a','b','y']; ['@@f'] -> ['@f']; ['@'] -> ['@']; ['--name=@f'] -> ['--name=@f']; ['@@'] -> ['@']",
+   "errors": "R6 messages (click.UsageError)",
+   "precedence": "R2(a) is checked before R2(b) and R2(c). R5 ('--') takes precedence over all of R2: after a '--' no token is examined at all.",
+   "bounds": "'@@' alone gives '@'; '@' alone stays '@'; a token '@x' with a one-character path 'x' is a file reference.",
+   "state": "none for the standalone function"
+  },
+  {
+   "id": "R3",
+   "text": "Response file format. The file is read as UTF-8; a leading byte-order mark is ignored. The content is split into lines on the single character '\\n' ONLY. One '\\r' immediately before a '\\n' is removed, and any other '\\r', '\\x0b', '\\x0c', '\\x1c'-'\\x1e', '\\x85', '\\u2028' or '\\u2029' stays inside the line's text. A final line without trailing newline counts. Each non-skipped line is exactly one token with no whitespace stripping. Lines that are exactly empty are skipped. A line consisting only of whitespace is NOT empty and yields a token. A line whose first character is '#' is a comment and is skipped. A line starting with the two characters '\\#' loses the backslash and yields a token starting with '#'. Any other line is used verbatim. Every token from the file is then examined under R2 (so lines may be '@@x' escapes or nested '@other' includes) and R5. File-level line syntax (blank lines, comments, '\\#') applies even after a '--' has been seen. Only '@' processing stops (R5).",
+   "inputs": "file bytes",
+   "output": "tokens, e.g. file b'\\xef\\xbb\\xbf# c\\n\\n--name\\r\\nx y\\n \\n\\\\#tag\\n' yields ['--name','x y',' ','#tag']; file b'a\\x0cb\\rc\\n' yields ['a\\x0cb\\rc']",
+   "errors": "R6 (invalid UTF-8 message)",
+   "precedence": "line syntax (R3) is applied first, then R2 token rules on the resulting tokens, with R5 overriding R2 once a '--' is reached.",
+   "bounds": "an empty file yields zero tokens; a file with only comments/blank lines yields zero tokens",
+   "state": "none"
+  },
+  {
+   "id": "R4",
+   "text": "Path resolution, nesting, duplicates and cycles. A file referenced from the top-level argument list is resolved relative to the process working directory at the moment of reading. A file referenced from inside a response file is resolved relative to the directory of the including file (the including file's path as it was opened). Absolute paths are used as-is. No '~', environment-variable or glob expansion is done. A nested include is expanded in place, recursively. Cycle rule: it is an error if the file being included has the same os.path.realpath as ANY file currently being read in the active include chain (including itself, e.g. a.txt containing '@a.txt'). Including the same file more than once without it being an ancestor (two sibling includes, a repeated top-level token, or a diamond) is allowed, and the file is read and expanded every time. The top-level file is nesting depth 1. Reading a file at depth 33 is an error, while depth 32 works. When both apply, the cycle check comes before the depth check, and the depth check before the readability check.",
+   "inputs": "paths as written in tokens/lines",
+   "output": "e.g. dir/a.txt containing '@sub/b.txt' reads dir/sub/b.txt, not ./sub/b.txt; ['@f','@f'] with f='x' gives ['x','x']; f='@g' and g='@f' is a cycle error",
+   "errors": "click.UsageError: \"Response file '{path}' includes itself.\" (path = text of the include that closes the cycle, exactly as written, without the '@'); click.UsageError: 'Response files are nested too deeply.' for depth 33",
+   "precedence": "cycle check > depth check > read/decode errors from R6",
+   "bounds": "depth 32 is allowed, depth 33 is rejected (inclusive limit of 32)",
+   "state": "the include chain is per expansion pass; a file read and finished is not remembered as 'seen' (so duplicates are fine)"
+  },
+  {
+   "id": "R5",
+   "text": "Double dash. While examining a list (and the files expanded inside it), as soon as a token equal to exactly '--' is produced (either from the list or from a file line), that '--' token itself is kept in the output and from that point to the end of the whole pass every later token is left exactly as is (no '@@' unescaping, no file reads). This applies to the rest of the including file, the rest of every enclosing file, and the rest of the argument list, not just the current file. '--' only affects the list being examined in that pass: it is not remembered across contexts. A context with expansion disabled does not examine its list, so a '--' consumed by it affects nothing. For example, with root disabled and sub-command enabled, 'cli -- sub @f' expands '@f' in the sub-command's list because that list does not contain the '--'. With the root enabled, the same line leaves '@f' literal. Tokens like '---' or '--x' are not the '--' terminator.",
+   "inputs": "'--' as list element or as a line in a response file",
+   "output": "e.g. f='a\\n--\\n@@z\\n', ['@f','@@y','@g'] -> ['a','--','@@z','@@y','@g'] (g not read)",
+   "errors": "none (nothing after '--' can fail)",
+   "precedence": "R5 overrides R2 and R4 for every token after the '--'. R3 line syntax (comments, blank lines, '\\#') still applies to remaining lines of the file in which '--' occurs.",
+   "bounds": "the '--' token itself is retained exactly once per occurrence; a second '--' after the first is also retained and has no extra effect",
+   "state": "the 'seen --' state is local to a single examination pass"
+  },
+  {
+   "id": "R6",
+   "text": "Errors and resilient parsing. Failures are raised as click.UsageError (exact class UsageError) attached to the context that was parsing. Standalone-mode main() therefore prints the usual 'Usage: ...' block plus 'Error: <message>' and exits with code 2, and CliRunner.invoke gives exit_code 2. Messages, with {path} being the path text as written (without '@', not joined with any directory): file missing, a directory, permission denied, or any other OSError on open/read -> \"Could not read response file '{path}'.\"; file bytes not decodable as UTF-8 -> \"Response file '{path}' is not valid UTF-8.\"; cycle and depth messages as in R4. When ctx.resilient_parsing is True (completion, or user-set), none of these errors are raised. The offending '@path' token is kept literally in the output (and is treated as settled, R7), nothing is logged for it (R11), and examination continues with the following tokens. Tokens already produced by an earlier part of the same pass (for example a file's lines before the failing include) are kept. Later usage errors that mention tokens (NoSuchOption, 'Got unexpected extra argument', NoSuchCommand) name the expanded token as it appears after expansion, e.g. \"No such option: --bogus\" when '--bogus' came from a file, never the '@path' token.",
+   "inputs": "bad paths, cycles, invalid bytes, resilient_parsing True/False",
+   "output": "UsageError (exit code 2) or, in resilient parsing, an unchanged '@path' token",
+   "errors": "click.UsageError \"Could not read response file '{path}'.\" | \"Response file '{path}' is not valid UTF-8.\" | \"Response file '{path}' includes itself.\" | 'Response files are nested too deeply.'",
+   "precedence": "resilient_parsing suppresses every expansion error from R4 and R6. Errors are raised during the context's parsing, so the group callback of an enabled root has not run yet, while for a sub-context-only enablement it already has (see R8).",
+   "bounds": "an empty path is impossible because '@' alone is literal (R2)",
+   "state": "a failed read never reaches the log"
+  },
+  {
+   "id": "R7",
+   "text": "Each token is examined at most once per invocation. A token occurrence becomes settled once an examination pass has gone over it, whether it was expanded, unescaped, or left literal because of a '--' (R5) or because of a resilient failure (R6). Settled token occurrences are never examined again by any context in the same context tree, whatever that context's resolved response_files value. This covers the leftover tokens a parent hands to sub-commands, the tokens a Group relays to the next chained command, and the arguments that a group re-parses when resolve_command meets an unknown command whose first character looks like an option prefix. Token occurrences never examined by an enabled context (because their context is disabled, or the list is a fresh list built by the caller, e.g. main(args=...), a new make_context list, or standalone expand_response_files) are unsettled, and are examined normally when an enabled context parses them. Consequences: with root and sub-command both enabled, 'cli sub @@x' gives the sub-command the literal argument '@x' (not a file read); 'cli -- @missing' gives \"No such command '@missing'.\" (not a response-file error) and reads no file; the log (R11) has no duplicate entries caused by re-parsing.",
+   "inputs": "argument lists passing through Group dispatch, chain, command lookup",
+   "output": "each file read once and each '@@' collapsed once per original token occurrence",
+   "errors": "none beyond R6",
+   "precedence": "settled-ness beats the enablement flag of a later context (R1): an enabled sub-context does not re-examine settled tokens. R5 interaction: tokens after '--' become settled literal when the enabled pass skips over them.",
+   "bounds": "tokens produced by expanding a file (e.g. a literal '@x' produced from '@@x') are settled as well",
+   "state": "settled-ness is invocation-scoped (shared by the whole context tree) and absent in a new invocation"
+  },
+  {
+   "id": "R8",
+   "text": "ROUTE MATRIX. main(): SAME as the baseline (root context expands during parsing; main(response_files=True) enables it; on Windows the existing argument glob pre-expansion of sys.argv still runs first and is otherwise unchanged). CliRunner.invoke: SAME as main() (a string args value is shlex-split first, then handled as the list; the working directory at parse time is the runner's current directory, so isolated_filesystem works; a failure gives exit_code 2 with output containing 'Error: ' plus the R6 message; each invoke starts with an empty log, R11). ctx.invoke(callback or Command, ...): N/A, since no argument list is parsed. Values passed as keyword arguments are delivered byte-identical, so a value '@missing' is passed through as that string, no file is touched, nothing is logged and no error occurs. ctx.forward(cmd, ...): N/A for the same reason, and values from ctx.params are forwarded unchanged. Nested (non-chain) groups: DIFFERENT in timing and enablement only. A sub-command's context inherits the parent's resolved flag unless it sets its own (R1). If the root is enabled, a bad reference anywhere in the line fails before the root group callback runs; if the root is disabled and only the sub-command is enabled, tokens are expanded when the sub-command's context is created, after the group callback has already run, and a failure there stops before the sub-command callback. chain=True groups: DIFFERENT. If the chain group is enabled, the whole token list, including all later chained commands' tokens, is expanded before the group callback and any error means no group or subcommand callback has run. If only a chained sub-command's context is enabled, its parse examines every still-unsettled token left in the line, including the tokens of later chained commands. Because all sub-contexts of a chain are created before any sub-command callback runs, an error from any chained context happens before every subcommand callback (the group callback has run). Extension points: a Command subclass overriding parse_args(ctx, args) and calling super().parse_args(ctx, args) receives the list exactly as its caller passed it (unexpanded), and after super returns ctx.params and ctx.args reflect the expanded tokens (SAME); a custom context_class (R1) is SAME.",
+   "inputs": "the routes above",
+   "output": "as in the matrix",
+   "errors": "R6 where expansion happens; none for N/A routes",
+   "precedence": "R7 governs repeated examination across the nested/chain routes; R1 governs which context expands.",
+   "bounds": "ctx.invoke/ctx.forward never expand, even when ctx.response_files is True",
+   "state": "see R7 and R11: the same context tree shares the log and settled-ness across all routes except the N/A ones, which add nothing"
+  },
+  {
+   "id": "R9",
+   "text": "Value sources and ordering. Tokens that came from response files are indistinguishable from tokens typed at that position. Values taken from them have ParameterSource.COMMANDLINE and therefore beat environment variables, default_map entries and parameter defaults, and a prompt is not shown for an option or argument that received its value from a file. The order of options for processing and for 'last one wins' is the order of the expanded list. Given option --name, 'cli --name a @f' with f='--name\\nb' yields 'b' and 'cli @f --name a' yields 'a'. A multiple=True option accumulates values in expanded order. Callbacks of non-eager parameters run in the order the parameters appear in the expanded list, and eager options such as --help or --version coming from a file act exactly as if typed. A required argument or option is satisfied by a file token. Parameters not present anywhere keep the existing order CLI > envvar > default_map > default (and prompt) unchanged.",
+   "inputs": "response file tokens, env vars, default_map, defaults, prompts, repeated options",
+   "output": "ctx.get_parameter_source(name) is COMMANDLINE for file-supplied values",
+   "errors": "none beyond ordinary parameter errors",
+   "precedence": "response-file token (COMMANDLINE) > environment variable > default_map > default; and for the same option, later position in the expanded list beats earlier",
+   "bounds": "none",
+   "state": "none"
+  },
+  {
+   "id": "R10",
+   "text": "Emptiness decisions use the expanded list. For a command with no_args_is_help (the default for a Group without invoke_without_command), the 'no arguments' decision is taken after expansion. The list ['@empty'] where empty.txt expands to zero tokens behaves exactly like an empty list (the help is shown through the existing no-args-help path), while the original empty list [] behaves as before. For a Group with invoke_without_command=True, ['@empty'] runs the group callback with ctx.invoked_subcommand None, and without invoke_without_command and without no_args_is_help the usual 'Missing command.' error occurs. Conversely, a list that expands to non-empty tokens never triggers the no-args help even if the original list had only one token. If the context is disabled (R1) then '@empty' is an ordinary token: no help, and it is treated as a command name or argument. Under resilient_parsing the existing rule (never show no-args help) is unchanged.",
+   "inputs": "['@empty'], [], ['@nonempty'] with no_args_is_help / invoke_without_command",
+   "output": "help vs normal run per the above",
+   "errors": "existing NoArgsIsHelpError / UsageError('Missing command.') behavior only",
+   "precedence": "expansion (R2-R5) happens before this check; R1 disabled state disables the whole effect",
+   "bounds": "zero expanded tokens counts as 'no arguments'; one expanded token does not",
+   "state": "none"
+  },
+  {
+   "id": "R11",
+   "text": "Log and invocation state. ctx.response_files_used returns a new list (mutating it changes nothing) of the paths of the response files that were successfully read in this context tree, in the order in which their reading began (a file is listed before the files it includes). Each entry is the path text as written in the token or include line (without '@', not joined with the including file's directory), and a file read twice appears twice. Failed reads (R6) and tokens left literal never appear, and the standalone click.expand_response_files adds nothing anywhere. The log is shared by a context and all contexts descended from it (sub-commands, chained commands, contexts made by ctx.invoke/forward), so the result_callback of a group, running with the group's context, sees the entries of every sub-command in the tree, and a sub-command sees the entries of the root. A new root context (every new main(), CliRunner.invoke, or make_context() without parent) starts with an empty log and empty settled-ness, so nothing leaks between two successive CliRunner.invoke calls in one process, and closing a context does not clear its log.",
+   "inputs": "any number of expansions in one tree",
+   "output": "e.g. ['a.txt','b.txt','a.txt'] for 'cli @a.txt @a.txt' where a.txt includes 'b.txt' once... exact order is pre-order of reads: ['a.txt','b.txt','a.txt','b.txt']",
+   "errors": "none",
+   "precedence": "R7 prevents duplicate reads caused by re-parse, so those never create extra entries",
+   "bounds": "empty list [] when nothing was expanded",
+   "state": "invocation-scoped: shared in the tree, reset for each new root context"
+  },
+  {
+   "id": "R12",
+   "text": "Shell completion. For every shell completion class (bash, zsh, fish, powershell and custom ShellComplete subclasses), the words before the incomplete word are treated as if a real parse had expanded them. That is, the enablement for contexts comes from the same rules as R1 (main/ctx_args extras, context_settings, inheritance), expansion follows R2-R5, and everything deduced from them is computed from the expanded tokens. This covers which command or sub-command is being completed, which option is awaiting a value, which positional argument is the first unfilled one, which non-multiple options are not suggested again because they were already given (by COMMANDLINE source), and suppression of option-name completion after '--'. Examples: with opts.txt containing '--name', completing 'cli @opts.txt ' offers the value completions of --name. With opts.txt containing '--', completing 'cli @opts.txt -' offers no option names, and with opts.txt containing '--name x', completing 'cli @opts.txt --n' does not offer '--name' again (for a non-multiple option). Completion always runs in resilient mode, so a missing, unreadable, invalid or cyclic response file never raises or prints an error, and its '@path' token stays literal and is handled as an ordinary word. The incomplete word itself is never expanded, so no completion is derived from the contents of a file named by it, and no file-name completion for '@...' is added. With no context enabled completion output is byte-identical to before.",
+   "inputs": "COMP_WORDS / COMP_CWORD environment for each shell, response files, enabled/disabled flags",
+   "output": "completion text lines as before, but derived from expanded words",
+   "errors": "none (never raises from response-file problems)",
+   "precedence": "R6 resilient behavior overrides the error rules; R5 '--' from a file suppresses option-name completion just like a typed '--'; R1 enablement decides whether any expansion happens at all",
+   "bounds": "the incomplete word is never expanded even if it is a complete '@existing.txt'",
+   "state": "completion builds fresh contexts per request, so its log and settled-ness never leak into a following request"
+  }
+ ],
+ "traps": [
+  "Double examination: Group.resolve_command re-runs parse_args on the remaining args when an unknown command starts with an option prefix (and '@' is one for '@x'-style tokens), and Group dispatch hands leftovers to an enabled sub-context. A naive per-parse expansion reads files twice, collapses '@@x' twice, logs duplicates, and turns 'cli -- @missing' into a file error instead of NoSuchCommand.",
+  "Duplicate vs cycle: a global 'already seen' set wrongly rejects diamond or sibling includes of the same file. Only files in the active include chain are cycles, and repeated reads each appear in the log.",
+  "Relative nested paths resolve against the including file's directory, not the working directory, while top-level paths use the working directory.",
+  "Line splitting: str.splitlines(), universal-newline text mode or str.strip() would split on \\x0c, \\r, \\u2028 and strip spaces. Only '\\n' separates lines, a single '\\r' before it is removed, and whitespace-only lines are tokens.",
+  "'--' read from inside a response file must stop expansion of the rest of that file, of all enclosing files and of the remaining CLI tokens, and must not be remembered by a context that did not examine the list.",
+  "no_args_is_help must be decided after expansion; deciding on the raw list makes ['@empty'] fall through.",
+  "Depth boundary: 32 allowed, 33 rejected, with the cycle check done first. Cycle comparison uses realpath, so a symlink to an ancestor is a cycle.",
+  "Enablement precedence: explicit main()/make_context kwargs beat context_settings; explicit False on a sub-context beats a True parent; None inherits.",
+  "State must not leak between CliRunner.invoke calls (no module-level 'seen' or log) and must be shared between the root and descendant contexts."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ],
+ "shortcuts": [
+  "Expand sys.argv/args only inside Command.main(): then CliRunner is fine but cmd.make_context(...) direct calls, sub-command-only enablement via context_settings, chained sub-commands (R8), parse_args overrides (they must see the raw list and the expanded results) and shell completion (R12) are all unexpanded.",
+  "Expand inside the low-level option parser's parse_args (or only in Command.parse_args) without any settled-token tracking: re-parse in resolve_command and nested enabled sub-contexts expand twice (R7), '@@x' collapses twice, the log gets duplicates, and 'cli -- @missing' raises a file error.",
+  "Expand in Command.parse_args but leave the no_args_is_help check (Command.parse_args and Group.parse_args both do it first) before the expansion: ['@empty'] never shows help or runs the group callback (R10).",
+  "Use a module-level or class-level 'enabled' flag or log instead of per-Context state: R1 inheritance and explicit-False override fail, and logs and settled-ness leak between consecutive CliRunner.invoke calls (R11).",
+  "Leave shell_completion untouched (completion words are fed to make_context but the original unexpanded words are used to find the incomplete option and '--'): completing after '@opts.txt' where the file ends with '--name' or '--' gives wrong results (R12).",
+  "Expand with shlex/splitlines/strip on a read_text() result and a single 'seen' set of files: breaks R3 line semantics and R4 duplicate/relative-path rules."
+ ]
+}

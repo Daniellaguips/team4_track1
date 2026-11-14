@@ -1,6 +1,6 @@
 """Prompt templates (versioned; hashed into every call record)."""
 
-VERSION = "v6.6.1-feedback"
+VERSION = "v6.8-coupling"
 
 SYSTEM_HEADER = """You are a senior Python engineer designing benchmark tasks for AI coding agents on the
 real open-source repository pallets/click, pinned at release 8.5.1. Below is the relevant source of
@@ -39,7 +39,12 @@ and long dependent edit chains are where agents fail). The design MUST stack at 
   L5 state: invocation-scoped state through ctx.invoke / ctx.forward / chained groups /
      result_callback, and reset between separate CliRunner.invoke calls.
 State every rule explicitly — difficulty must come from integrating with code the agent has to
-read, never from hidden requirements. Name the levers used in a "levers" field.
+read, never from hidden requirements.
+CHOOSE a feature with UNAVOIDABLE SEMANTIC COUPLING: name (in a "shortcuts" field) at least 3
+plausible shortcut implementations a fast agent would try (e.g. patching only main(), only one
+Context path, only direct calls) and make sure the rules make EACH of them observably wrong.
+Rules describe OBSERVABLE behavior only: never prescribe mechanism — no private names, no hook
+sites, no internal call order, no 'store it on X', no list of methods that need no change. Name the levers used in a "levers" field.
 One rule MUST be an explicit ROUTE MATRIX: for each of main(), CliRunner.invoke, ctx.invoke,
 ctx.forward, nested groups and chain=True groups, state 'same' / 'different' / 'N/A' and, for
 'different' or 'N/A', the exact observable outcome or the reason. No blanket 'where applicable'.
@@ -49,7 +54,7 @@ Each rule is a contract row. Reply with ONLY a ```json block:
   "rules": [{{"id": "R1", "text": "...", "inputs": "...", "output": "...",
              "errors": "exact type + message or none", "precedence": "...", "bounds": "...",
              "state": "..."}}],
-  "traps": ["..."], "levers": ["L1", "..."]}}
+  "traps": ["..."], "levers": ["L1", "..."], "shortcuts": ["...", "...", "..."]}}
 """
 
 SPEC_GOLD = """Implement this FROZEN contract. Do not add, drop or change rules.
@@ -62,7 +67,8 @@ Produce exactly these tagged sections and nothing else:
 <instruction_md>
 The task statement for the coding agent (Markdown): title, motivation, public interface, then EVERY
 rule as "R1. ...", "R2. ..." (same ids, complete, including exact error message strings). State only
-WHAT is observable through the public API. Never explain how existing click code works, when contexts
+WHAT is NEW and observable through the public API; do not restate existing click 8.5.1 behavior
+(say "unchanged" where needed) and never describe where or how to integrate. Never explain how existing click code works, when contexts
 are built, which function to edit, or any private name. Do not list traps or common mistakes. Keep
 every observable fact the tests depend on (e.g. event order) — drop only the explanation. End with AT
 MOST 3 examples showing call syntax only (no invalid-input lists, no expected-output table). Examples
@@ -142,8 +148,11 @@ COMPLETE edit set.
 """
 
 FAIRNESS = """Audit a benchmark task for fairness. You see the task statement given to the agent and the hidden
-tests. List every behavior a test depends on that the statement does NOT clearly specify (exact
-strings, ordering, types, edge cases, state). Be strict but do not invent issues.
+tests. The agent works on the real click 8.5.1 repository: UNCHANGED click 8.5.1 public behavior
+(its documented API, existing output formats, existing errors, CliRunner semantics) is authoritative
+and does NOT need restating — a test relying on it is fair. List only NEW behavior a test depends on
+that the statement does NOT clearly specify (exact new strings, ordering, types, edge cases, state).
+Be strict about new semantics but do not invent issues.
 
 STATEMENT:
 {instruction}

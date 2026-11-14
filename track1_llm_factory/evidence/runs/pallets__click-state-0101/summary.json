@@ -1,0 +1,20 @@
+{
+ "instance_id": "pallets__click-state-0101",
+ "model": "anthropic/claude-sonnet-5.5",
+ "wall_seconds": 105,
+ "model_calls": 2,
+ "attempts": 3,
+ "n_input_tokens": 128386,
+ "n_output_tokens": 17561,
+ "n_cache_tokens": 69152,
+ "cost_usd": 0.301,
+ "ok": false,
+ "failed_stage": "fairness/judge",
+ "card": "state",
+ "seed": 101,
+ "prompts_version": "v6.8-coupling",
+ "lineage": {
+  "replaces": "pallets__click-state-0001",
+  "replaced_resolve_at_3": "3/3"
+ }
+}

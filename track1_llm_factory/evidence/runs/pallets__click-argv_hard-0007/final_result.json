@@ -1,0 +1,9 @@
+{
+ "ok": false,
+ "stage": "gold",
+ "f2p_ids": [],
+ "p2p_ids": [],
+ "report": "generated tests not green under gold: tests/test_opt_in_response_file_file_argv_expansion_per_context.py::test_r10_combo_annotation_runner_output, tests/test_opt_in_response_file_file_argv_expansion_per_context.py::test_r10_combo_multiple_files_order, tests/test_opt_in_response_file_file_argv_expansion_per_context.py::test_r10_combo_subcommand_annotated_with_root_files, tests/test_opt_in_response_file_file_argv_expansion_per_context.py::test_r10_no_files_no_annotation",
+ "f2p_ids_count": 0,
+ "p2p_ids_count": 0
+}

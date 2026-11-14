@@ -23,7 +23,7 @@ UPSTREAM = ROOT / "upstream-click"
 BASE_COMMIT = "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1"
 OUT = ROOT / "generated_tasks"
 RUNS = ROOT / "runs"
-MAX_REPAIRS = 2
+MAX_REPAIRS = int(__import__('os').environ.get('FACTORY_MAX_REPAIRS', '2'))
 MIN_RULES, MAX_RULES = 10, 12
 MIN_GOLD_FILES = int(__import__('os').environ.get('FACTORY_MIN_GOLD_FILES', '3'))
 MIN_GOLD_ADDED = int(__import__('os').environ.get('FACTORY_MIN_GOLD_ADDED', '150'))
@@ -277,7 +277,7 @@ def build(card_id: str, seed: int, replay: bool = False, harder_than: str | None
         snap = run_dir / f"candidate{attempt}"
         snap.mkdir(exist_ok=True)
         (snap / "package.json").write_text(json.dumps(pkg, indent=1))
-        result = evaluate(pkg, design, card, tree, iid, run_dir, ask, check)
+        result = evaluate(pkg, design, card, tree, iid, run_dir, ask, check, harder=bool(harder_than))
         (snap / "result.json").write_text(json.dumps(_trim(result), indent=1))
         if result.get("ok") or attempt == MAX_REPAIRS:
             break
@@ -293,7 +293,7 @@ def build(card_id: str, seed: int, replay: bool = False, harder_than: str | None
     return finish(tel, iid, card_id, seed, result)
 
 
-def evaluate(pkg, design, card, tree, iid, run_dir, ask, check) -> dict:
+def evaluate(pkg, design, card, tree, iid, run_dir, ask, check, harder: bool = False) -> dict:
     try:
         for k in ("instruction", "edits", "test_code"):
             if k not in pkg:
@@ -310,6 +310,8 @@ def evaluate(pkg, design, card, tree, iid, run_dir, ask, check) -> dict:
         if MIN_GOLD_FILES and len(files) < MIN_GOLD_FILES:
             problems.append(f"gold touches {len(files)} files {files} (< {MIN_GOLD_FILES}); cross-module lever not met")
         problems += statement_leakage(pkg["instruction"])
+        if harder:
+            problems += harder_targets(design, files)
         for n in combos:
             body = pkg["test_code"].split(f"def {n}", 1)[1].split("\ndef ", 1)[0]
             if not re.search(r"#\s*decided by R\d+", body):
@@ -328,6 +330,26 @@ def evaluate(pkg, design, card, tree, iid, run_dir, ask, check) -> dict:
         return check.verify(task_dir, [], card["p2p"])
     except Exception as e:  # noqa: BLE001 — every failure becomes a repair diagnostic
         return {"ok": False, "stage": "build", "report": f"{type(e).__name__}: {str(e)[:3500]}"}
+
+
+def harder_targets(design: dict, files: list[str]) -> list[str]:
+    """Mechanical enforcement of the redesign's absolute targets (prompts.HARDER)."""
+    out = []
+    src = [f for f in files if f.startswith("src/")]
+    if len(src) < 4:
+        out.append(f"redesign target: gold must change >= 4 src files, got {len(src)}: {src}")
+    rules = design.get("rules", [])
+    def refs_other(r):
+        own = str(r.get("id"))
+        blob = f"{r.get('text', '')} {r.get('precedence', '')}"
+        return any(x != own for x in re.findall(r"\bR\d+\b", blob))
+    inter = sum(1 for r in rules if refs_other(r))
+    if inter < 5:
+        out.append(f"redesign target: >= 5 rules must state an interaction with another rule, got {inter}")
+    keep = sum(1 for r in rules if re.search(r"byte-identical|unchanged|identical to (the )?current", json.dumps(r), re.I))
+    if keep < 2:
+        out.append(f"redesign target: >= 2 rules must change existing behavior with byte-identical guarantees, got {keep}")
+    return out
 
 
 def prior_files(prev_iid: str) -> str:

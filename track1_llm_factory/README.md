@@ -58,6 +58,40 @@ uv run python -m factory.feedback loop
   leaked internals, self-contradicting examples). That's the cost of keeping hard tasks fair.
 - Research behind the levers: `plan/WHAT-STUMPS-HAIKU.md`. Plan and reviews: `plan/`.
 
+## Final outcome and what we learned (written at freeze)
+
+**Honest result: the LLM factory did not produce a task that stumps Haiku 5.5 within the session.**
+The full ledger of every attempt is in `evidence/YIELD_REPORT.md`:
+- 36 attempted runs, 2 valid, **0 valid on the first pass**
+- about $31 of model calls, counted from every call log, including killed runs
+
+Both valid tasks were from early prompt versions, and Haiku resolved both **3/3**. The feedback loop
+retired the second one automatically. Its harder replacement was then rejected by the fairness gate.
+
+### Why Haiku won (from trajectories and an independent Codex frontier forensic review)
+- **Our statements handed over an implementation plan:** module and superclass names, hook sites,
+  call order, even which methods needed no change. Haiku read little code, wrote the feature in one
+  pass, then self-verified against the examples.
+- **Our own fairness gate caused part of this.** It rejected tests that relied on unchanged Click
+  behavior, forcing specs to re-explain integration points. Fixed in v6.7: unchanged Click 8.5.1
+  public behavior is authoritative, and only new semantics must be stated.
+- **Rule count, test volume and file count are not hardness.** The next step is features with
+  unavoidable semantic coupling, where plausible shortcut implementations fail (v6.8).
+
+### Why hard tasks were hard to make fair
+Designs with real coupling (recursive response files + completion, dependent lazy defaults,
+transactional output) repeatedly contained subtle contradictions: impossible orderings,
+compatibility-breaking enum renumbering, "both discarded and already printed" output. The blind
+fairness judge rejected 8 at packaging. An additional agent design review by Codex stopped 13 more
+before packaging. **These reviews only ever stopped runs; they never edited a generated task.**
+
+### Disclosed interventions
+- Human and agent prompt iterations v6.2 → v6.8, each driven by measured results or reviews.
+- Agent design reviews (kills only).
+- `state-0001` re-verified with the fixed checker (no regeneration).
+- `argv_hard-0007` given 2 extra repairs at the end (`FACTORY_MAX_REPAIRS=4`).
+- Development k=3 runs are selection feedback, not final evidence. Any final task gets a fresh k=3.
+
 ## Run
 ```bash
 uv sync

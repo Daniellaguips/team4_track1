@@ -106,4 +106,41 @@ CARDS = {
                 "tests/test_shell_completion.py", "tests/test_options.py"],
         "test_dir": "tests",
     },
+    "argv_completion": {
+        "blueprint": "opt-in @response-file expansion that is shared CORRECTLY between normal parsing and "
+        "shell completion: recursive includes resolved relative to the including file, a cycle error "
+        "naming the include stack, '--' stops expansion, the incomplete word being completed is never "
+        "expanded, each file read exactly once per invocation, the same file may be included twice "
+        "non-recursively. ctx.invoke/ctx.forward are unchanged (N/A).",
+        "shape": "one semantic feature on two distinct execution paths (parse + completion) with recursion and I/O state",
+        "ground": ["src/click/core.py", "src/click/parser.py", "src/click/shell_completion.py", "src/click/__init__.py"],
+        "p2p": ["tests/test_basic.py", "tests/test_parser.py", "tests/test_shell_completion.py",
+                "tests/test_commands.py", "tests/test_arguments.py"],
+        "test_dir": "tests",
+    },
+    "lazy_defaults": {
+        "blueprint": "options whose default is computed from OTHER parameters' final values: an explicit "
+        "dependency DAG, evaluation only after all sources are resolved, a dependent default is "
+        "suppressed when its own value came from CLI/env/default_map, falsey values are real values, "
+        "cycle errors name the cycle, computed once per context, and NEVER evaluated while rendering "
+        "--help or during shell completion. ParameterSource reports a new DEPENDENT source without "
+        "renumbering existing members.",
+        "shape": "cross-parameter dependency resolution across parse, help and completion paths",
+        "ground": ["src/click/core.py", "src/click/shell_completion.py", "src/click/decorators.py", "src/click/__init__.py"],
+        "p2p": ["tests/test_options.py", "tests/test_defaults.py", "tests/test_basic.py",
+                "tests/test_shell_completion.py", "tests/test_context.py"],
+        "test_dir": "tests",
+    },
+    "atomic_output": {
+        "blueprint": "opt-in buffered output for a command tree: click.echo output is committed to the "
+        "real stream ONLY after the whole ROOT invocation (including result_callback and chained "
+        "subcommands) succeeds; on any exception or ctx.exit with non-zero code it is discarded "
+        "(stderr policy stated explicitly); nested groups share the root's buffer (no double commit); "
+        "ctx.exit(0) commits; CliRunner observes exactly the committed bytes.",
+        "shape": "transactional state across nested/chained invocation with success/failure/rollback paths",
+        "ground": ["src/click/core.py", "src/click/utils.py", "src/click/testing.py", "src/click/__init__.py"],
+        "p2p": ["tests/test_basic.py", "tests/test_chain.py", "tests/test_commands.py",
+                "tests/test_testing.py", "tests/test_utils"],
+        "test_dir": "tests",
+    },
 }
