@@ -89,7 +89,11 @@ before packaging. **These reviews only ever stopped runs; they never edited a ge
 - Human and agent prompt iterations v6.2 → v6.8, each driven by measured results or reviews.
 - Agent design reviews (kills only).
 - `state-0001` re-verified with the fixed checker (no regeneration).
-- `argv_hard-0007` given 2 extra repairs at the end (`FACTORY_MAX_REPAIRS=4`).
+- `argv_hard-0007` given 2 extra repairs at the end (`FACTORY_MAX_REPAIRS=4`). **Abandoned:** the extra
+  repair left the gold unchanged and WEAKENED four tests (exact message → startswith/substring) to fit
+  it. A Codex review caught this test-to-gold overfitting, and the run was stopped and never used
+  (`evidence/runs/pallets__click-argv_hard-0007/ABANDONED.json`). Next gate to add: reject any repair
+  that weakens assertions while the gold is unchanged.
 - Development k=3 runs are selection feedback, not final evidence. Any final task gets a fresh k=3.
 
 ## Run

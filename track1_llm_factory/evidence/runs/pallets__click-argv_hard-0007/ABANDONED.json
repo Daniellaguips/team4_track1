@@ -1,0 +1,1 @@
+{"status":"ABANDONED","reason":"post-result salvage (repair cap raised 2->4) produced candidate3 whose gold was byte-identical to candidate2 and whose repair WEAKENED four R10 tests (exact message -> startswith/endswith/substring) to fit the gold. Test-to-gold overfitting caught by Codex review; run stopped and not used.","time":"14:34"}

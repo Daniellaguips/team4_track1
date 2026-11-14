@@ -2,7 +2,7 @@
 
 - Attempted runs: **36**
 - Valid (passed every gate): **2**  · first-pass valid: **0/36**
-- Total generation cost from call logs: **$31.14** (131 model calls)
+- Total generation cost from call logs: **$31.42** (132 model calls)
 - Outcomes: killed/unterminated: 25, rejected: fairness/judge: 8, rejected: gold: 1, VALID (retired): 1, VALID: 1
 
 | run | status | prompts | candidates | calls | cost $ | Haiku resolve@3 | replaces |
@@ -13,7 +13,7 @@
 | pallets__click-argv_hard-0002 | rejected: fairness/judge | v6.5.1-codexfair | 3 | 7 | 1.85 |  |  |
 | pallets__click-argv_hard-0003 | killed/unterminated | ? | 2 | 5 | 1.42 |  |  |
 | pallets__click-argv_hard-0004 | killed/unterminated | ? | 2 | 5 | 1.17 |  |  |
-| pallets__click-argv_hard-0007 | rejected: gold | v6.7-baseline-authoritative | 3 | 7 | 1.53 |  |  |
+| pallets__click-argv_hard-0007 | rejected: gold | v6.7-baseline-authoritative | 4 | 8 | 1.81 |  |  |
 | pallets__click-argv_hard-0008 | killed/unterminated | ? | 0 | 2 | 0.49 |  |  |
 | pallets__click-argv_hard-0009 | killed/unterminated | ? | 1 | 3 | 0.89 |  |  |
 | pallets__click-argv_hard-0010 | killed/unterminated | ? | 0 | 2 | 0.68 |  |  |
