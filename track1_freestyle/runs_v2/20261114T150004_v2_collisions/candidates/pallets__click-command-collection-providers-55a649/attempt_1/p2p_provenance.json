@@ -1,0 +1,43 @@
+{
+ "upstream_regression": [
+  "tests/test_arguments.py::test_nested_subcommand_help",
+  "tests/test_arguments.py::test_subcommand_help",
+  "tests/test_basic.py::test_basic_group",
+  "tests/test_basic.py::test_group_commands_dict",
+  "tests/test_basic.py::test_group_from_list",
+  "tests/test_basic.py::test_hidden_command",
+  "tests/test_basic.py::test_hidden_group",
+  "tests/test_basic.py::test_repr",
+  "tests/test_basic.py::test_summary_line",
+  "tests/test_chain.py::test_args_and_chain",
+  "tests/test_chain.py::test_basic_chaining",
+  "tests/test_chain.py::test_chaining_with_arguments",
+  "tests/test_chain.py::test_chaining_with_options",
+  "tests/test_chain.py::test_group_arg_behavior",
+  "tests/test_commands.py::test_auto_shorthelp",
+  "tests/test_commands.py::test_deprecated_help_text_is_not_translated",
+  "tests/test_commands.py::test_unknown_command",
+  "tests/test_formatting.py::test_removing_multiline_marker",
+  "tests/test_imports.py::test_light_imports",
+  "tests/test_info_dict.py::test_command[Group]",
+  "tests/test_normalization.py::test_command_normalization",
+  "tests/test_shell_completion.py::test_add_different_name",
+  "tests/test_shell_completion.py::test_chained",
+  "tests/test_shell_completion.py::test_files_closed",
+  "tests/test_shell_completion.py::test_group",
+  "tests/test_shell_completion.py::test_group_command_same_option",
+  "tests/test_shell_completion.py::test_hidden",
+  "tests/test_shell_completion.py::test_nested_group[args0--expect0]",
+  "tests/test_shell_completion.py::test_nested_group[args1--expect1]",
+  "tests/test_shell_completion.py::test_nested_group[args2--expect2]",
+  "tests/test_shell_completion.py::test_nested_group[args3---expect3]"
+ ],
+ "authored_compatibility": [
+  "tests/test_command_collection_compat.py::test_lookup_precedence_is_unchanged",
+  "tests/test_command_collection_compat.py::test_list_commands_is_sorted_without_duplicates",
+  "tests/test_command_collection_compat.py::test_chain_mode_still_rejects_a_group_from_a_source",
+  "tests/test_command_collection_compat.py::test_hidden_winner_still_hides_the_name_in_help",
+  "tests/test_command_collection_compat.py::test_completion_is_unchanged",
+  "tests/test_command_collection_compat.py::test_duplicate_names_raise_no_warnings"
+ ]
+}

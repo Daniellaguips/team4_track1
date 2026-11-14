@@ -1,0 +1,524 @@
+[
+ {
+  "case": "gold",
+  "kind": "gold",
+  "test_fixture": false,
+  "expected": "accept",
+  "hardened": "accept",
+  "as_expected": true,
+  "v1_logic": true,
+  "detail": {
+   "gate": "gold",
+   "ok": true,
+   "kind": "container",
+   "detail": {
+    "reward": 1.0,
+    "f2p_passed": 16,
+    "f2p_total": 16,
+    "p2p_passed": 37,
+    "p2p_total": 37,
+    "secs": 2.8,
+    "problems": [],
+    "f2p_status_counts": {
+     "PASSED": 16
+    },
+    "p2p_status_counts": {
+     "PASSED": 37
+    }
+   }
+  }
+ },
+ {
+  "case": "nop_baseline",
+  "kind": "nop",
+  "test_fixture": false,
+  "expected": "accept",
+  "hardened": "accept",
+  "as_expected": true,
+  "v1_logic": true,
+  "detail": {
+   "gate": "nop",
+   "ok": true,
+   "kind": "container",
+   "detail": {
+    "f2p_all_reported": true,
+    "reward": 0.0,
+    "f2p_passed": 0,
+    "f2p_total": 16,
+    "p2p_passed": 37,
+    "p2p_total": 37,
+    "secs": 2.8,
+    "problems": [],
+    "f2p_status_counts": {
+     "FAILED": 16
+    },
+    "p2p_status_counts": {
+     "PASSED": 37
+    },
+    "not_failed": {},
+    "p2p_not_passed": {}
+   }
+  }
+ },
+ {
+  "case": "fixture_missing_f2p__nop",
+  "kind": "nop",
+  "test_fixture": true,
+  "expected": "reject",
+  "hardened": "reject",
+  "as_expected": true,
+  "v1_logic": "accept",
+  "detail": {
+   "gate": "nop",
+   "ok": false,
+   "kind": "container",
+   "detail": {
+    "f2p_all_reported": false,
+    "reward": 0.0,
+    "f2p_passed": 0,
+    "f2p_total": 17,
+    "p2p_passed": 37,
+    "p2p_total": 37,
+    "secs": 2.8,
+    "problems": [],
+    "f2p_status_counts": {
+     "FAILED": 16,
+     "MISSING": 1
+    },
+    "p2p_status_counts": {
+     "PASSED": 37
+    },
+    "not_failed": {
+     "tests/test_duration_type.py::test_t1_fixture_does_not_exist": "MISSING"
+    },
+    "p2p_not_passed": {}
+   }
+  }
+ },
+ {
+  "case": "fixture_collection_error__nop",
+  "kind": "nop",
+  "test_fixture": true,
+  "expected": "reject",
+  "hardened": "reject",
+  "as_expected": true,
+  "v1_logic": "accept",
+  "detail": {
+   "gate": "nop",
+   "ok": false,
+   "kind": "container",
+   "detail": {
+    "f2p_all_reported": false,
+    "reward": 0.0,
+    "f2p_passed": 0,
+    "f2p_total": 16,
+    "p2p_passed": 37,
+    "p2p_total": 37,
+    "secs": 2.7,
+    "problems": [
+     "collection/import errors: ['tests/test_duration_type.py']",
+     "pytest reported 1 error(s) (collection/setup/teardown)",
+     "pytest run markers: ['collection_error']"
+    ],
+    "f2p_status_counts": {
+     "MISSING": 16
+    },
+    "p2p_status_counts": {
+     "PASSED": 37
+    },
+    "not_failed": {
+     "tests/test_duration_type.py::test_exported_and_basic_conversion": "MISSING",
+     "tests/test_duration_type.py::test_components_sum_on_command_line": "MISSING",
+     "tests/test_duration_type.py::test_surrounding_whitespace_is_stripped": "MISSING",
+     "tests/test_duration_type.py::test_invalid_grammar": "MISSING",
+     "tests/test_duration_type.py::test_invalid_message_uses_unstripped_text": "MISSING",
+     "tests/test_duration_type.py::test_repeated_unit_is_invalid": "MISSING",
+     "tests/test_duration_type.py::test_component_order": "MISSING",
+     "tests/test_duration_type.py::test_digits_only": "MISSING",
+     "tests/test_duration_type.py::test_int_default_follows_digits_rule": "MISSING",
+     "tests/test_duration_type.py::test_timedelta_passthrough": "MISSING",
+     "tests/test_duration_type.py::test_bounds_inclusive": "MISSING",
+     "tests/test_duration_type.py::test_below_minimum_message": "MISSING",
+     "tests/test_duration_type.py::test_above_maximum_message": "MISSING",
+     "tests/test_duration_type.py::test_bounds_apply_to_timedelta_values": "MISSING",
+     "tests/test_duration_type.py::test_help_metavar": "MISSING",
+     "tests/test_duration_type.py::test_info_dict": "MISSING"
+    },
+    "p2p_not_passed": {}
+   }
+  }
+ },
+ {
+  "case": "fixture_collection_error__gold",
+  "kind": "gold",
+  "test_fixture": true,
+  "expected": "reject",
+  "hardened": "reject",
+  "as_expected": true,
+  "v1_logic": "reject",
+  "detail": {
+   "gate": "gold",
+   "ok": false,
+   "kind": "container",
+   "detail": {
+    "reward": 0.0,
+    "f2p_passed": 0,
+    "f2p_total": 16,
+    "p2p_passed": 37,
+    "p2p_total": 37,
+    "secs": 2.9,
+    "problems": [
+     "collection/import errors: ['tests/test_duration_type.py']",
+     "pytest reported 1 error(s) (collection/setup/teardown)",
+     "pytest run markers: ['collection_error']"
+    ],
+    "f2p_status_counts": {
+     "MISSING": 16
+    },
+    "p2p_status_counts": {
+     "PASSED": 37
+    }
+   }
+  }
+ },
+ {
+  "case": "mutant_bounds_exclusive",
+  "kind": "mutant",
+  "test_fixture": false,
+  "expected": "killed",
+  "hardened": "killed",
+  "as_expected": true,
+  "v1_logic": "killed",
+  "detail": {
+   "verdict": "killed",
+   "problems": [],
+   "non_verdict_tests": {},
+   "killed_by": {
+    "f2p": [
+     "tests/test_duration_type.py::test_bounds_inclusive"
+    ]
+   },
+   "f2p_failed": [
+    "tests/test_duration_type.py::test_bounds_inclusive"
+   ],
+   "failed_by_import_or_syntax_error": {},
+   "p2p_failed": [],
+   "reward": 0.9375,
+   "f2p_passed": 15,
+   "f2p_total": 16,
+   "p2p_passed": 37,
+   "p2p_total": 37,
+   "secs": 2.8
+  }
+ },
+ {
+  "case": "fixture_mutant_syntax_error",
+  "kind": "mutant",
+  "test_fixture": true,
+  "expected": "invalid",
+  "hardened": "invalid",
+  "as_expected": true,
+  "v1_logic": "killed",
+  "detail": {
+   "verdict": "invalid",
+   "problems": [
+    "parser produced no test records",
+    "no pytest summary line (crashed, killed, or never ran)"
+   ],
+   "non_verdict_tests": {
+    "tests/test_duration_type.py::test_exported_and_basic_conversion": "MISSING",
+    "tests/test_duration_type.py::test_components_sum_on_command_line": "MISSING",
+    "tests/test_duration_type.py::test_surrounding_whitespace_is_stripped": "MISSING",
+    "tests/test_duration_type.py::test_invalid_grammar": "MISSING",
+    "tests/test_duration_type.py::test_invalid_message_uses_unstripped_text": "MISSING",
+    "tests/test_duration_type.py::test_repeated_unit_is_invalid": "MISSING",
+    "tests/test_duration_type.py::test_component_order": "MISSING",
+    "tests/test_duration_type.py::test_digits_only": "MISSING",
+    "tests/test_duration_type.py::test_int_default_follows_digits_rule": "MISSING",
+    "tests/test_duration_type.py::test_timedelta_passthrough": "MISSING"
+   },
+   "killed_by": {},
+   "f2p_failed": [],
+   "failed_by_import_or_syntax_error": {},
+   "p2p_failed": [],
+   "reward": 0.0,
+   "f2p_passed": 0,
+   "f2p_total": 16,
+   "p2p_passed": 0,
+   "p2p_total": 37,
+   "secs": 0.8
+  }
+ },
+ {
+  "case": "fixture_mutant_patch_does_not_apply",
+  "kind": "mutant",
+  "test_fixture": true,
+  "expected": "invalid",
+  "hardened": "invalid",
+  "as_expected": true,
+  "v1_logic": "survived",
+  "detail": {
+   "verdict": "invalid",
+   "problems": [
+    "stage failed before tests ran: apply_patch",
+    "no grading result (no grading_details.json)"
+   ],
+   "non_verdict_tests": {
+    "tests/test_duration_type.py::test_exported_and_basic_conversion": "MISSING",
+    "tests/test_duration_type.py::test_components_sum_on_command_line": "MISSING",
+    "tests/test_duration_type.py::test_surrounding_whitespace_is_stripped": "MISSING",
+    "tests/test_duration_type.py::test_invalid_grammar": "MISSING",
+    "tests/test_duration_type.py::test_invalid_message_uses_unstripped_text": "MISSING",
+    "tests/test_duration_type.py::test_repeated_unit_is_invalid": "MISSING",
+    "tests/test_duration_type.py::test_component_order": "MISSING",
+    "tests/test_duration_type.py::test_digits_only": "MISSING",
+    "tests/test_duration_type.py::test_int_default_follows_digits_rule": "MISSING",
+    "tests/test_duration_type.py::test_timedelta_passthrough": "MISSING"
+   },
+   "killed_by": {},
+   "f2p_failed": [],
+   "failed_by_import_or_syntax_error": {},
+   "p2p_failed": [],
+   "reward": null,
+   "f2p_passed": null,
+   "f2p_total": null,
+   "p2p_passed": null,
+   "p2p_total": null,
+   "secs": 0.2,
+   "container_exit": 91,
+   "stage_fail": "apply_patch"
+  }
+ },
+ {
+  "case": "full_suite__gold",
+  "kind": "full_suite",
+  "test_fixture": false,
+  "expected": "accept",
+  "hardened": "accept",
+  "as_expected": true,
+  "v1_logic": null,
+  "detail": {
+   "gate": "full_suite_under_gold",
+   "ok": true,
+   "kind": "container",
+   "detail": {
+    "pytest_exit": 0,
+    "container_exit": 0,
+    "summary": {
+     "passed": 2450,
+     "failed": 0,
+     "errors": 0,
+     "skipped": 24,
+     "xfailed": 1,
+     "xpassed": 0,
+     "deselected": 31000,
+     "no_tests_ran": false,
+     "markers": []
+    },
+    "problems": [],
+    "tail": [
+     "........................................................................ [ 98%]",
+     "...........................                                              [100%]",
+     "2450 passed, 24 skipped, 31000 deselected, 1 xfailed in 4.05s"
+    ],
+    "note": "entire existing suite + feature tests with gold applied (extra, not graded)"
+   },
+   "log": {
+    "saved_log": true,
+    "lines": 36,
+    "bytes": 2862,
+    "ends_with_pytest_summary": true,
+    "has_failures_or_errors_section": false,
+    "last_line": "2450 passed, 24 skipped, 31000 deselected, 1 xfailed in 4.05s"
+   }
+  },
+  "container_exit": 0
+ },
+ {
+  "case": "full_suite__fixture_failing_test",
+  "kind": "full_suite",
+  "test_fixture": true,
+  "expected": "reject",
+  "hardened": "reject",
+  "as_expected": true,
+  "v1_logic": null,
+  "detail": {
+   "gate": "full_suite_under_gold",
+   "ok": false,
+   "kind": "container",
+   "detail": {
+    "pytest_exit": 1,
+    "container_exit": 1,
+    "summary": {
+     "passed": 2447,
+     "failed": 3,
+     "errors": 0,
+     "skipped": 24,
+     "xfailed": 1,
+     "xpassed": 0,
+     "deselected": 31000,
+     "no_tests_ran": false,
+     "markers": []
+    },
+    "problems": [
+     "pytest exit 1 (tests failed)",
+     "container exit 1",
+     "3 failed, 0 error(s)"
+    ],
+    "tail": [
+     "FAILED tests/test_duration_type.py::test_invalid_message_uses_unstripped_text",
+     "FAILED tests/test_duration_type.py::test_repeated_unit_is_invalid - Assertion...",
+     "3 failed, 2447 passed, 24 skipped, 31000 deselected, 1 xfailed in 4.05s"
+    ],
+    "note": "entire existing suite + feature tests with gold applied (extra, not graded)"
+   },
+   "log": {
+    "saved_log": true,
+    "lines": 102,
+    "bytes": 5521,
+    "ends_with_pytest_summary": true,
+    "has_failures_or_errors_section": true,
+    "last_line": "3 failed, 2447 passed, 24 skipped, 31000 deselected, 1 xfailed in 4.05s"
+   }
+  },
+  "container_exit": 1
+ },
+ {
+  "case": "full_suite__fixture_collection_error",
+  "kind": "full_suite",
+  "test_fixture": true,
+  "expected": "reject",
+  "hardened": "reject",
+  "as_expected": true,
+  "v1_logic": null,
+  "detail": {
+   "gate": "full_suite_under_gold",
+   "ok": false,
+   "kind": "container",
+   "detail": {
+    "pytest_exit": 2,
+    "container_exit": 2,
+    "summary": {
+     "passed": 0,
+     "failed": 0,
+     "errors": 1,
+     "skipped": 0,
+     "xfailed": 0,
+     "xpassed": 0,
+     "deselected": 31000,
+     "no_tests_ran": false,
+     "markers": [
+      "collection_error",
+      "interrupted"
+     ]
+    },
+    "problems": [
+     "pytest exit 2 (interrupted)",
+     "container exit 2",
+     "no passing tests",
+     "0 failed, 1 error(s)",
+     "pytest run markers: ['collection_error', 'interrupted']"
+    ],
+    "tail": [
+     "ERROR tests/test_duration_type.py",
+     "!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+     "31000 deselected, 1 error in 1.78s"
+    ],
+    "note": "entire existing suite + feature tests with gold applied (extra, not graded)"
+   },
+   "log": {
+    "saved_log": true,
+    "lines": 34,
+    "bytes": 1690,
+    "ends_with_pytest_summary": true,
+    "has_failures_or_errors_section": true,
+    "last_line": "31000 deselected, 1 error in 1.78s"
+   }
+  },
+  "container_exit": 2
+ },
+ {
+  "case": "full_suite__fixture_gold_does_not_apply",
+  "kind": "full_suite",
+  "test_fixture": true,
+  "expected": "reject",
+  "hardened": "reject",
+  "as_expected": true,
+  "v1_logic": null,
+  "detail": {
+   "gate": "full_suite_under_gold",
+   "ok": false,
+   "kind": "container",
+   "detail": {
+    "pytest_exit": null,
+    "container_exit": 91,
+    "summary": null,
+    "problems": [
+     "stage failed: apply_gold",
+     "container exit 91"
+    ],
+    "tail": [],
+    "note": "entire existing suite + feature tests with gold applied (extra, not graded)"
+   },
+   "log": {
+    "saved_log": false
+   }
+  },
+  "container_exit": 91
+ },
+ {
+  "case": "full_suite__fixture_tests_do_not_apply",
+  "kind": "full_suite",
+  "test_fixture": true,
+  "expected": "reject",
+  "hardened": "reject",
+  "as_expected": true,
+  "v1_logic": null,
+  "detail": {
+   "gate": "full_suite_under_gold",
+   "ok": false,
+   "kind": "container",
+   "detail": {
+    "pytest_exit": null,
+    "container_exit": 92,
+    "summary": null,
+    "problems": [
+     "stage failed: apply_tests",
+     "container exit 92"
+    ],
+    "tail": [],
+    "note": "entire existing suite + feature tests with gold applied (extra, not graded)"
+   },
+   "log": {
+    "saved_log": false
+   }
+  },
+  "container_exit": 92
+ },
+ {
+  "case": "v1_full_suite_command__fixture_failing_test",
+  "kind": "full_suite",
+  "test_fixture": true,
+  "container_exit": 0,
+  "v1_logic": "reject",
+  "stdout_tail": [
+   "FAILED tests/test_duration_type.py::test_invalid_message_uses_unstripped_text",
+   "FAILED tests/test_duration_type.py::test_repeated_unit_is_invalid - Assertion...",
+   "3 failed, 2447 passed, 24 skipped, 31000 deselected, 1 xfailed in 3.51s"
+  ],
+  "note": "V1 command: pytest piped through tail under bash without pipefail"
+ },
+ {
+  "case": "v1_full_suite_command__fixture_collection_error",
+  "kind": "full_suite",
+  "test_fixture": true,
+  "container_exit": 0,
+  "v1_logic": "accept",
+  "stdout_tail": [
+   "ERROR tests/test_duration_type.py",
+   "!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+   "31000 deselected, 1 error in 1.71s"
+  ],
+  "note": "V1 command: pytest piped through tail under bash without pipefail"
+ }
+]

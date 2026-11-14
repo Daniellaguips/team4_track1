@@ -1,0 +1,20 @@
+[
+  "tests/test_command_collection_providers.py::test_provider_record",
+  "tests/test_command_collection_providers.py::test_sources_reported_in_order",
+  "tests/test_command_collection_providers.py::test_own_command_comes_first",
+  "tests/test_command_collection_providers.py::test_unprovided_and_exact_names",
+  "tests/test_command_collection_providers.py::test_first_provider_is_what_get_command_returns",
+  "tests/test_command_collection_providers.py::test_repeated_registrations_are_not_merged",
+  "tests/test_command_collection_providers.py::test_collisions_need_distinct_objects",
+  "tests/test_command_collection_providers.py::test_listed_but_unresolvable_names_are_not_collisions",
+  "tests/test_command_collection_providers.py::test_collisions_follow_list_commands_order",
+  "tests/test_command_collection_providers.py::test_no_collisions",
+  "tests/test_command_collection_providers.py::test_hidden_commands_are_reported",
+  "tests/test_command_collection_providers.py::test_results_are_independent_snapshots",
+  "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+  "tests/test_command_collection_providers.py::test_sources_with_custom_lookup",
+  "tests/test_command_collection_providers.py::test_nested_collection_is_one_provider",
+  "tests/test_command_collection_providers.py::test_chain_mode_groups_are_reported",
+  "tests/test_command_collection_providers.py::test_errors_propagate",
+  "tests/test_command_collection_providers.py::test_no_warnings_and_nothing_changes"
+]

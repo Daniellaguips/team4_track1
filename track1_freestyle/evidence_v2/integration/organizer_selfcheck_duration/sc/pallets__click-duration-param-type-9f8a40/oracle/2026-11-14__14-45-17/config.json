@@ -1,0 +1,13 @@
+{
+    "job_name": "2026-11-14__14-45-17",
+    "jobs_dir": "/Users/shuooo/Documents/Documents - KyleShuo’s MacBook Air/RAM_course/Project/team4_track1/track1_freestyle/evidence_v2/integration/organizer_selfcheck_duration/sc/pallets__click-duration-param-type-9f8a40/oracle",
+    "environment": {
+        "type": "docker",
+        "delete": false
+    },
+    "tasks": [
+        {
+            "path": "/tmp/t1v2/sc_copy/pallets__click-duration-param-type-9f8a40"
+        }
+    ]
+}

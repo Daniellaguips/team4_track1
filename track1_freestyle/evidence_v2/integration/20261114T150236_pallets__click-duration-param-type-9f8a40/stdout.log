@@ -1,0 +1,16 @@
+gold                                       expected=accept    hardened=accept    v1=True
+nop_baseline                               expected=accept    hardened=accept    v1=True
+fixture_missing_f2p__nop                   expected=reject    hardened=reject    v1=accept
+fixture_collection_error__nop              expected=reject    hardened=reject    v1=accept
+fixture_collection_error__gold             expected=reject    hardened=reject    v1=reject
+mutant_bounds_exclusive                    expected=killed    hardened=killed    v1=killed
+fixture_mutant_syntax_error                expected=invalid   hardened=invalid   v1=killed
+fixture_mutant_patch_does_not_apply        expected=invalid   hardened=invalid   v1=survived
+full_suite__gold                           expected=accept    hardened=accept    v1=None
+full_suite__fixture_failing_test           expected=reject    hardened=reject    v1=None
+full_suite__fixture_collection_error       expected=reject    hardened=reject    v1=None
+full_suite__fixture_gold_does_not_apply    expected=reject    hardened=reject    v1=None
+full_suite__fixture_tests_do_not_apply     expected=reject    hardened=reject    v1=None
+v1_full_suite_command__fixture_failing_test container_exit=0 v1=reject
+v1_full_suite_command__fixture_collection_error container_exit=0 v1=accept
+{"out": "evidence_v2/integration/20261114T150236_pallets__click-duration-param-type-9f8a40", "all_as_expected": true}

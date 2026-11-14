@@ -1,0 +1,745 @@
+[
+ {
+  "gate": "structure",
+  "ok": true,
+  "kind": "static",
+  "detail": {
+   "errors": [],
+   "warnings": []
+  }
+ },
+ {
+  "gate": "test_categories",
+  "ok": true,
+  "kind": "static",
+  "detail": {
+   "problems": [],
+   "counts": {
+    "f2p": 18,
+    "p2p_upstream": 30,
+    "p2p_authored": 6
+   },
+   "note": "authored compatibility tests are graded as pass-to-pass but are not upstream tests"
+  }
+ },
+ {
+  "gate": "base_health",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "passed": 2434,
+   "failed": [],
+   "collected": 2435,
+   "note": "full existing suite at base_commit inside the task image"
+  }
+ },
+ {
+  "gate": "grounding",
+  "ok": true,
+  "kind": "static",
+  "detail": {
+   "modified_existing_files": [
+    "src/click/__init__.py",
+    "src/click/core.py"
+   ],
+   "new_files": [],
+   "anchors": 4,
+   "touched_symbols": [
+    "src/click/core.py::CommandCollection.get_command",
+    "src/click/core.py::CommandCollection.list_commands",
+    "src/click/core.py::Group.format_commands",
+    "src/click/core.py::Group.get_command",
+    "src/click/core.py::Group.list_commands",
+    "src/click/core.py::Group.resolve_command",
+    "src/click/core.py::_check_nested_chain",
+    "src/click/core.py::_complete_visible_commands"
+   ],
+   "note": "every gold edit is anchored on text that occurs exactly once at base"
+  }
+ },
+ {
+  "gate": "novelty",
+  "ok": true,
+  "kind": "network",
+  "detail": {
+   "upstream_main": "e38188e9e205005d5af5f9e59df51904c984586a",
+   "blocking": [],
+   "github_merged_pr_hits_for_manual_review": [],
+   "github_checked": true,
+   "scope": "git grep of src/ at base and origin/main, git log -G base..main, GitHub PR search"
+  }
+ },
+ {
+  "gate": "fairness_lint",
+  "ok": false,
+  "kind": "static",
+  "detail": {
+   "problems": [
+    "keyword reverse= not named in spec"
+   ],
+   "requirements": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10"
+   ],
+   "n_tests": 18
+  }
+ },
+ {
+  "gate": "isolation",
+  "ok": true,
+  "kind": "static+container",
+  "detail": {
+   "problems": [],
+   "checks": [
+    "no test names/paths or harness files in spec",
+    "spec quotes <=2 gold lines",
+    "Dockerfile copies nothing from the package",
+    "image has no /solution, /tests, feature test files; /app is one commit (no upstream history); clean tree"
+   ]
+  }
+ },
+ {
+  "gate": "gold",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "reward": 1.0,
+   "f2p_passed": 18,
+   "f2p_total": 18,
+   "p2p_passed": 36,
+   "p2p_total": 36,
+   "secs": 2.2,
+   "problems": [],
+   "f2p_status_counts": {
+    "PASSED": 18
+   },
+   "p2p_status_counts": {
+    "PASSED": 36
+   }
+  }
+ },
+ {
+  "gate": "nop",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "f2p_all_reported": true,
+   "reward": 0.0,
+   "f2p_passed": 0,
+   "f2p_total": 18,
+   "p2p_passed": 36,
+   "p2p_total": 36,
+   "secs": 2.1,
+   "problems": [],
+   "f2p_status_counts": {
+    "FAILED": 18
+   },
+   "p2p_status_counts": {
+    "PASSED": 36
+   },
+   "not_failed": {},
+   "p2p_not_passed": {}
+  }
+ },
+ {
+  "gate": "mutation",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "killed": {
+    "local_omitted": true,
+    "local_after_sources": true,
+    "sources_reversed": true,
+    "active_provider_only": true,
+    "merges_same_object": true,
+    "collision_by_provider_count": true,
+    "collision_by_listing_groups": true,
+    "hidden_filtered": true,
+    "cached_per_name": true,
+    "reads_commands_mapping": true,
+    "applies_chain_check": true,
+    "one_based_index": true,
+    "swallows_source_errors": true,
+    "warns_on_collision": true,
+    "sorts_collision_names": true,
+    "expands_nested_collections": true,
+    "mutable_record": true,
+    "none_when_empty": true,
+    "list_commands_keeps_duplicates": true,
+    "chain_check_dropped": true
+   },
+   "score": "20/20",
+   "verdicts": {
+    "local_omitted": "killed",
+    "local_after_sources": "killed",
+    "sources_reversed": "killed",
+    "active_provider_only": "killed",
+    "merges_same_object": "killed",
+    "collision_by_provider_count": "killed",
+    "collision_by_listing_groups": "killed",
+    "hidden_filtered": "killed",
+    "cached_per_name": "killed",
+    "reads_commands_mapping": "killed",
+    "applies_chain_check": "killed",
+    "one_based_index": "killed",
+    "swallows_source_errors": "killed",
+    "warns_on_collision": "killed",
+    "sorts_collision_names": "killed",
+    "expands_nested_collections": "killed",
+    "mutable_record": "killed",
+    "none_when_empty": "killed",
+    "list_commands_keeps_duplicates": "killed",
+    "chain_check_dropped": "killed"
+   },
+   "per_mutant": {
+    "local_omitted": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+       "tests/test_command_collection_providers.py::test_first_provider_is_what_get_command_returns",
+       "tests/test_command_collection_providers.py::test_own_command_comes_first"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+      "tests/test_command_collection_providers.py::test_first_provider_is_what_get_command_returns",
+      "tests/test_command_collection_providers.py::test_own_command_comes_first"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.8333,
+     "f2p_passed": 15,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 2.3
+    },
+    "local_after_sources": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+       "tests/test_command_collection_providers.py::test_first_provider_is_what_get_command_returns",
+       "tests/test_command_collection_providers.py::test_own_command_comes_first"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+      "tests/test_command_collection_providers.py::test_first_provider_is_what_get_command_returns",
+      "tests/test_command_collection_providers.py::test_own_command_comes_first"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.8333,
+     "f2p_passed": 15,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 1.9
+    },
+    "sources_reversed": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+       "tests/test_command_collection_providers.py::test_first_provider_is_what_get_command_returns",
+       "tests/test_command_collection_providers.py::test_hidden_commands_are_reported",
+       "tests/test_command_collection_providers.py::test_own_command_comes_first",
+       "tests/test_command_collection_providers.py::test_repeated_registrations_are_not_merged",
+       "tests/test_command_collection_providers.py::test_sources_reported_in_order",
+       "tests/test_command_collection_providers.py::test_sources_with_custom_lookup"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+      "tests/test_command_collection_providers.py::test_first_provider_is_what_get_command_returns",
+      "tests/test_command_collection_providers.py::test_hidden_commands_are_reported",
+      "tests/test_command_collection_providers.py::test_own_command_comes_first",
+      "tests/test_command_collection_providers.py::test_repeated_registrations_are_not_merged",
+      "tests/test_command_collection_providers.py::test_sources_reported_in_order",
+      "tests/test_command_collection_providers.py::test_sources_with_custom_lookup"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.6111,
+     "f2p_passed": 11,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 2.1
+    },
+    "active_provider_only": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+       "tests/test_command_collection_providers.py::test_collisions_follow_list_commands_order",
+       "tests/test_command_collection_providers.py::test_collisions_need_distinct_objects",
+       "tests/test_command_collection_providers.py::test_first_provider_is_what_get_command_returns",
+       "tests/test_command_collection_providers.py::test_hidden_commands_are_reported",
+       "tests/test_command_collection_providers.py::test_nested_collection_is_one_provider",
+       "tests/test_command_collection_providers.py::test_own_command_comes_first",
+       "tests/test_command_collection_providers.py::test_repeated_registrations_are_not_merged",
+       "tests/test_command_collection_providers.py::test_results_are_independent_snapshots",
+       "tests/test_command_collection_providers.py::test_sources_reported_in_order",
+       "tests/test_command_collection_providers.py::test_sources_with_custom_lookup"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+      "tests/test_command_collection_providers.py::test_collisions_follow_list_commands_order",
+      "tests/test_command_collection_providers.py::test_collisions_need_distinct_objects",
+      "tests/test_command_collection_providers.py::test_first_provider_is_what_get_command_returns",
+      "tests/test_command_collection_providers.py::test_hidden_commands_are_reported",
+      "tests/test_command_collection_providers.py::test_nested_collection_is_one_provider",
+      "tests/test_command_collection_providers.py::test_own_command_comes_first",
+      "tests/test_command_collection_providers.py::test_repeated_registrations_are_not_merged",
+      "tests/test_command_collection_providers.py::test_results_are_independent_snapshots",
+      "tests/test_command_collection_providers.py::test_sources_reported_in_order",
+      "tests/test_command_collection_providers.py::test_sources_with_custom_lookup"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.3889,
+     "f2p_passed": 7,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 1.9
+    },
+    "merges_same_object": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_repeated_registrations_are_not_merged"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_repeated_registrations_are_not_merged"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.9444,
+     "f2p_passed": 17,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 1.9
+    },
+    "collision_by_provider_count": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_collisions_need_distinct_objects"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_collisions_need_distinct_objects"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.9444,
+     "f2p_passed": 17,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 2.0
+    },
+    "collision_by_listing_groups": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_chain_mode_groups_are_reported",
+       "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+       "tests/test_command_collection_providers.py::test_collisions_need_distinct_objects",
+       "tests/test_command_collection_providers.py::test_listed_but_unresolvable_names_are_not_collisions",
+       "tests/test_command_collection_providers.py::test_nested_collection_is_one_provider",
+       "tests/test_command_collection_providers.py::test_no_collisions"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_chain_mode_groups_are_reported",
+      "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+      "tests/test_command_collection_providers.py::test_collisions_need_distinct_objects",
+      "tests/test_command_collection_providers.py::test_listed_but_unresolvable_names_are_not_collisions",
+      "tests/test_command_collection_providers.py::test_nested_collection_is_one_provider",
+      "tests/test_command_collection_providers.py::test_no_collisions"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.6667,
+     "f2p_passed": 12,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 1.9
+    },
+    "hidden_filtered": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_hidden_commands_are_reported"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_hidden_commands_are_reported"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.9444,
+     "f2p_passed": 17,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 1.9
+    },
+    "cached_per_name": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+       "tests/test_command_collection_providers.py::test_errors_propagate",
+       "tests/test_command_collection_providers.py::test_results_are_independent_snapshots"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+      "tests/test_command_collection_providers.py::test_errors_propagate",
+      "tests/test_command_collection_providers.py::test_results_are_independent_snapshots"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.8333,
+     "f2p_passed": 15,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 2.0
+    },
+    "reads_commands_mapping": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_errors_propagate",
+       "tests/test_command_collection_providers.py::test_nested_collection_is_one_provider",
+       "tests/test_command_collection_providers.py::test_sources_with_custom_lookup"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_errors_propagate",
+      "tests/test_command_collection_providers.py::test_nested_collection_is_one_provider",
+      "tests/test_command_collection_providers.py::test_sources_with_custom_lookup"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.8333,
+     "f2p_passed": 15,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 1.9
+    },
+    "applies_chain_check": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_chain_mode_groups_are_reported"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_chain_mode_groups_are_reported"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.9444,
+     "f2p_passed": 17,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 2.2
+    },
+    "one_based_index": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+       "tests/test_command_collection_providers.py::test_listed_but_unresolvable_names_are_not_collisions",
+       "tests/test_command_collection_providers.py::test_nested_collection_is_one_provider",
+       "tests/test_command_collection_providers.py::test_own_command_comes_first",
+       "tests/test_command_collection_providers.py::test_repeated_registrations_are_not_merged",
+       "tests/test_command_collection_providers.py::test_sources_reported_in_order",
+       "tests/test_command_collection_providers.py::test_sources_with_custom_lookup"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+      "tests/test_command_collection_providers.py::test_listed_but_unresolvable_names_are_not_collisions",
+      "tests/test_command_collection_providers.py::test_nested_collection_is_one_provider",
+      "tests/test_command_collection_providers.py::test_own_command_comes_first",
+      "tests/test_command_collection_providers.py::test_repeated_registrations_are_not_merged",
+      "tests/test_command_collection_providers.py::test_sources_reported_in_order",
+      "tests/test_command_collection_providers.py::test_sources_with_custom_lookup"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.6111,
+     "f2p_passed": 11,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 2.0
+    },
+    "swallows_source_errors": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_errors_propagate"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_errors_propagate"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.9444,
+     "f2p_passed": 17,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 1.9
+    },
+    "warns_on_collision": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+       "tests/test_command_collection_providers.py::test_collisions_follow_list_commands_order",
+       "tests/test_command_collection_providers.py::test_collisions_need_distinct_objects",
+       "tests/test_command_collection_providers.py::test_hidden_commands_are_reported",
+       "tests/test_command_collection_providers.py::test_nested_collection_is_one_provider",
+       "tests/test_command_collection_providers.py::test_no_warnings_and_nothing_changes",
+       "tests/test_command_collection_providers.py::test_results_are_independent_snapshots",
+       "tests/test_command_collection_providers.py::test_sources_with_custom_lookup"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+      "tests/test_command_collection_providers.py::test_collisions_follow_list_commands_order",
+      "tests/test_command_collection_providers.py::test_collisions_need_distinct_objects",
+      "tests/test_command_collection_providers.py::test_hidden_commands_are_reported",
+      "tests/test_command_collection_providers.py::test_nested_collection_is_one_provider",
+      "tests/test_command_collection_providers.py::test_no_warnings_and_nothing_changes",
+      "tests/test_command_collection_providers.py::test_results_are_independent_snapshots",
+      "tests/test_command_collection_providers.py::test_sources_with_custom_lookup"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.5556,
+     "f2p_passed": 10,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 2.3
+    },
+    "sorts_collision_names": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_collisions_follow_list_commands_order"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_collisions_follow_list_commands_order"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.9444,
+     "f2p_passed": 17,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 2.0
+    },
+    "expands_nested_collections": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_nested_collection_is_one_provider"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_nested_collection_is_one_provider"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.9444,
+     "f2p_passed": 17,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 1.9
+    },
+    "mutable_record": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_provider_record"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_provider_record"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.9444,
+     "f2p_passed": 17,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 2.2
+    },
+    "none_when_empty": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "f2p": [
+       "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+       "tests/test_command_collection_providers.py::test_no_collisions",
+       "tests/test_command_collection_providers.py::test_unprovided_and_exact_names"
+      ]
+     },
+     "f2p_failed": [
+      "tests/test_command_collection_providers.py::test_changes_after_a_call_are_reflected",
+      "tests/test_command_collection_providers.py::test_no_collisions",
+      "tests/test_command_collection_providers.py::test_unprovided_and_exact_names"
+     ],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [],
+     "reward": 0.8333,
+     "f2p_passed": 15,
+     "f2p_total": 18,
+     "p2p_passed": 36,
+     "p2p_total": 36,
+     "secs": 1.9
+    },
+    "list_commands_keeps_duplicates": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "p2p_authored": [
+       "tests/test_command_collection_compat.py::test_list_commands_is_sorted_without_duplicates"
+      ]
+     },
+     "f2p_failed": [],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [
+      "tests/test_command_collection_compat.py::test_list_commands_is_sorted_without_duplicates"
+     ],
+     "reward": 0.0,
+     "f2p_passed": 18,
+     "f2p_total": 18,
+     "p2p_passed": 35,
+     "p2p_total": 36,
+     "secs": 1.9
+    },
+    "chain_check_dropped": {
+     "verdict": "killed",
+     "problems": [],
+     "non_verdict_tests": {},
+     "killed_by": {
+      "p2p_authored": [
+       "tests/test_command_collection_compat.py::test_chain_mode_still_rejects_a_group_from_a_source"
+      ]
+     },
+     "f2p_failed": [],
+     "failed_by_import_or_syntax_error": {},
+     "p2p_failed": [
+      "tests/test_command_collection_compat.py::test_chain_mode_still_rejects_a_group_from_a_source"
+     ],
+     "reward": 0.0,
+     "f2p_passed": 18,
+     "f2p_total": 18,
+     "p2p_passed": 35,
+     "p2p_total": 36,
+     "secs": 2.1
+    }
+   }
+  }
+ },
+ {
+  "gate": "full_suite_under_gold",
+  "ok": false,
+  "kind": "container",
+  "detail": {
+   "pytest_exit": 1,
+   "container_exit": 1,
+   "summary": {
+    "passed": 2457,
+    "failed": 1,
+    "errors": 0,
+    "skipped": 24,
+    "xfailed": 1,
+    "xpassed": 0,
+    "deselected": 31000,
+    "no_tests_ran": false,
+    "markers": []
+   },
+   "problems": [
+    "pytest exit 1 (tests failed)",
+    "container exit 1",
+    "1 failed, 0 error(s)"
+   ],
+   "tail": [
+    "=========================== short test summary info ============================",
+    "FAILED tests/test_imports.py::test_light_imports - AssertionError: assert 'da...",
+    "1 failed, 2457 passed, 24 skipped, 31000 deselected, 1 xfailed in 4.20s"
+   ],
+   "note": "entire existing suite + feature tests with gold applied (extra, not graded)"
+  }
+ }
+]

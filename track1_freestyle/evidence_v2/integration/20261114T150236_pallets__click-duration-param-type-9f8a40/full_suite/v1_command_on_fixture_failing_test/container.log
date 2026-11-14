@@ -1,0 +1,7 @@
+exit=0
+--- stdout
+FAILED tests/test_duration_type.py::test_invalid_message_uses_unstripped_text
+FAILED tests/test_duration_type.py::test_repeated_unit_is_invalid - Assertion...
+3 failed, 2447 passed, 24 skipped, 31000 deselected, 1 xfailed in 3.51s
+
+--- stderr

@@ -1,0 +1,7 @@
+exit=91 secs=0.2
+--- stdout
+T1_STAGE_FAIL=apply_patch
+
+--- stderr
+error: patch failed: src/click/__init__.py:56
+error: src/click/__init__.py: patch does not apply

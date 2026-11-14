@@ -44,6 +44,11 @@ New evidence lives only in `track1_freestyle/evidence_v2/`.
 
 ### 2a. Benchmark and Docker evidence, by provenance
 
+> **Current status: `docs/BENCHMARK_STATUS.md`.** That document rechecks PR #2 at head
+> `8394b349` in a separate worktree, audits the raw benchmark file field by field, and covers the
+> V2 collision task (blocked). Docker integration has since been executed on this branch
+> (`docs/V2_CONTAINER_INTEGRATION.md`). The text below is kept as written at commit `47263d2`.
+
 An earlier draft of this document said "no model benchmark has run". That was true of the
 evidence on this branch when it was written, but it is now outdated. The evidence falls into
 three tiers.
@@ -174,11 +179,18 @@ or `INCONSISTENT(A+B)` when it has records with several statuses.
 |---|---|
 | gold | no problems, reward 1.0, every F2P `PASSED`, every P2P `PASSED` |
 | nop | no problems, reward 0.0, every F2P `FAILED` (call phase; not `MISSING`/`ERROR`/`SKIPPED`/`INCONSISTENT`), every P2P `PASSED` |
-| mutant `killed` | no problems; every expected test is `PASSED` or `FAILED`; and at least one F2P `FAILED` whose FAILURES block raises nothing in {`SyntaxError`, `IndentationError`, `TabError`, `ImportError`, `ModuleNotFoundError`} |
-| mutant `invalid` | any problem, any expected test not PASSED/FAILED, or the only F2P failures are import/syntax errors |
-| mutant `survived` | valid run, every F2P passes |
+| mutant `killed` | no problems; every expected test is `PASSED` or `FAILED`; and at least one F2P **or P2P** test `FAILED` whose FAILURES block raises nothing in {`SyntaxError`, `IndentationError`, `TabError`, `ImportError`, `ModuleNotFoundError`}. `killed_by` names the category: `f2p`, `p2p_upstream` or `p2p_authored` |
+| mutant `invalid` | any problem, any expected test not PASSED/FAILED, or the only failures are import/syntax errors |
+| mutant `survived` | valid run, every F2P and P2P passes |
 | mutation gate | at least one mutant, and every mutant `killed` |
 | full suite | no `T1_STAGE_FAIL`, `T1_PYTEST_EXIT=0`, container exit 0, summary line present, ≥1 passed, 0 failed, 0 errors, no crash markers |
+
+**Change in the test-categories milestone (commit `77d7c5c`).** Until then a mutant counted as
+killed only through an F2P failure. A mutant that implements the feature but breaks a P2P test
+receives reward 0 from `grade.py`, so it is now `killed`, with `killed_by` naming the category. No
+saved V1 verdict changes; the historical replay still accepts all five V1 tasks. Test categories
+(F2P, upstream P2P, authored compatibility P2P) and the `test_categories` gate are described in
+`docs/COMMAND_COLLISION_TEST_PLAN.md` section 1 and `docs/COLLISION_TASK_REPORT.md`.
 
 The nop rule deliberately allows `ImportError`/`AttributeError` *inside a test function*. A test that
 imports the not-yet-existing feature is the normal way a feature test fails at base. It must not
@@ -195,6 +207,8 @@ All run locally on macOS (arm64), no containers. Logs are in `track1_freestyle/e
 | Same, Python 3.13.5 + dash | 44 passed | `validation_tests_py313_dash.log` |
 | Full factory import (`factory.pipeline`, all 5 families) on Python 3.13.5 | ok (on 3.11 `families/duration.py` fails to import: it uses 3.12+ f-string syntax; pre-existing, not changed) | — |
 | Offline re-classification of every saved gold/nop/mutant run (V1 batch, demo, dev runs) | see below | `replay_historical.json` |
+| *Test-categories milestone (commit `8d54758`):* regression tests incl. `test_test_categories.py`, Python 3.13.5, `/bin/sh` and `/bin/dash` | 61 passed each | `validation_tests_v2_py313_sh.log`, `validation_tests_v2_py313_dash.log` |
+| Same replay with the P2P-aware mutant rule | 15 attempts; verdicts, mutant verdicts and nop details identical to `replay_historical.json` | `replay_historical_v2.json` |
 
 Re-classification of saved runs (historical files, new logic; nothing re-executed):
 
@@ -229,7 +243,16 @@ Coverage of the required scenarios:
 | Mutant behavioural failure vs invalid execution | `test_mutant_behavioural_failure_is_killed`, `test_mutant_lazy_import_behavioural_failure_is_killed`, `test_mutant_syntax_error_at_import_is_invalid`, `test_mutant_lazy_import_syntax_error_is_invalid`, `test_mutant_that_did_not_apply_is_invalid`, `test_mutant_survivor_is_reported`, `test_mutation_gate_needs_every_mutant_killed` |
 | No verdict without grading | `test_missing_grading_result_and_bad_verifier_exit`, `test_patch_apply_failure_is_reported` |
 
-## 6. Not executed: container integration
+## 6. Container integration
+
+**Executed on 2026-11-14 under Docker (engine 29.9.2): `docs/V2_CONTAINER_INTEGRATION.md`.** On
+an isolated copy of the duration task, every gold, nop, mutant and full-suite case, including
+labelled deliberate-failure fixtures, gave the expected verdict, and exit statuses 0, 1, 2, 91 and
+92 propagated. The organizer `check_structure.py` and Harbor 0.25.0 `selfcheck.sh` passed. A full
+`python -m factory generate` with the hardened gates also ran (`docs/COLLISION_TASK_REPORT.md`).
+The three items listed as unverified below are therefore now verified.
+
+Historical text (commit `47263d2`, before Docker was available on this host):
 
 Docker CLI 29.9.2 is installed, but the Docker daemon was not running. Docker Desktop was launched once
 (user-level `open -a Docker`, no sudo). It exited without starting a daemon; it may need first-run
@@ -265,8 +288,8 @@ SELFCHECK_OUT=evidence_v2/integration/harbor_selfcheck \
 ## 7. What these checks cannot establish
 
 - **Difficulty.** Nothing on this branch measures model performance. The only difficulty evidence
-  is the benchmark reported in PR #2 (resolve@3 = 3/3 on all five V1 tasks; section 2a), which I
-  have not independently verified.
+  is the benchmark reported in PR #2 (resolve@3 = 3/3 on all five V1 tasks), which I have not
+  re-run; see `docs/BENCHMARK_STATUS.md` for what was and was not verified.
 - **That a nop FAILED means "feature absent".** The gate guarantees each F2P was collected and
   failed in its own call, while the P2P set (same click import, same harness) is green. The gold run
   shows the same tests pass once the gold patch is applied. Together these are strong
@@ -284,4 +307,5 @@ SELFCHECK_OUT=evidence_v2/integration/harbor_selfcheck \
 - **Shell portability beyond dash/bash.** Verified with bash 3.2 (POSIX mode) and dash. In
   production `container.run` still invokes the script with `bash -c` (the image ships bash). The
   script itself uses no bash features, so it also runs under the image's `/bin/sh` (dash on Debian
-  bookworm), but that image was not run here.
+  bookworm). In the container runs it was executed through `bash -c`; running it under the image's
+  dash was not tested separately.

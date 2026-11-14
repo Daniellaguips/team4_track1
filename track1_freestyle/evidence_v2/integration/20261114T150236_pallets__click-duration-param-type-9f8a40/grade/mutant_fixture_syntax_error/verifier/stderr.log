@@ -1,0 +1,7 @@
+ImportError while loading conftest '/app/tests/conftest.py'.
+tests/conftest.py:3: in <module>
+    from click.testing import CliRunner
+E     File "/app/src/click/__init__.py", line 59
+E       def t1_fixture_broken(:  # T1 TEST FIXTURE: deliberate syntax error
+E                             ^
+E   SyntaxError: invalid syntax

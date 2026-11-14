@@ -1,0 +1,444 @@
+{
+ "runs/20261114T115550_batch5/candidates/pallets__click-duration-param-type-9f8a40/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": true,
+   "mutation": true,
+   "full_suite_under_gold": true
+  },
+  "replayed": {
+   "gold": true,
+   "nop": true,
+   "mutation": true
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {},
+  "mutant_verdicts": {
+   "bare_number_flipped": "killed",
+   "bounds_exclusive": "killed",
+   "info_dict_timedelta": "killed",
+   "message_uses_stripped_text": "killed",
+   "no_strip": "killed",
+   "order_rule_wrong": "killed",
+   "passthrough_skips_bounds": "killed",
+   "upper_case_units": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ },
+ "runs/20261114T115550_batch5/candidates/pallets__click-group-command-abbreviations-583fa0/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": true,
+   "mutation": true,
+   "full_suite_under_gold": true
+  },
+  "replayed": {
+   "gold": true,
+   "nop": true,
+   "mutation": true
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {},
+  "mutant_verdicts": {
+   "candidate_order_flipped": "killed",
+   "empty_token_matches": "killed",
+   "first_match_wins": "killed",
+   "hidden_rule_flipped": "killed",
+   "names_not_normalized": "killed",
+   "raises_when_resilient": "killed",
+   "returns_typed_prefix": "killed",
+   "uses_commands_mapping": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ },
+ "runs/20261114T115550_batch5/candidates/pallets__click-help-command-sections-56c8e3/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": true,
+   "mutation": true,
+   "full_suite_under_gold": true
+  },
+  "replayed": {
+   "gold": true,
+   "nop": true,
+   "mutation": true
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {},
+  "mutant_verdicts": {
+   "case_insensitive": "killed",
+   "default_position_flipped": "killed",
+   "explicit_commands_separate": "killed",
+   "global_alignment": "killed",
+   "order_flipped": "killed",
+   "per_section_limit": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ },
+ "runs/20261114T115550_batch5/candidates/pallets__click-option-conflicts-with-921c06/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": true,
+   "mutation": true,
+   "full_suite_under_gold": true
+  },
+  "replayed": {
+   "gold": true,
+   "nop": true,
+   "mutation": true
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {},
+  "mutant_verdicts": {
+   "checked_during_resilient": "killed",
+   "defaults_count": "killed",
+   "no_dedup": "killed",
+   "pair_order_swapped": "killed",
+   "self_reference_not_ignored": "killed",
+   "source_rule_flipped": "killed",
+   "string_split_into_chars": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ },
+ "runs/20261114T115550_batch5/candidates/pallets__click-prompt-max-attempts-ac2a26/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": true,
+   "mutation": true,
+   "full_suite_under_gold": true
+  },
+  "replayed": {
+   "gold": true,
+   "nop": true,
+   "mutation": true
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {},
+  "mutant_verdicts": {
+   "bool_accepted": "killed",
+   "confirm_not_counted": "killed",
+   "empty_rule_flipped": "killed",
+   "flag_prompt_not_forwarded": "killed",
+   "message_suppressed_on_last": "killed",
+   "mismatch_not_counted": "killed",
+   "off_by_one": "killed",
+   "wrong_exhaustion_exception": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ },
+ "runs/20261114T120613_demo_fresh/candidates/pallets__click-help-command-sections-ffd69f/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": true,
+   "mutation": true,
+   "full_suite_under_gold": true
+  },
+  "replayed": {
+   "gold": true,
+   "nop": true,
+   "mutation": true
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {},
+  "mutant_verdicts": {
+   "case_insensitive": "killed",
+   "default_position_flipped": "killed",
+   "explicit_commands_separate": "killed",
+   "global_alignment": "killed",
+   "order_flipped": "killed",
+   "per_section_limit": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ },
+ "dev_runs/20261114T113637_dev1/candidates/pallets__click-duration-param-type-0e7568/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": true,
+   "mutation": true,
+   "full_suite_under_gold": true
+  },
+  "replayed": {
+   "gold": true,
+   "nop": true,
+   "mutation": true
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {},
+  "mutant_verdicts": {
+   "bare_number_flipped": "killed",
+   "bounds_exclusive": "killed",
+   "info_dict_timedelta": "killed",
+   "message_uses_stripped_text": "killed",
+   "no_strip": "killed",
+   "order_rule_wrong": "killed",
+   "passthrough_skips_bounds": "killed",
+   "upper_case_units": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ },
+ "dev_runs/20261114T114902_dev2_abbrev/candidates/pallets__click-group-command-abbreviations-f29899/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": false,
+   "mutation": true,
+   "full_suite_under_gold": true
+  },
+  "replayed": {
+   "gold": true,
+   "nop": false,
+   "mutation": true
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {
+   "tests/test_command_abbreviations.py::test_off_by_default": "PASSED"
+  },
+  "mutant_verdicts": {
+   "candidate_order_flipped": "killed",
+   "empty_token_matches": "killed",
+   "first_match_wins": "killed",
+   "hidden_rule_flipped": "killed",
+   "names_not_normalized": "killed",
+   "raises_when_resilient": "killed",
+   "returns_typed_prefix": "killed",
+   "uses_commands_mapping": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ },
+ "dev_runs/20261114T114902_dev2_attempts/candidates/pallets__click-prompt-max-attempts-701650/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": false,
+   "mutation": null,
+   "full_suite_under_gold": null
+  },
+  "replayed": {
+   "gold": true,
+   "nop": false,
+   "mutation": true
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {
+   "tests/test_prompt_attempts.py::test_unlimited_by_default": "PASSED"
+  },
+  "mutant_verdicts": {
+   "empty_rule_flipped": "killed",
+   "mismatch_not_counted": "killed",
+   "off_by_one": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ },
+ "dev_runs/20261114T114902_dev2_conflicts/candidates/pallets__click-option-conflicts-with-c50d1d/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": true,
+   "mutation": false,
+   "full_suite_under_gold": true
+  },
+  "replayed": {
+   "gold": true,
+   "nop": true,
+   "mutation": false
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {},
+  "mutant_verdicts": {
+   "checked_during_resilient": "killed",
+   "defaults_count": "killed",
+   "no_dedup": "survived",
+   "pair_order_swapped": "killed",
+   "self_reference_not_ignored": "killed",
+   "source_rule_flipped": "killed",
+   "string_split_into_chars": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ },
+ "dev_runs/20261114T114902_dev2_sections/candidates/pallets__click-help-command-sections-85cb7e/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": true,
+   "mutation": true,
+   "full_suite_under_gold": true
+  },
+  "replayed": {
+   "gold": true,
+   "nop": true,
+   "mutation": true
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {},
+  "mutant_verdicts": {
+   "case_insensitive": "killed",
+   "default_position_flipped": "killed",
+   "explicit_commands_separate": "killed",
+   "global_alignment": "killed",
+   "order_flipped": "killed",
+   "per_section_limit": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ },
+ "dev_runs/20261114T115310_dev3_abbrev/candidates/pallets__click-group-command-abbreviations-f29899/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": true,
+   "mutation": true,
+   "full_suite_under_gold": true
+  },
+  "replayed": {
+   "gold": true,
+   "nop": true,
+   "mutation": true
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {},
+  "mutant_verdicts": {
+   "candidate_order_flipped": "killed",
+   "empty_token_matches": "killed",
+   "first_match_wins": "killed",
+   "hidden_rule_flipped": "killed",
+   "names_not_normalized": "killed",
+   "raises_when_resilient": "killed",
+   "returns_typed_prefix": "killed",
+   "uses_commands_mapping": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ },
+ "dev_runs/20261114T115310_dev3_attempts/candidates/pallets__click-prompt-max-attempts-701650/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": false,
+   "mutation": true,
+   "full_suite_under_gold": true
+  },
+  "replayed": {
+   "gold": true,
+   "nop": false,
+   "mutation": true
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {
+   "tests/test_prompt_attempts.py::test_unlimited_by_default": "PASSED"
+  },
+  "mutant_verdicts": {
+   "bool_accepted": "killed",
+   "confirm_not_counted": "killed",
+   "empty_rule_flipped": "killed",
+   "flag_prompt_not_forwarded": "killed",
+   "message_suppressed_on_last": "killed",
+   "mismatch_not_counted": "killed",
+   "off_by_one": "killed",
+   "wrong_exhaustion_exception": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ },
+ "dev_runs/20261114T115310_dev3_conflicts/candidates/pallets__click-option-conflicts-with-c50d1d/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": true,
+   "mutation": true,
+   "full_suite_under_gold": true
+  },
+  "replayed": {
+   "gold": true,
+   "nop": true,
+   "mutation": true
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {},
+  "mutant_verdicts": {
+   "checked_during_resilient": "killed",
+   "defaults_count": "killed",
+   "pair_order_swapped": "killed",
+   "reports_last_pair": "killed",
+   "self_reference_not_ignored": "killed",
+   "source_rule_flipped": "killed",
+   "string_split_into_chars": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ },
+ "dev_runs/20261114T115444_dev4_attempts/candidates/pallets__click-prompt-max-attempts-701650/attempt_1": {
+  "historical": {
+   "gold": true,
+   "nop": true,
+   "mutation": true,
+   "full_suite_under_gold": true
+  },
+  "replayed": {
+   "gold": true,
+   "nop": true,
+   "mutation": true
+  },
+  "problems": {
+   "gold": [],
+   "nop": [],
+   "mutation": {}
+  },
+  "nop_not_failed": {},
+  "mutant_verdicts": {
+   "bool_accepted": "killed",
+   "confirm_not_counted": "killed",
+   "empty_rule_flipped": "killed",
+   "flag_prompt_not_forwarded": "killed",
+   "message_suppressed_on_last": "killed",
+   "mismatch_not_counted": "killed",
+   "off_by_one": "killed",
+   "wrong_exhaustion_exception": "killed"
+  },
+  "note": "full_suite_under_gold not replayable: historical runs kept only the last 3 output lines"
+ }
+}

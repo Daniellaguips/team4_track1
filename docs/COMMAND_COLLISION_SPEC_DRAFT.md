@@ -1,6 +1,15 @@
 # Specification draft: `CommandCollection` provider diagnostics
 
-Status: **draft for team review. Not implemented, not packaged, not benchmarked.** It targets
+> **Superseded (2026-11-14).** The settled design is `docs/COMMAND_COLLISION_DECISIONS.md`, and
+> the final specification is the `instruction.md` of
+> `track1_freestyle/generated_tasks_v2/pallets__click-command-collection-providers-55a649`
+> (R1–R10). Main changes from this draft: the record has no `name` field (D3); it is a
+> `typing.NamedTuple`, so `import click` stays light; cycles are unspecified (D16); and the
+> compatibility tests are graded as authored pass-to-pass tests (section 7, U7, resolved).
+> Requirement mapping: `docs/COMMAND_COLLISION_TEST_PLAN.md` section 4. The text below is kept
+> unchanged as the earlier draft.
+
+Status (at the time of the draft): **draft for team review. Not implemented, not packaged, not benchmarked.** It targets
 pallets/click at `cf19179e8e2fd54c601378cec9e0d21bb12b6fb1` (8.5.1). Background and novelty evidence:
 `docs/COMMAND_COLLISION_INVESTIGATION.md`. Open decisions are listed in section 6. The draft is meant
 to be implementable from this text and the repository alone; it refers to no hidden tests or

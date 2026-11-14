@@ -1,0 +1,55 @@
+{
+ "instance_id": "pallets__click-command-collection-providers-55a649",
+ "family": "collisions",
+ "knobs": {
+  "scope": "diagnostics"
+ },
+ "axes": {
+  "capability": "introspection of command lookup across merged groups",
+  "module": "click.core.CommandCollection (+ new click.CommandProvider record, click/__init__ export)",
+  "behavior_shape": "ordered provider enumeration + identity-based collision report",
+  "integration": "Group.get_command/list_commands overrides, add_source, nested collections, hidden commands, chain-mode check, help/completion left unchanged",
+  "novelty_note": "upstream Click (base and main e38188e9) has no provider listing or collision report for CommandCollection; related ideas exist elsewhere (stevedore conflict_resolver, argparse duplicate subparser error, cloup section duplicates) but not as a Click API. See docs/COMMAND_COLLISION_INVESTIGATION.md."
+ },
+ "generator": "deterministic blueprint (no LLM)",
+ "model": "none",
+ "model_calls": 0,
+ "n_input_tokens": 0,
+ "n_output_tokens": 0,
+ "n_cache_tokens": 0,
+ "base_commit": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+ "code_version": "8d54758684cc5d610f67445682e5de6b776d3e96",
+ "blueprint_origin": {
+  "kind": "manually authored sixth blueprint (not autonomous feature discovery)",
+  "design": "docs/COMMAND_COLLISION_INVESTIGATION.md -> COMMAND_COLLISION_SPEC_DRAFT.md -> COMMAND_COLLISION_DECISIONS.md, directed by the team member running the V2 assignment",
+  "authoring": "blueprint code (instruction, gold edits, tests, mutants) written in a Cursor agent session with an LLM coding assistant (Claude); reviewed against base source and run through the factory gates",
+  "generation_time_model_calls": 0,
+  "reused_components": "V1 pipeline, gates (V2-hardened), templates (grade.py, parser.py, test.sh, Dockerfile), coverage-based P2P curation, novelty/fairness/isolation gates"
+ },
+ "attempts": [
+  {
+   "attempt": 1,
+   "verdict": "accepted",
+   "reason": "all gates passed",
+   "gates": {
+    "structure": true,
+    "test_categories": true,
+    "base_health": true,
+    "grounding": true,
+    "novelty": true,
+    "fairness_lint": true,
+    "isolation": true,
+    "gold": true,
+    "nop": true,
+    "mutation": true,
+    "full_suite_under_gold": true
+   }
+  }
+ ],
+ "repairs": [],
+ "human_edits_after_generation": [],
+ "status": "accepted",
+ "first_pass_valid": true,
+ "wall_seconds": 68.1,
+ "package": "generated_tasks_v2/pallets__click-command-collection-providers-55a649"
+}

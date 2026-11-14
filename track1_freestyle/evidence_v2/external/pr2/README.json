@@ -31,5 +31,12 @@
   "per-rollout trajectory/<iid>/<model>/rollout_N/ directories",
   "result.json with agent_info.model_info",
   "verifier/reward.json per rollout"
- ]
+ ],
+ "rechecked": {
+  "head_sha": "8394b349fe1d1487906e3fb3e38d925a1aa50d89",
+  "pr_state": "OPEN (not merged)",
+  "how": "git fetch origin refs/pull/2/head into refs/remotes/pr2/head; detached worktree outside the repo",
+  "benchmark_json_generated_tasks_and_docker_evidence_changed_since_934bf44c": false,
+  "generated_tasks_blob_compare_vs_local": "IDENTICAL (60 files)"
+ }
 }

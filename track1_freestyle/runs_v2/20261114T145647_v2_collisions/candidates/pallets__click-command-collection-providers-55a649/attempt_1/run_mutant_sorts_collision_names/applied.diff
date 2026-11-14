@@ -1,0 +1,100 @@
+diff --git a/src/click/__init__.py b/src/click/__init__.py
+index a34ab02..6d46e64 100644
+--- a/src/click/__init__.py
++++ b/src/click/__init__.py
+@@ -10,6 +10,7 @@ from __future__ import annotations
+ from .core import Argument as Argument
+ from .core import Command as Command
+ from .core import CommandCollection as CommandCollection
++from .core import CommandProvider as CommandProvider
+ from .core import Context as Context
+ from .core import Group as Group
+ from .core import Option as Option
+diff --git a/src/click/core.py b/src/click/core.py
+index e4b6b57..9854404 100644
+--- a/src/click/core.py
++++ b/src/click/core.py
+@@ -1,6 +1,7 @@
+ from __future__ import annotations
+ 
+ import collections.abc as cabc
++import dataclasses
+ import enum
+ import errno
+ import inspect
+@@ -2138,6 +2139,26 @@ class _MultiCommand(Group, metaclass=_FakeSubclassCheck):
+     """
+ 
+ 
++@dataclasses.dataclass(frozen=True)
++class CommandProvider:
++    """A place where a :class:`CommandCollection` finds a command for a
++    name, as reported by :meth:`CommandCollection.get_command_providers`.
++
++    :param group: The group whose lookup returned the command: the
++        collection itself for its own commands, otherwise the source.
++    :param source_index: ``None`` for the collection's own commands,
++        otherwise the position of the source in
++        :attr:`CommandCollection.sources`.
++    :param command: The command the lookup returned.
++
++    .. versionadded:: 8.6
++    """
++
++    group: Group
++    source_index: int | None
++    command: Command
++
++
+ class CommandCollection(Group):
+     """A :class:`Group` that looks up subcommands on other groups. If a command
+     is not found on this group, each registered source is checked in order.
+@@ -2195,6 +2216,48 @@ class CommandCollection(Group):
+ 
+         return sorted(rv)
+ 
++    def get_command_providers(
++        self, ctx: Context, cmd_name: str
++    ) -> list[CommandProvider]:
++        """Return every provider of ``cmd_name`` in lookup order: the
++        collection's own command first, then each source in order. The
++        first provider is the one :meth:`get_command` uses, the others
++        are shadowed. Nothing is cached and lookup is not changed.
++
++        .. versionadded:: 8.6
++        """
++        rv: list[CommandProvider] = []
++        cmd = super().get_command(ctx, cmd_name)
++
++        if cmd is not None:
++            rv.append(CommandProvider(group=self, source_index=None, command=cmd))
++
++        for index, source in enumerate(self.sources):
++            cmd = source.get_command(ctx, cmd_name)
++
++            if cmd is not None:
++                rv.append(CommandProvider(group=source, source_index=index, command=cmd))
++
++        return rv
++
++    def get_command_collisions(
++        self, ctx: Context
++    ) -> dict[str, list[CommandProvider]]:
++        """Return the names from :meth:`list_commands` that more than one
++        distinct command object provides, mapped to their providers.
++
++        .. versionadded:: 8.6
++        """
++        rv: dict[str, list[CommandProvider]] = {}
++
++        for name in sorted(self.list_commands(ctx)):
++            providers = self.get_command_providers(ctx, name)
++
++            if len({id(p.command) for p in providers}) > 1:
++                rv[name] = providers
++
++        return rv
++
+ 
+ def _check_iter(value: cabc.Iterable[V]) -> cabc.Iterator[V]:
+     """Check if the value is iterable but not a string. Raises a type

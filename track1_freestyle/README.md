@@ -142,6 +142,9 @@ organizer `selfcheck.sh` then repeats 7–8 through real Harbor.
 > F2P (including collection errors), and the extra full-suite run piped pytest through `tail`. These
 > are fixed on branch `v2/validation-hardening-collision-spec`; see `../docs/V2_VALIDATION_HARDENING.md`.
 > Saved V1 runs still pass the hardened gates when re-classified offline.
+> V2 output is kept apart from V1: `generated_tasks_v2/`, `runs_v2/`, `ledger_v2.json` and
+> `pipeline_run_v2.json` (one task from the manually authored `collisions` blueprint; see
+> `../docs/COLLISION_TASK_REPORT.md`). Current benchmark status: `../docs/BENCHMARK_STATUS.md`.
 
 Regression (P2P) curation: once per base, the suite runs under coverage with per-test contexts; for
 every function enclosing a gold hunk plus the blueprint's declared focus symbols, the 12 tests that

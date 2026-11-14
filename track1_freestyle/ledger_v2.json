@@ -1,0 +1,14 @@
+[
+ {
+  "family": "collisions",
+  "knobs": {
+   "scope": "diagnostics"
+  }
+ },
+ {
+  "family": "collisions",
+  "knobs": {
+   "scope": "diagnostics"
+  }
+ }
+]

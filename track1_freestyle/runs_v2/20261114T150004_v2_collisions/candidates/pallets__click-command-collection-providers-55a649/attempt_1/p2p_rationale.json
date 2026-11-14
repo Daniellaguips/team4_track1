@@ -1,0 +1,271 @@
+{
+ "per_symbol": {
+  "src/click/core.py::CommandCollection.get_command": [],
+  "src/click/core.py::CommandCollection.list_commands": [],
+  "src/click/core.py::Group.get_command": [
+   "tests/test_arguments.py::test_nested_subcommand_help",
+   "tests/test_arguments.py::test_subcommand_help",
+   "tests/test_basic.py::test_basic_group",
+   "tests/test_basic.py::test_group_commands_dict",
+   "tests/test_basic.py::test_group_from_list",
+   "tests/test_basic.py::test_hidden_command",
+   "tests/test_basic.py::test_hidden_group",
+   "tests/test_basic.py::test_summary_line",
+   "tests/test_chain.py::test_args_and_chain",
+   "tests/test_chain.py::test_basic_chaining",
+   "tests/test_chain.py::test_chaining_with_arguments",
+   "tests/test_chain.py::test_chaining_with_options"
+  ],
+  "src/click/core.py::Group.list_commands": [
+   "tests/test_basic.py::test_basic_group",
+   "tests/test_basic.py::test_hidden_command",
+   "tests/test_basic.py::test_hidden_group",
+   "tests/test_basic.py::test_summary_line",
+   "tests/test_commands.py::test_auto_shorthelp",
+   "tests/test_commands.py::test_deprecated_help_text_is_not_translated",
+   "tests/test_formatting.py::test_removing_multiline_marker",
+   "tests/test_info_dict.py::test_command[Group]",
+   "tests/test_shell_completion.py::test_add_different_name",
+   "tests/test_shell_completion.py::test_chained",
+   "tests/test_shell_completion.py::test_files_closed",
+   "tests/test_shell_completion.py::test_group"
+  ],
+  "src/click/core.py::Group.format_commands": [
+   "tests/test_basic.py::test_basic_group",
+   "tests/test_basic.py::test_summary_line",
+   "tests/test_commands.py::test_auto_shorthelp",
+   "tests/test_commands.py::test_deprecated_help_text_is_not_translated",
+   "tests/test_formatting.py::test_removing_multiline_marker",
+   "tests/test_basic.py::test_hidden_command",
+   "tests/test_basic.py::test_hidden_group"
+  ],
+  "src/click/core.py::Group.resolve_command": [
+   "tests/test_normalization.py::test_command_normalization",
+   "tests/test_commands.py::test_unknown_command",
+   "tests/test_arguments.py::test_nested_subcommand_help",
+   "tests/test_arguments.py::test_subcommand_help",
+   "tests/test_basic.py::test_basic_group",
+   "tests/test_basic.py::test_group_commands_dict",
+   "tests/test_basic.py::test_group_from_list",
+   "tests/test_chain.py::test_args_and_chain",
+   "tests/test_chain.py::test_basic_chaining",
+   "tests/test_chain.py::test_chaining_with_arguments",
+   "tests/test_chain.py::test_chaining_with_options",
+   "tests/test_chain.py::test_group_arg_behavior"
+  ],
+  "src/click/core.py::_complete_visible_commands": [
+   "tests/test_shell_completion.py::test_add_different_name",
+   "tests/test_shell_completion.py::test_chained",
+   "tests/test_shell_completion.py::test_group",
+   "tests/test_shell_completion.py::test_nested_group[args0--expect0]",
+   "tests/test_shell_completion.py::test_nested_group[args1--expect1]",
+   "tests/test_shell_completion.py::test_nested_group[args2--expect2]",
+   "tests/test_shell_completion.py::test_hidden",
+   "tests/test_shell_completion.py::test_group_command_same_option",
+   "tests/test_shell_completion.py::test_nested_group[args3---expect3]",
+   "tests/test_shell_completion.py::test_files_closed"
+  ],
+  "src/click/core.py::_check_nested_chain": [
+   "tests/test_arguments.py::test_nested_subcommand_help",
+   "tests/test_arguments.py::test_subcommand_help",
+   "tests/test_basic.py::test_basic_group",
+   "tests/test_basic.py::test_hidden_command",
+   "tests/test_basic.py::test_hidden_group",
+   "tests/test_basic.py::test_repr",
+   "tests/test_basic.py::test_summary_line",
+   "tests/test_chain.py::test_args_and_chain",
+   "tests/test_chain.py::test_basic_chaining",
+   "tests/test_chain.py::test_chaining_with_arguments",
+   "tests/test_chain.py::test_chaining_with_options",
+   "tests/test_chain.py::test_group_arg_behavior"
+  ]
+ },
+ "why": {
+  "tests/test_arguments.py::test_nested_subcommand_help": [
+   "src/click/core.py::Group.get_command",
+   "src/click/core.py::Group.resolve_command",
+   "src/click/core.py::_check_nested_chain"
+  ],
+  "tests/test_arguments.py::test_subcommand_help": [
+   "src/click/core.py::Group.get_command",
+   "src/click/core.py::Group.resolve_command",
+   "src/click/core.py::_check_nested_chain"
+  ],
+  "tests/test_basic.py::test_basic_group": [
+   "src/click/core.py::Group.get_command",
+   "src/click/core.py::Group.list_commands",
+   "src/click/core.py::Group.format_commands",
+   "src/click/core.py::Group.resolve_command",
+   "src/click/core.py::_check_nested_chain"
+  ],
+  "tests/test_basic.py::test_group_commands_dict": [
+   "src/click/core.py::Group.get_command",
+   "src/click/core.py::Group.resolve_command"
+  ],
+  "tests/test_basic.py::test_group_from_list": [
+   "src/click/core.py::Group.get_command",
+   "src/click/core.py::Group.resolve_command"
+  ],
+  "tests/test_basic.py::test_hidden_command": [
+   "src/click/core.py::Group.get_command",
+   "src/click/core.py::Group.list_commands",
+   "src/click/core.py::Group.format_commands",
+   "src/click/core.py::_check_nested_chain"
+  ],
+  "tests/test_basic.py::test_hidden_group": [
+   "src/click/core.py::Group.get_command",
+   "src/click/core.py::Group.list_commands",
+   "src/click/core.py::Group.format_commands",
+   "src/click/core.py::_check_nested_chain"
+  ],
+  "tests/test_basic.py::test_repr": [
+   "src/click/core.py::_check_nested_chain"
+  ],
+  "tests/test_basic.py::test_summary_line": [
+   "src/click/core.py::Group.get_command",
+   "src/click/core.py::Group.list_commands",
+   "src/click/core.py::Group.format_commands",
+   "src/click/core.py::_check_nested_chain"
+  ],
+  "tests/test_chain.py::test_args_and_chain": [
+   "src/click/core.py::Group.get_command",
+   "src/click/core.py::Group.resolve_command",
+   "src/click/core.py::_check_nested_chain"
+  ],
+  "tests/test_chain.py::test_basic_chaining": [
+   "src/click/core.py::Group.get_command",
+   "src/click/core.py::Group.resolve_command",
+   "src/click/core.py::_check_nested_chain"
+  ],
+  "tests/test_chain.py::test_chaining_with_arguments": [
+   "src/click/core.py::Group.get_command",
+   "src/click/core.py::Group.resolve_command",
+   "src/click/core.py::_check_nested_chain"
+  ],
+  "tests/test_chain.py::test_chaining_with_options": [
+   "src/click/core.py::Group.get_command",
+   "src/click/core.py::Group.resolve_command",
+   "src/click/core.py::_check_nested_chain"
+  ],
+  "tests/test_chain.py::test_group_arg_behavior": [
+   "src/click/core.py::Group.resolve_command",
+   "src/click/core.py::_check_nested_chain"
+  ],
+  "tests/test_commands.py::test_auto_shorthelp": [
+   "src/click/core.py::Group.list_commands",
+   "src/click/core.py::Group.format_commands"
+  ],
+  "tests/test_commands.py::test_deprecated_help_text_is_not_translated": [
+   "src/click/core.py::Group.list_commands",
+   "src/click/core.py::Group.format_commands"
+  ],
+  "tests/test_commands.py::test_unknown_command": [
+   "src/click/core.py::Group.resolve_command"
+  ],
+  "tests/test_formatting.py::test_removing_multiline_marker": [
+   "src/click/core.py::Group.list_commands",
+   "src/click/core.py::Group.format_commands"
+  ],
+  "tests/test_info_dict.py::test_command[Group]": [
+   "src/click/core.py::Group.list_commands"
+  ],
+  "tests/test_normalization.py::test_command_normalization": [
+   "src/click/core.py::Group.resolve_command"
+  ],
+  "tests/test_shell_completion.py::test_add_different_name": [
+   "src/click/core.py::Group.list_commands",
+   "src/click/core.py::_complete_visible_commands"
+  ],
+  "tests/test_shell_completion.py::test_chained": [
+   "src/click/core.py::Group.list_commands",
+   "src/click/core.py::_complete_visible_commands"
+  ],
+  "tests/test_shell_completion.py::test_files_closed": [
+   "src/click/core.py::Group.list_commands",
+   "src/click/core.py::_complete_visible_commands"
+  ],
+  "tests/test_shell_completion.py::test_group": [
+   "src/click/core.py::Group.list_commands",
+   "src/click/core.py::_complete_visible_commands"
+  ],
+  "tests/test_shell_completion.py::test_group_command_same_option": [
+   "src/click/core.py::_complete_visible_commands"
+  ],
+  "tests/test_shell_completion.py::test_hidden": [
+   "src/click/core.py::_complete_visible_commands"
+  ],
+  "tests/test_shell_completion.py::test_nested_group[args0--expect0]": [
+   "src/click/core.py::_complete_visible_commands"
+  ],
+  "tests/test_shell_completion.py::test_nested_group[args1--expect1]": [
+   "src/click/core.py::_complete_visible_commands"
+  ],
+  "tests/test_shell_completion.py::test_nested_group[args2--expect2]": [
+   "src/click/core.py::_complete_visible_commands"
+  ],
+  "tests/test_shell_completion.py::test_nested_group[args3---expect3]": [
+   "src/click/core.py::_complete_visible_commands"
+  ]
+ },
+ "touched": {
+  "src/click/core.py::CommandCollection.get_command": {
+   "lines": [
+    2173,
+    2188
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  },
+  "src/click/core.py::CommandCollection.list_commands": {
+   "lines": [
+    2190,
+    2196
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  },
+  "src/click/core.py::Group.get_command": {
+   "lines": [
+    1959,
+    1963
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  },
+  "src/click/core.py::Group.list_commands": {
+   "lines": [
+    1965,
+    1967
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  },
+  "src/click/core.py::Group.format_commands": {
+   "lines": [
+    1978,
+    2004
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  },
+  "src/click/core.py::Group.resolve_command": {
+   "lines": [
+    2088,
+    2112
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  },
+  "src/click/core.py::_complete_visible_commands": {
+   "lines": [
+    63,
+    79
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  },
+  "src/click/core.py::_check_nested_chain": {
+   "lines": [
+    82,
+    99
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  }
+ },
+ "declared_by_blueprint": [
+  "tests/test_imports.py::test_light_imports"
+ ]
+}
