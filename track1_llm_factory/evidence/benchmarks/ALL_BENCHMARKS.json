@@ -1,0 +1,66 @@
+{
+ "hard-pallets__click-state-0001": {
+  "rewards": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "resolved": "3/3"
+ },
+ "kyle-collision": {
+  "rewards": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "resolved": "3/3"
+ },
+ "team-pallets__click-duration-param-type-9f8a40": {
+  "rewards": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "resolved": "3/3"
+ },
+ "team-pallets__click-group-command-abbreviations-583fa0": {
+  "rewards": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "resolved": "3/3"
+ },
+ "team-pallets__click-help-command-sections-56c8e3": {
+  "rewards": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "resolved": "3/3"
+ },
+ "team-pallets__click-option-conflicts-with-921c06": {
+  "rewards": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "resolved": "3/3"
+ },
+ "team-pallets__click-prompt-max-attempts-ac2a26": {
+  "rewards": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "resolved": "3/3"
+ },
+ "types-0001-bench": {
+  "rewards": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "resolved": "3/3"
+ }
+}

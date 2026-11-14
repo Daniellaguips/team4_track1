@@ -106,3 +106,17 @@ uv run python -m factory.generate --card state --seed 1 --replay   # rebuild fro
 ```
 Cards: `types, argv, help, testing, completion` (single-module) and `sources, state, argv_hard,
 help_hard` (hard, multi-lever). Spend for the whole session was about $10–15 of the $100 key.
+
+## Latest status (3:25 PM, before presentations)
+- **Haiku benchmark ledger** (`evidence/benchmarks/ALL_BENCHMARKS.json`): 8 jobs, **24/24 attempts
+  solved**. That covers the pilot, the team's 5 submitted tasks, the `state` task, and Kyle's
+  validated `command-collection-providers` task from PR #3 (3/3, F2P 18/18, run on the team Anthropic
+  key with `anthropic/claude-haiku-5-5`).
+- **Prompts v7 (Arian Berisha, `plan/PROMPTS.md`)** are installed in `factory/prompts.py`. The fairness
+  judge is now a different model family (`JUDGE_MODEL=openai/gpt-6-luna`). The first v7 task to pass
+  every gate, `argv_hard-0502`, was being benchmarked at the time of writing. It is development evidence
+  only, not part of the scored submission.
+- **Last-round tactic:** reviewed contracts repaired by Fable and fed in via `FACTORY_DESIGN_FILE`
+  (disclosed). Fresh-eyes notes for judges: `plan/FRESH-FABLE-NOTES.md`.
+- **Next improvement:** an executable baseline. Every "as in click 8.5.1" sentence ships with a probe
+  run against the untouched repo before gold is written. Most hard designs failed on exactly such claims.

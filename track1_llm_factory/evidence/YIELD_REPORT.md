@@ -1,14 +1,20 @@
 # Yield and cost report (every attempted run)
 
-- Attempted runs: **36**
-- Valid (passed every gate): **2**  · first-pass valid: **0/36**
-- Total generation cost from call logs: **$31.42** (132 model calls)
-- Outcomes: killed/unterminated: 25, rejected: fairness/judge: 8, rejected: gold: 1, VALID (retired): 1, VALID: 1
+- Attempted runs: **56**
+- Valid (passed every gate): **3**  · first-pass valid: **0/56**
+- Total generation cost from call logs: **$69.01** (184 model calls)
+- Outcomes: killed/unterminated: 42, rejected: fairness/judge: 9, rejected: gold: 2, VALID: 2, VALID (retired): 1
 
 | run | status | prompts | candidates | calls | cost $ | Haiku resolve@3 | replaces |
 |---|---|---|---|---|---|---|---|
 | pallets__click-argv_completion-0001 | killed/unterminated | ? | 0 | 2 | 0.54 |  |  |
 | pallets__click-argv_completion-0002 | killed/unterminated | ? | 0 | 2 | 0.52 |  |  |
+| pallets__click-argv_completion-0021 | killed/unterminated | ? | 0 | 1 | 2.31 |  |  |
+| pallets__click-argv_completion-0022 | killed/unterminated | ? | 0 | 2 | 3.51 |  |  |
+| pallets__click-argv_completion-0023 | killed/unterminated | ? | 0 | 1 | 2.12 |  |  |
+| pallets__click-argv_completion-0024 | killed/unterminated | ? | 0 | 1 | 2.20 |  |  |
+| pallets__click-argv_completion-0501 | killed/unterminated | ? | 1 | 3 | 1.15 |  |  |
+| pallets__click-argv_completion-0502 | killed/unterminated | ? | 2 | 5 | 1.22 |  |  |
 | pallets__click-argv_hard-0001 | rejected: fairness/judge | v6.3-hard | 3 | 7 | 1.61 |  |  |
 | pallets__click-argv_hard-0002 | rejected: fairness/judge | v6.5.1-codexfair | 3 | 7 | 1.85 |  |  |
 | pallets__click-argv_hard-0003 | killed/unterminated | ? | 2 | 5 | 1.42 |  |  |
@@ -17,14 +23,28 @@
 | pallets__click-argv_hard-0008 | killed/unterminated | ? | 0 | 2 | 0.49 |  |  |
 | pallets__click-argv_hard-0009 | killed/unterminated | ? | 1 | 3 | 0.89 |  |  |
 | pallets__click-argv_hard-0010 | killed/unterminated | ? | 0 | 2 | 0.68 |  |  |
+| pallets__click-argv_hard-0021 | killed/unterminated | ? | 0 | 1 | 2.37 |  |  |
+| pallets__click-argv_hard-0501 | killed/unterminated | ? | 2 | 5 | 1.46 |  |  |
+| pallets__click-argv_hard-0502 | VALID | v7-observable-deps | 2 | 5 | 1.02 |  |  |
 | pallets__click-atomic_output-0001 | killed/unterminated | ? | 0 | 1 | 0.46 |  |  |
 | pallets__click-atomic_output-0002 | killed/unterminated | ? | 0 | 1 | 0.25 |  |  |
+| pallets__click-atomic_output-0501 | killed/unterminated | ? | 2 | 4 | 1.34 |  |  |
 | pallets__click-help_hard-0001 | rejected: fairness/judge | v6.3-hard | 3 | 6 | 1.14 |  |  |
 | pallets__click-help_hard-0002 | killed/unterminated | ? | 2 | 4 | 1.17 |  |  |
 | pallets__click-help_hard-0008 | killed/unterminated | ? | 0 | 1 | 0.19 |  |  |
 | pallets__click-help_hard-0009 | killed/unterminated | ? | 0 | 2 | 0.49 |  |  |
 | pallets__click-lazy_defaults-0001 | killed/unterminated | ? | 0 | 1 | 0.43 |  |  |
 | pallets__click-lazy_defaults-0002 | killed/unterminated | ? | 0 | 2 | 0.75 |  |  |
+| pallets__click-lazy_defaults-0021 | killed/unterminated | ? | 0 | 1 | 2.68 |  |  |
+| pallets__click-lazy_defaults-0022 | killed/unterminated | ? | 0 | 1 | 2.50 |  |  |
+| pallets__click-lazy_defaults-0023 | killed/unterminated | ? | 0 | 1 | 2.68 |  |  |
+| pallets__click-lazy_defaults-0024 | killed/unterminated | ? | 0 | 1 | 2.91 |  |  |
+| pallets__click-lazy_defaults-0323 | rejected: gold | v6.9-noworked | 3 | 5 | 1.73 |  |  |
+| pallets__click-lazy_defaults-0324 | rejected: fairness/judge | v6.9-noworked | 3 | 6 | 2.20 |  |  |
+| pallets__click-lazy_defaults-0424 | killed/unterminated | ? | 0 | 2 | 1.07 |  |  |
+| pallets__click-lazy_defaults-0425 | killed/unterminated | ? | 2 | 3 | 1.24 |  |  |
+| pallets__click-lazy_defaults-0501 | killed/unterminated | ? | 0 | 2 | 0.97 |  |  |
+| pallets__click-lazy_defaults-0502 | killed/unterminated | ? | 0 | 2 | 0.91 |  |  |
 | pallets__click-sources-0001 | rejected: fairness/judge | v6.3-hard | 3 | 7 | 1.25 |  |  |
 | pallets__click-sources-0003 | killed/unterminated | ? | 2 | 4 | 1.58 |  |  |
 | pallets__click-sources-0004 | killed/unterminated | ? | 1 | 3 | 1.01 |  |  |

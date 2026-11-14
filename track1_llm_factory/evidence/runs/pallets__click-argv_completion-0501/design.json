@@ -1,0 +1,288 @@
+{
+ "feature": "argv_completion",
+ "summary": "Opt-in @response-file expansion. When a command (or Context / main() kwarg / context_settings) configures a response-file prefix, tokens of the invocation's argv that start with that prefix are replaced by the tokens read from the named file. Includes are recursive, resolved relative to the including file, and cycle-checked with the include stack named in the error. A literal '--' stops all expansion, and a doubled prefix escapes a literal token. The same expansion applies to normal parsing (root context) and to shell completion (ShellComplete.get_completions), where completion behaves as if the expanded tokens had been typed and the word being completed is never expanded. Each file is read at most once per invocation, and invocation state is not shared between invocations. Repo constraint: `import click` must not import any new module that is not on the tests/test_imports.py allowlist, and filterwarnings=error means the feature must not emit warnings.",
+ "public_api": [
+  "click.ResponseFileError (subclass of click.UsageError, exported from click and click.exceptions)",
+  "click.Command.response_file_prefix (class attribute, default None)",
+  "click.Context(..., response_file_prefix: str | None = None)",
+  "click.Context.response_file_prefix (attribute)",
+  "click.Context.response_files (attribute, list[str])",
+  "main(..., response_file_prefix=...) via the existing **extra to Context",
+  "context_settings={'response_file_prefix': ...}",
+  "click.shell_completion.ShellComplete.get_completions (behavior with a configured prefix)"
+ ],
+ "keywords": [
+  "response_file_prefix",
+  "response_files",
+  "ResponseFileError",
+  "expand",
+  "get_completions",
+  "make_context",
+  "parse_args",
+  "context_settings",
+  "cycle"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "Configuration and precedence of the prefix. Command gets a class attribute `response_file_prefix` (default None = feature disabled). Context.__init__ gets a keyword parameter `response_file_prefix` (default None) and a public attribute `ctx.response_file_prefix`. Resolution of the value stored on a context, highest first: (1) a non-None explicit value given to the Context constructor, which includes `main(..., response_file_prefix=...)` extras and `make_context(..., response_file_prefix=...)` extras; (2) a non-None value in the command's `context_settings` dict under the key 'response_file_prefix'; (3) for a context with a parent, the parent context's `ctx.response_file_prefix`; (4) for a root context, `command.response_file_prefix`. An explicit value or context_settings value of None counts as 'not given'. Sources (1) and (2) follow the existing make_context rule that an explicit extra beats context_settings.",
+   "inputs": "prefix strings from the four sources above",
+   "output": "ctx.response_file_prefix holds the resolved value (None when disabled). Example: Command attribute '@' plus main(response_file_prefix='+') gives '+'. context_settings {'response_file_prefix': '%'} plus attribute '@' gives '%'. A child context created through ctx.invoke(cmd) or Group dispatch has the same value as its parent unless the child's own context_settings or extras give one.",
+   "errors": "ValueError with message exactly \"'response_file_prefix' must not be empty.\" is raised when a Context would be created with a resolved prefix equal to the empty string '' from any source. It is a plain ValueError, not a click exception, so main() does not convert it.",
+   "precedence": "explicit Context/main/make_context kwarg > context_settings > parent context value > Command.response_file_prefix > None (disabled). Only the ROOT context's resolved prefix decides expansion (see R3), so a child's different prefix never causes any expansion.",
+   "bounds": "Any non-empty str is valid, including multi-character prefixes ('+f:') and prefixes made of option characters ('-', '--').",
+   "state": "The value is fixed at Context construction."
+  },
+  {
+   "id": "R2",
+   "text": "Disabled means byte-identical. When the resolved prefix of the root context is None, behavior is exactly that of click 8.5.1: no file is opened, a token such as '@x' is an ordinary token (for example a positional argument value '@x'), completion behaves unchanged, and nothing about the feature appears in help or usage text. `ctx.response_files` is an empty list. `Context.to_info_dict()` and `Command.to_info_dict()` return exactly the same keys as before the feature, with no new keys, whether or not a prefix is configured. `--help` and usage output of a command are identical with and without a configured prefix.",
+   "inputs": "any argv when no prefix is configured; any command's info dict and help",
+   "output": "unchanged 8.5.1 output",
+   "errors": "none",
+   "precedence": "Applies on top of R1: if R1 yields None, no other rule in this contract is active.",
+   "bounds": "Context.to_info_dict() keys stay exactly {'command','info_name','allow_extra_args','allow_interspersed_args','ignore_unknown_options','auto_envvar_prefix'}.",
+   "state": "ctx.response_files is a fresh empty list per root context."
+  },
+  {
+   "id": "R3",
+   "text": "Where expansion applies. When the ROOT context (parent is None) of an invocation has a prefix, the argument list given to its parsing (what main() / CliRunner.invoke / cmd.make_context(name, args) passes) is expanded BEFORE any option or argument parsing, so the parser, ctx.args, ctx.params, and error messages such as 'Got unexpected extra argument (x)' see only the expanded tokens. Tokens that came from a file are indistinguishable from typed ones: an option may take its value across a boundary (`--name @f` where f contains the single line `bob` behaves like `--name bob`, and a file whose last line is `--name` followed by a typed `bob` also works). Expansion is argv-level only. A value coming from an environment variable, from default_map, or from a prompt is never expanded, even if it starts with the prefix. A token such as `--name=@f` does not start with the prefix, so it is not expanded. Contexts with a parent (subcommands created by Group dispatch, `make_context(..., parent=ctx)`) never expand their args, because the root already expanded the whole list. `no_args_is_help` is evaluated on the ORIGINAL (unexpanded) argument list, so `cli @empty.txt` where the file is empty does not print help.",
+   "inputs": "argv list for a root context with a prefix",
+   "output": "e.g. prefix '@', file args.txt = \"--name\\nbob\\nx\\n\", `cli @args.txt` behaves as `cli --name bob x`. With an empty file and a Group (no_args_is_help default True, no invoke_without_command) the result is the error 'Missing command.', not help.",
+   "errors": "none beyond R6 to R8",
+   "precedence": "Expansion happens before no precedence among parameter sources is evaluated. It changes only which tokens exist. The argv-vs-envvar-vs-default_map precedence of parameters stays as in 8.5.1. For `--opt=@f` or an envvar '@f', the literal string '@f' is the value.",
+   "bounds": "A completely empty original argv with a Group still shows help via no_args_is_help exactly as before.",
+   "state": "none"
+  },
+  {
+   "id": "R4",
+   "text": "Token classification, applied in this order to each token of the argv, and to each token read from a file, left to right in one stream. (a) The exact token '--' is NEVER a response-file token and is never escaped, whatever the prefix. It is emitted unchanged and from that point on expansion is STOPPED for everything after it: the rest of the current file, the rest of every including file, and the rest of the argv. Every later token is emitted verbatim (no escape handling, no file read, even a second '--' or a token identical to an earlier expanded one). The stop is identified by the position of the first '--' in the expansion stream, not by token text. (b) Otherwise, a token that starts with the prefix repeated twice (prefix+prefix) is an escape: it is emitted as the token with exactly one leading prefix removed and is not expanded ('@@x' gives '@x'; '@@' gives '@'). (c) Otherwise, a token that starts with the prefix and is longer than the prefix is a response-file token naming the path token[len(prefix):], taken verbatim (no '~' or env expansion, no stripping). (d) Otherwise (including a token equal to the prefix alone) the token is emitted unchanged.",
+   "inputs": "tokens, prefix",
+   "output": "With prefix '@': ['@@x','--','@f','@@y'] gives ['@x','--','@f','@@y'] and f is never opened, so a missing f raises no error. With prefix '-': the token '--' is the stop marker, not an escape for '-' and not a file token for a file named '-'. With prefix '-', '--x' gives '-x' by (b) and '-v' reads file 'v' by (c).",
+   "errors": "none",
+   "precedence": "(a) beats (b), (c) and (d). The '--' stop beats everything that follows it, including include tokens inside files and tokens of the outer argv after the including token. The click parser later handles the retained '--' as in 8.5.1 (it is consumed by the parser, so `cli a -- b` and `cli @f b` where f is `a` and `--` behave identically).",
+   "bounds": "Only exact equality with '--' triggers the stop. '--x', '---' and ' --' do not.",
+   "state": "The 'stopped' flag is per invocation expansion and propagates up out of nested files."
+  },
+  {
+   "id": "R5",
+   "text": "File format. A response file is read as UTF-8 text. Lines are separated by '\\n', '\\r\\n' or a lone '\\r' (no other character separates lines). Each line is stripped of leading and trailing whitespace (str.strip()). A stripped line that is empty, or whose first character is '#', is skipped. Each remaining stripped line is exactly ONE token (spaces inside a line are preserved, no shell splitting, no quote handling). Each token is then classified by R4 in place, so a line may itself be an include token, an escape, or '--'. The tokens of an included file replace the include token at its position, depth first, preserving order.",
+   "inputs": "file text",
+   "output": "File '  # note\\n\\n--name\\n  hello world  \\n#x\\n@inner.txt\\n' gives ['--name','hello world', <tokens of inner.txt>]. A token that begins with '#' cannot be written in a file.",
+   "errors": "see R8",
+   "precedence": "Stripping happens before classification, so '   @@x  ' gives the token '@x'.",
+   "bounds": "An empty file, or a file with only blank and comment lines, yields no tokens.",
+   "state": "none"
+  },
+  {
+   "id": "R6",
+   "text": "Path resolution. A response-file token found directly in argv names a path relative to the current working directory. A token found inside a file names a path relative to the directory containing THAT including file (not the cwd, not the top-level file's directory). Absolute paths are used as is. The resolved path is normalized with os.path.abspath, and this absolute normalized string is the file's identity and the form used in `ctx.response_files` and in every error message (symlinks are not resolved).",
+   "inputs": "token path, location of the token",
+   "output": "argv '@conf/a.txt' where conf/a.txt contains '@sub/b.txt' reads <cwd>/conf/sub/b.txt, and b.txt containing '@c.txt' reads <cwd>/conf/sub/c.txt. The same relative text in two different including directories names two different files.",
+   "errors": "see R7, R8",
+   "precedence": "Includer-relative resolution applies identically in normal parsing and in completion.",
+   "bounds": "'..' segments are collapsed by abspath, so 'x/../a.txt' and 'a.txt' are the same file for cycle checks, the read cache and response_files.",
+   "state": "none"
+  },
+  {
+   "id": "R7",
+   "text": "Cycle detection by include stack, not by visited set. The include stack is the chain of files currently being expanded, outermost first. When an include token resolves to a file that is already on the stack (including a file that includes itself), expansion fails with ResponseFileError whose message is 'Response files include each other in a cycle: ' followed by the stack entries from the outermost file down to and including the repeated file, joined by ' -> ' (absolute normalized paths per R6). The check happens when the token is reached, in left-to-right order, and before any later token is processed. Including the same file several times without it being on the stack is NOT a cycle, for example `cli @a @a`, a file listing 'b.txt' twice, or two files c and d that both include e.",
+   "inputs": "include graph",
+   "output": "a includes b, b includes c, c includes b gives message exactly 'Response files include each other in a cycle: <abs a> -> <abs b> -> <abs c> -> <abs b>'. Self-include of a gives '<abs a> -> <abs a>'. argv ['@a','@a'] with an acyclic a expands a twice with no error.",
+   "errors": "click.ResponseFileError(message) as given; see R8 for the exception's type and display.",
+   "precedence": "The stack check is made before the file would be read or fetched from the cache. A cycle raised before the '--' stop (R4) is reached is reported. A cycle token located after the stop is never examined, so no error.",
+   "bounds": "Stack depth is unbounded (no depth limit error).",
+   "state": "The stack is local to one expansion and is popped when a file finishes, so sibling includes do not see each other."
+  },
+  {
+   "id": "R8",
+   "text": "Read errors and the exception. click.ResponseFileError is a subclass of click.UsageError (hence of ClickException) with signature ResponseFileError(message, ctx=None). In normal parsing it is raised with the root context attached, before any parameter callback or group/command callback runs. In standalone_mode=True it is shown like any UsageError (stderr gets the 'Usage: ...' block and a line 'Error: <message>') and the exit code is 2. With standalone_mode=False it propagates out of main() as a ResponseFileError. Messages (path = absolute normalized path per R6): if opening or reading the file raises OSError (missing file, directory, permission), message is \"Could not read response file '<path>'.\". If the bytes are not valid UTF-8, message is \"Response file '<path>' is not valid UTF-8.\". A cycle uses the message of R7. The first error in left-to-right expansion order wins.",
+   "inputs": "bad include token",
+   "output": "`cli @missing.txt` under CliRunner gives exit_code 2 and output containing \"Error: Could not read response file '<abs>/missing.txt'.\"; a file containing the byte 0xff gives \"Response file '<abs>' is not valid UTF-8.\".",
+   "errors": "ResponseFileError with the exact messages above; err.message equals the message, err.exit_code == 2, err.ctx is the root context in normal parsing.",
+   "precedence": "A Context-construction ValueError (R1) happens earlier than any file error. Passing resilient_parsing=True to make_context does NOT suppress a ResponseFileError outside completion (it raises as usual). Completion has its own rule R11.",
+   "bounds": "A file is only opened when its include token is reached while expansion is active, so an unreadable file after '--' (R4) or after an earlier error is never opened.",
+   "state": "A file that failed to read is not added to ctx.response_files."
+  },
+  {
+   "id": "R9",
+   "text": "Read once per invocation, and invocation-scoped state. Within one invocation each distinct file (R6 identity) is opened for reading at most once, even if it is included many times. The 2nd and later inclusions reuse the tokens obtained by that single read (still resolved relative to that file's own directory). 'One invocation' means everything done with one root context for normal parsing (one main() / CliRunner.invoke / make_context call, including all nested subcommand and chain contexts), or one ShellComplete.get_completions call for completion (both its context resolution and its incomplete-word resolution together). The cache is NOT kept across invocations: modifying a file between two CliRunner.invoke calls makes the second call see the new content. `ctx.response_files` is a list of the absolute normalized paths of the files successfully read, each exactly once, in the order of first read, which is depth-first pre-order (a includes b then c, b includes d gives [a, b, d, c]). The list object is shared by every context in one hierarchy: `child_ctx.response_files is root_ctx.response_files`, including sub-contexts created by Group dispatch, chain dispatch and ctx.invoke(cmd). A new root context gets a new list.",
+   "inputs": "include graphs with repeated files, repeated invocations",
+   "output": "argv ['@a','@a'] with a containing '@b' reads a and b once each: response_files == [abs a, abs b]. Counting calls of the builtin open() for those paths gives 1 each.",
+   "errors": "none",
+   "precedence": "The once-only reuse does not weaken R7: a file on the stack is a cycle even though its tokens are cached.",
+   "bounds": "Files never reached (after '--') do not appear in response_files.",
+   "state": "Reset per invocation: nothing persists in module-level state between separate CliRunner.invoke or get_completions calls. A group callback, a subcommand callback, and a result_callback in the same invocation all see the same list through get_current_context().find_root().response_files."
+  },
+  {
+   "id": "R10",
+   "text": "Completion shares the expansion. For a command with a configured prefix, ShellComplete.get_completions(args, incomplete) (and therefore the bash/zsh/fish/powershell protocol built on it) behaves as if the user had typed the expanded tokens in place of the response-file tokens. The decision of which words are 'args' and which one is 'incomplete' is made by the shell-specific get_completion_args exactly as in 8.5.1, before any expansion. Only `args` are expanded. The incomplete word is NEVER expanded, escape-processed, or read as a file: it reaches the completion logic exactly as given ('@f' stays '@f', '@@x' stays '@@x') and no file is opened for it. Which word is the incomplete one is decided by its position (index COMP_CWORD of the words), never by its text: with COMP_WORDS 'prog @f @f' and COMP_CWORD 2, the first '@f' is expanded and the second is not. All the rest of completion then follows UNCHANGED 8.5.1 logic on the expanded list: subcommand resolution, the check whether '--' is present in the already-typed args (a '--' coming from a file counts), the rule that an incomplete word starting with an option prefix character gets option-name completions even if the previous expanded token is an option expecting a value, completion of the value of an option that is the last expanded token (for example a Choice option whose '--color' is the last line of the file), and the choice of the first argument without a parsed value. The prefix used is resolved with the same sources as R1, where ctx_args (the dict given to ShellComplete / the main() extras) counts as the explicit source; context_settings and Command.response_file_prefix come after.",
+   "inputs": "COMP_WORDS/COMP_CWORD or (args, incomplete) given to get_completions",
+   "output": "File f = '--color\\n'. With Choice(['red','blue']) option --color, get_completions(['@f'], 'r') gives value ['red']. get_completions(['@f'], '-') gives the option names (startswith '-'). If f contains '--' as a line, then get_completions(['@f'], '-') does NOT give option names but is treated like `cli -- -<TAB>`, i.e. argument completion. A custom shell_complete callback on a parameter receives incomplete '@f' unchanged and sees `ctx.response_files` listing each file once.",
+   "errors": "none beyond R11",
+   "precedence": "R4 stop rules and R6 path rules apply unchanged. The 8.5.1 option-looking-incomplete-word precedence (option names win over value completion of the previous option) is not altered by the feature, and the '--' presence check uses the expanded args.",
+   "bounds": "An incomplete word equal to the prefix alone, or empty, is passed through as is.",
+   "state": "Each file is read at most once per get_completions call (R9), even though both context resolution and incomplete-word resolution need the expanded tokens. Expansion must not be applied twice to the same tokens, because the escape rule R4(b) is not idempotent: arg '@@x' must complete as the literal word '@x', not read file 'x'."
+  },
+  {
+   "id": "R11",
+   "text": "ONE rule for response-file errors during completion. If expanding `args` in ShellComplete.get_completions raises any condition of R7 or R8 (cycle, unreadable file, invalid UTF-8), get_completions returns an empty list [] and does not raise. Through the environment protocol (`_PROG_COMPLETE=bash_complete`, COMP_WORDS, COMP_CWORD, running main), standard output is empty, nothing is printed to stderr, and the exit code is 0. This is the only completion behavior for such errors: there is no partial expansion, no fallback to the unexpanded tokens, and no exception escapes get_completions. It applies only to ResponseFileError. Any other exception (a ValueError from an empty prefix per R1, an error raised by a user shell_complete callback) is not caught by this rule and behaves as in 8.5.1.",
+   "inputs": "a bad include among the already-typed words",
+   "output": "get_completions(['@missing.txt'], '') returns []. With the env protocol the CliRunner result has exit_code 0 and output ''.",
+   "errors": "none (the ResponseFileError is swallowed in completion only)",
+   "precedence": "Outside completion, R8 applies (error raised). The same bad file raises in cli.main(['@missing.txt']) and yields [] in get_completions.",
+   "bounds": "A bad file placed after '--' or only as the incomplete word is never read, hence returns the normal completions rather than [].",
+   "state": "Nothing from the failed attempt is kept for a later get_completions call."
+  },
+  {
+   "id": "R12",
+   "text": "Route matrix for a root command with a configured prefix. main(args): same, expansion of the root argv. In standalone mode a bad file prints the 'Usage:' block and 'Error: <message>' to stderr and exits 2. With standalone_mode=False main() raises ResponseFileError. CliRunner.invoke(cli, args): same as main(). A str args is first split by shlex (existing behavior), then the resulting tokens are expanded. A failure gives result.exit_code == 2 and the message in result.output. ctx.invoke(cmd, **kw): N/A because it does not parse argv, so nothing is expanded and no file is opened. The sub-context it creates has the caller as parent and shares the caller's response_files list object. ctx.forward(cmd, **kw): N/A for the same reason. cmd.make_context(name, args) with no parent: same, it is a root. cmd.make_context(name, args, parent=ctx): different, args are NOT expanded and '@x' stays a literal token. Nested groups: same, the whole argv is expanded once by the root before dispatch, so the subcommand name and its arguments may come from a file; the prefix configured on a nested group or leaf command is ignored for expansion, unless that command is itself run as the root. chain=True groups: same, expansion happens once before the chain is split into subcommands, so one file may list several subcommands with their arguments; any file error is raised before the group callback or any subcommand callback runs. result_callback: same, it runs after expansion and may read ctx.response_files. A user subclass of Command or Group that overrides parse_args and calls super().parse_args(ctx, args), or a custom context_class that calls super().__init__ with its arguments, gets exactly one expansion per invocation.",
+   "inputs": "the routes listed",
+   "output": "as listed per route",
+   "errors": "ResponseFileError per R7 and R8 on routes that parse a root argv",
+   "precedence": "R1 decides which prefix applies. The ROOT context's prefix is the only one that matters on every route.",
+   "bounds": "ctx.invoke and ctx.forward never touch the filesystem for response files.",
+   "state": "response_files and the read cache are per root context (R9). ctx.invoke/forward sub-contexts reuse the caller's list."
+  }
+ ],
+ "relied_on": [
+  {
+   "fact": "CliRunner.invoke(cli, args) passes a list of tokens to cli.main as argv, and a str args is first split with shlex.split.",
+   "example": "runner.invoke(cli, 'run \"two words\"') gives argv ['run','two words'].",
+   "used_by": [
+    "R3",
+    "R12"
+   ]
+  },
+  {
+   "fact": "A UsageError raised during parsing in standalone mode prints the usage block and 'Error: <message>' to stderr and exits with code 2. Result.output of CliRunner contains the stderr text. With standalone_mode=False the exception propagates out of main().",
+   "example": "A Group invoked with `@empty.txt` (empty expansion) and no subcommand gives exit_code 2 and output containing 'Error: Missing command.'",
+   "used_by": [
+    "R3",
+    "R8",
+    "R12"
+   ]
+  },
+  {
+   "fact": "Extra keyword arguments of main() and make_context() are passed to the Context constructor, and command.context_settings keys are used only when the key was not given explicitly as an extra.",
+   "example": "cli.main(args=[], standalone_mode=False, color=True) on a command with context_settings={'color': False} gives ctx.color == True.",
+   "used_by": [
+    "R1",
+    "R10"
+   ]
+  },
+  {
+   "fact": "A child context is created with parent=ctx and the Group dispatch (and ctx.invoke(cmd)) makes sub-contexts whose parent is the calling context.",
+   "example": "Inside a command called through ctx.invoke(other), click.get_current_context().parent is the calling ctx.",
+   "used_by": [
+    "R9",
+    "R12"
+   ]
+  },
+  {
+   "fact": "After parsing, ctx.args holds the leftover tokens in order when the command allows extra args, and 'Got unexpected extra argument (x)' lists leftover tokens otherwise.",
+   "example": "A command with context_settings={'allow_extra_args': True} invoked with ['a','b'] has ctx.args == ['a','b'].",
+   "used_by": [
+    "R3"
+   ]
+  },
+  {
+   "fact": "The parser consumes the first '--' token and treats everything after it as positional, even if it looks like an option.",
+   "example": "A command with `@click.argument('x', nargs=-1)` invoked as ['a','--','--name'] gets x == ('a','--name').",
+   "used_by": [
+    "R4"
+   ]
+  },
+  {
+   "fact": "An attached option value `--name=@f` is a single argv token. A token '-' or '--' alone is not an option.",
+   "example": "['--name=@f'] sets name to '@f'.",
+   "used_by": [
+    "R3"
+   ]
+  },
+  {
+   "fact": "Values from envvar and default_map are not argv tokens: they are converted by the parameter type directly.",
+   "example": "An option with envvar='NAME' and env NAME='@f' yields the string '@f'.",
+   "used_by": [
+    "R3"
+   ]
+  },
+  {
+   "fact": "Group.no_args_is_help defaults to True unless invoke_without_command is set: an empty argv prints the group's help. Group.invoke without subcommand fails with 'Missing command.' when args are non-empty but contain no command.",
+   "example": "Group with no args run via CliRunner: output contains 'Usage:'.",
+   "used_by": [
+    "R3"
+   ]
+  },
+  {
+   "fact": "Context.to_info_dict() returns exactly the keys command, info_name, allow_extra_args, allow_interspersed_args, ignore_unknown_options, auto_envvar_prefix.",
+   "example": "set(ctx.to_info_dict()) == {'command','info_name','allow_extra_args','allow_interspersed_args','ignore_unknown_options','auto_envvar_prefix'}",
+   "used_by": [
+    "R2"
+   ]
+  },
+  {
+   "fact": "ShellComplete subclasses (BashComplete, ZshComplete, FishComplete, PowerShellComplete) are constructed as Cls(cli, ctx_args, prog_name, complete_var). get_completions(args, incomplete) returns CompletionItem objects with .value. Bash/zsh get_completion_args use args = COMP_WORDS words [1:COMP_CWORD] and incomplete = the word at index COMP_CWORD (or '' if none).",
+   "example": "BashComplete(cli, {}, 'prog', '_PROG_COMPLETE').get_completions(['--color'], 'r') returns items whose .value are the matching Choice values.",
+   "used_by": [
+    "R10",
+    "R11"
+   ]
+  },
+  {
+   "fact": "The env protocol: running cli.main(prog_name='prog') with env _PROG_COMPLETE=bash_complete, COMP_WORDS and COMP_CWORD set writes one 'plain,<value>' line per completion (bash format) to stdout and exits with code 0.",
+   "example": "CliRunner().invoke(cli, [], prog_name='prog', env={'_PROG_COMPLETE':'bash_complete','COMP_WORDS':'prog @f @f','COMP_CWORD':'2'})",
+   "used_by": [
+    "R10",
+    "R11"
+   ]
+  },
+  {
+   "fact": "Completion for an incomplete word that starts with an option prefix character, when no '--' is among the already-typed args, offers the command's option names that start with it. Otherwise, if the last typed arg is an option that takes a value, that option's type completes the value (Choice completes matching choices), otherwise the first argument without a value completes.",
+   "example": "get_completions([], '-') on a command with --color gives items including '--color' and '--help'.",
+   "used_by": [
+    "R10"
+   ]
+  },
+  {
+   "fact": "A parameter shell_complete callback is called as f(ctx, param, incomplete) and may return plain strings. The ctx is the context of the resolved (deepest) command.",
+   "example": "@click.argument('x', shell_complete=lambda ctx, p, inc: [inc]) echoes the incomplete word exactly.",
+   "used_by": [
+    "R9",
+    "R10"
+   ]
+  },
+  {
+   "fact": "In chain=True groups the remaining argv after the group's own options is split into several subcommand invocations, each creating a context with parent=group context.",
+   "example": "cli a x b y with chain=True runs a with arg x and then b with arg y.",
+   "used_by": [
+    "R12"
+   ]
+  },
+  {
+   "fact": "click.get_current_context() returns the context of the running command and ctx.find_root() returns the outermost context.",
+   "example": "In a result_callback, click.get_current_context().find_root() is the context created by main().",
+   "used_by": [
+    "R9"
+   ]
+  }
+ ],
+ "traps": [
+  "Cycle detection with a global visited set wrongly rejects `cli @a @a` or two files including the same third file. The cycle must be defined by the current include stack, and the message must list the whole stack from the outermost file.",
+  "'--' must stop expansion globally (rest of the current file, of all including files and of the argv), not only inside the file where it appears. With prefix '-' the exact token '--' must be checked before the escape rule and the file-token rule. Files named after '--' are never opened.",
+  "Relative include paths resolve against the directory of the INCLUDING file, not the cwd or the top-level file's directory.",
+  "In completion, expanding in one place and then again inside make_context double-expands tokens: '@@x' would become the literal '@x' and then be read as file 'x', and the files would be read twice. Completion must also use the expanded args for the '--' check and last-option check.",
+  "The incomplete word must be identified by its position (COMP_CWORD), not by text equality, so an earlier identical '@f' is still expanded. The incomplete word itself is never expanded or escape-processed.",
+  "The read cache and ctx.response_files must be per invocation. A module-level cache goes stale when a file changes between two CliRunner.invoke calls, and a response_files list that is not shared by child contexts breaks chain/group visibility.",
+  "no_args_is_help must be decided on the unexpanded argv, so an empty response file under a Group gives 'Missing command.', not help.",
+  "Completion errors have a single rule: get_completions returns [] for ResponseFileError, but outside completion resilient_parsing=True must not swallow the error.",
+  "Option values may span the file boundary, so files must be expanded into one flat argv before parsing, not parsed separately.",
+  "The feature must not add module-level imports that break tests/test_imports.py (for example shlex, io or glob at import time) and must not emit warnings (filterwarnings=error)."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ]
+}

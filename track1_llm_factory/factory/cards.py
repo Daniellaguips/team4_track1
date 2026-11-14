@@ -111,7 +111,11 @@ CARDS = {
         "shell completion: recursive includes resolved relative to the including file, a cycle error "
         "naming the include stack, '--' stops expansion, the incomplete word being completed is never "
         "expanded, each file read exactly once per invocation, the same file may be included twice "
-        "non-recursively. ctx.invoke/ctx.forward are unchanged (N/A).",
+        "non-recursively. ctx.invoke/ctx.forward are unchanged (N/A). Completion follows UNCHANGED click "
+        "8.5.1 precedence for an option-looking incomplete word; response-file reader errors during completion "
+        "are handled by ONE stated rule (no contradicting 'never escapes' rule); token-occurrence identity is "
+        "defined by position in the original argv. The exact token '--' is NEVER a response-file token, "
+        "whatever the configured prefix.",
         "shape": "one semantic feature on two distinct execution paths (parse + completion) with recursion and I/O state",
         "ground": ["src/click/core.py", "src/click/parser.py", "src/click/shell_completion.py", "src/click/__init__.py"],
         "p2p": ["tests/test_basic.py", "tests/test_parser.py", "tests/test_shell_completion.py",
@@ -124,7 +128,14 @@ CARDS = {
         "suppressed when its own value came from CLI/env/default_map, falsey values are real values, "
         "cycle errors name the cycle, computed once per context, and NEVER evaluated while rendering "
         "--help or during shell completion. ParameterSource reports a new DEPENDENT source without "
-        "renumbering existing members.",
+        "renumbering existing members. MUST define: resilient parsing evaluates nothing and leaves explicitly "
+        "resolved values untouched; with a cycle in resilient mode, callbacks run in declaration order ignoring "
+        "edges; dependents receive a fresh kwargs mapping of original values (no deep copy); invalid "
+        "depends_on containers and duplicate dependency names raise a stated error; retry semantics after "
+        "default_from raises on the same Context are stated. Callback multiplicity of ordinary and prompted "
+        "parameters stays EXACTLY as in click 8.5.1 (a prompt may call a callback more than once); only "
+        "computed non-prompt dependents promise exactly-once. Duplicate storage names involving a dependent "
+        "are rejected with a stated error.",
         "shape": "cross-parameter dependency resolution across parse, help and completion paths",
         "ground": ["src/click/core.py", "src/click/shell_completion.py", "src/click/decorators.py", "src/click/__init__.py"],
         "p2p": ["tests/test_options.py", "tests/test_defaults.py", "tests/test_basic.py",

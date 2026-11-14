@@ -1,0 +1,267 @@
+{
+ "feature": "argv_completion: opt-in response-file (@file) expansion shared by normal parsing and shell completion",
+ "summary": "A root command can opt in (Context/context_settings/main extras) to response-file expansion. A token such as '@args.txt' is replaced in place by the tokens listed in that file. Includes are recursive, resolved relative to the including file, protected against cycles, stopped by '--', and read at most once per invocation. The same expansion is applied to the 'args' that shell completion reasons about, but never to the incomplete word. Failures raise a UsageError while parsing; under resilient parsing (completion) one rule keeps the failing token as a literal instead.",
+ "public_api": [
+  "click.Context(..., response_file_prefix=None, response_file_reader=None): two new keyword parameters appended after all existing ones, exposed as same-named attributes",
+  "Command.context_settings / Command.main(**extra) / Command.make_context(**extra) / ShellComplete(cli, ctx_args, ...) accept response_file_prefix and response_file_reader through the existing extra-kwargs mechanism",
+  "click.expand_response_files(args, prefix, reader=None, *, resilient=False) -> list[str]",
+  "UsageError messages: \"Could not read response file {path!r}.\" and \"Response file cycle detected: {stack}\""
+ ],
+ "keywords": [
+  "response_file_prefix",
+  "response_file_reader",
+  "expand_response_files",
+  "Response file cycle detected",
+  "Could not read response file",
+  "response_file_prefix must be a non-empty string."
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "Opt-in configuration. Context gains two optional keyword parameters, response_file_prefix (str or None, default None) and response_file_reader (callable taking a path string and returning the file's text as str, or None meaning 'read the file as UTF-8 text'). They are stored on the context under the same attribute names. When a context is created with a parent and the parameter is None, the attribute is inherited from the parent (like terminal_width). With response_file_prefix None, no expansion ever happens and every pre-existing behavior is byte-identical: '@x' is an ordinary token, Context.to_info_dict() has exactly its previous keys, and the existing positional parameter order of Context.__init__ is unchanged. The settings can be supplied through Command.context_settings, Command.main(**extra), Command.make_context(**extra) and the ctx_args of a ShellComplete instance. An explicit extra overrides context_settings, as for every other context setting.",
+   "inputs": "response_file_prefix: str or None; response_file_reader: callable(str) -> str, or None",
+   "output": "Context attributes ctx.response_file_prefix and ctx.response_file_reader (None when neither given nor inherited)",
+   "errors": "ValueError('response_file_prefix must be a non-empty string.') when the prefix is '' (raised by Context construction and by click.expand_response_files)",
+   "precedence": "Explicit constructor/extra value > context_settings value > value inherited from parent > None.",
+   "bounds": "Any non-empty string is a valid prefix, including multi-character ones and '-'.",
+   "state": "None. The attributes are plain configuration."
+  },
+  {
+   "id": "R2",
+   "text": "When expansion happens. Expansion is performed exactly once per invocation, by make_context, and only when the context being created has no parent and its response_file_prefix is not None. The whole args list is expanded before parse_args runs, and it is expanded with resilient=ctx.resilient_parsing and ctx.response_file_reader. Contexts that have a parent (subcommands, nested groups, chained commands) never expand. A subcommand's own context_settings prefix is inert, and the tokens it receives are already expanded. A Command subclass overriding parse_args receives the expanded list at the root and the already-expanded tokens at lower levels. The list passed in by the caller is never mutated. Interaction with no_args_is_help: it is evaluated on the expanded list, so '@empty.txt' (a file with no tokens) behaves exactly like an invocation with no arguments (same output and exit code as []). Interaction with R10: errors are only raised when ctx.resilient_parsing is false. A UsageError raised here has the new root context attached, so in standalone mode it exits with code 2 and prints 'Error: <message>'.",
+   "inputs": "argv list handed to main()/make_context() of a root command",
+   "output": "parse_args sees the expanded token list; ctx.args and parameter values reflect expanded tokens",
+   "errors": "click.UsageError per R8/R9 (exact class UsageError, not a subclass)",
+   "precedence": "Expansion runs before no_args_is_help and before any option parsing.",
+   "bounds": "A direct sub.make_context('sub', args) with no parent is itself a root and expands only if its own prefix is set.",
+   "state": "Per-invocation state is created inside this single expansion call (see R7). Nothing is shared between invocations."
+  },
+  {
+   "id": "R3",
+   "text": "Token classification. A token is a response-file token iff the prefix is set, token.startswith(prefix), len(token) > len(prefix), and token != '--'. The file name is token[len(prefix):], taken verbatim with no stripping. Any other token, including the bare prefix (for example '@'), '--', and tokens such as '--name=@x', is literal and passed through unchanged. Every token of argv is classified, including option values and subcommand arguments ('--name @x' expands '@x'). The exact token '--' is never a response-file token, even when the prefix is '-' or '--'. With prefix '-', the token '-x' is a response-file token for file 'x', and '-' alone is literal. click.expand_response_files(args, prefix, reader=None, *, resilient=False) applies R3-R10 to a sequence and returns a new list. It uses a fresh cache per call, raises the same UsageErrors with ctx None, and does not mutate its input.",
+   "inputs": "token strings",
+   "output": "classification (literal vs. file token with a name)",
+   "errors": "none",
+   "precedence": "R6 ('--') is checked before R3: '--' is never classified as a file token and additionally stops expansion.",
+   "bounds": "len(token) == len(prefix) is literal (exclusive bound). len(token) == len(prefix)+1 is a file token.",
+   "state": "none"
+  },
+  {
+   "id": "R4",
+   "text": "File syntax and recursion. The file text is split into lines at '\\n'. Each line is stripped of leading/trailing whitespace (str.strip, so a trailing '\\r' disappears). Empty lines are skipped, and lines whose stripped text starts with '#' are skipped as comments (so a token beginning with '#' cannot be written in a file). Each remaining line is exactly one token, with internal whitespace preserved ('Al Ice' is one token, no shell-style quoting or escapes). The tokens replace the response-file token in place, preserving order. File tokens obtained from a file (after stripping) are classified by R3 and expanded recursively, depth first, in place. Expanded output is never rescanned by a second pass, so a literal token that reached the output (after '--', or kept by R10) is not expanded later.",
+   "inputs": "file text",
+   "output": "ordered token list spliced at the position of the response-file token",
+   "errors": "none (see R8/R9 for include errors)",
+   "precedence": "none",
+   "bounds": "A file with no non-comment non-blank lines contributes zero tokens. Nesting depth is unbounded apart from the cycle rule.",
+   "state": "none"
+  },
+  {
+   "id": "R5",
+   "text": "Path strings and the reader contract. The reader is called with a single path string. For a token in the original argv the string is the file name exactly as written. For a token found inside a file reached by path string P, the string is the name as written if it is absolute (os.path.isabs) or if os.path.dirname(P) == '', else os.path.join(os.path.dirname(P), name). There is no normalisation of the string passed to the reader. Includes are therefore resolved relative to the including file, never to the current directory. Example: argv '@cfg/a.txt', and cfg/a.txt contains '@b.txt', so the reader is called with 'cfg/a.txt' then 'cfg/b.txt'. The default reader opens the path and decodes it as UTF-8. A reader signals a read failure by raising OSError (including FileNotFoundError) or UnicodeDecodeError. Any other exception raised by a reader propagates unchanged in every mode, including under resilient parsing.",
+   "inputs": "response-file name, path string of the including file",
+   "output": "path string handed to the reader",
+   "errors": "none here (read failures are R9)",
+   "precedence": "none",
+   "bounds": "Top-level tokens (not inside any file) are always passed to the reader as written, even if relative.",
+   "state": "none"
+  },
+  {
+   "id": "R6",
+   "text": "'--' stops expansion. The first '--' token met while walking the stream, whether it is in argv or inside any file at any depth, is emitted literally and ends all expansion. Every later token is emitted literally with no reader call and no classification. This covers the rest of that file and the remainder of every enclosing file and of argv. The stop does not end at the end of the file that contained '--'. The '--' token itself stays in the output. Interaction with R9/R8: a missing file or a cycle after '--' never raises and the reader is never called for it. Interaction with R3: it holds whatever the prefix is.",
+   "inputs": "token stream",
+   "output": "literal tail after '--'",
+   "errors": "none",
+   "precedence": "R6 beats R3, R7, R8 and R9 for every token after '--'.",
+   "bounds": "Tokens before the '--' in the same file and in outer files that precede the including token are expanded normally.",
+   "state": "A single 'stopped' flag per expansion call, reset on the next call."
+  },
+  {
+   "id": "R7",
+   "text": "Each file is read exactly once per invocation. A file's identity is os.path.normcase(os.path.abspath(path)). Spellings such as 'a.txt' and 'sub/../a.txt' are the same file, with no symlink resolution. Within one invocation the reader is called at most once per identity, and its text (or its failure, see R10) is remembered. The same file may be included any number of times as long as it is not currently being expanded. A diamond (a includes b and c, and both include d), or '@x.txt @x.txt' in argv, is NOT a cycle: x.txt's tokens appear twice and the reader is called once. An invocation is one root make_context call, one click.expand_response_files call, or one ShellComplete.get_completions / complete() call. A shell completion run never reads a file twice, even though it both resolves the context and later inspects the args. Nothing is cached across invocations: a second CliRunner.invoke or get_completions call calls the reader again, so edited files are seen.",
+   "inputs": "path strings",
+   "output": "reader call counts",
+   "errors": "none",
+   "precedence": "R8 (cycle check) is evaluated before the cache lookup and before any reader call.",
+   "bounds": "Exactly one reader call per distinct identity per invocation, never zero for an expanded file and never two.",
+   "state": "Invocation-scoped cache, created fresh at the start of each invocation and discarded at its end. It must not be module-level or attached to the command or context class."
+  },
+  {
+   "id": "R8",
+   "text": "Cycle detection. If a response-file token names a file whose identity (R7) is currently open, i.e. it is the file being expanded or one of the files that transitively included it, the invocation fails with a UsageError whose message is 'Response file cycle detected: ' + ' -> '.join(stack). The stack is the path strings (R5) of the open files from outermost to innermost, followed by the offending path string. Example: argv '@a.txt', a includes b, b includes a gives 'Response file cycle detected: a.txt -> b.txt -> a.txt'. With a self-include it is 'a.txt -> a.txt'. With directories, a file 'd/a.txt' that includes 'b.txt', which includes 'a.txt', gives 'd/a.txt -> d/b.txt -> d/a.txt'. The reader is not called for the offending include. Interaction with R7: a file included twice sequentially is not a cycle, and only files on the current include chain count.",
+   "inputs": "include chain",
+   "output": "UsageError",
+   "errors": "click.UsageError('Response file cycle detected: <p1> -> <p2> -> ... -> <p1-spelling>')",
+   "precedence": "Checked before the cache and before the reader (R7). Suppressed by R6 after '--'. Converted to a literal token by R10 under resilient parsing.",
+   "bounds": "The stack always has at least two entries (a self-include is 'x -> x').",
+   "state": "The open-file stack exists only during the expansion call."
+  },
+  {
+   "id": "R9",
+   "text": "Read failure. If the reader raises OSError or UnicodeDecodeError (R5), expansion fails with UsageError \"Could not read response file {path!r}.\", where path is the path string given to the reader (repr formatting, so quoted). Failures are reported in expansion order. The first failing include aborts, and no later file is read (the reader is not called for any file after it). Example: reader raising FileNotFoundError for 'nope.txt' yields \"Could not read response file 'nope.txt'.\" and, via main in standalone mode, exit code 2 with 'Error: Could not read response file 'nope.txt'.' in the output.",
+   "inputs": "reader exceptions",
+   "output": "UsageError",
+   "errors": "click.UsageError(\"Could not read response file 'nope.txt'.\")",
+   "precedence": "Suppressed by R6 after '--'. Converted to a literal token by R10 under resilient parsing. The cycle check R8 comes first for the same token.",
+   "bounds": "A reader returning '' is a success (zero tokens), not a failure.",
+   "state": "none"
+  },
+  {
+   "id": "R10",
+   "text": "ONE rule for failures under resilient parsing. When ctx.resilient_parsing is true (as it always is during shell completion), or when resilient=True is passed to click.expand_response_files, R8 and R9 failures never raise. The token that failed is left in the output as a literal token, with its original prefix and text (for a cycle, the include token that would close the cycle), and expansion continues with the next token. A failed identity is remembered for the rest of the invocation, so the reader is not called again for it, even if the same file is named again. Exceptions the reader raises that are not OSError/UnicodeDecodeError are not covered by this rule and propagate (R5). This is the only rule about failures during completion. There is no separate 'completion never raises' rule.",
+   "inputs": "ctx.resilient_parsing or the resilient flag",
+   "output": "literal failed tokens; continued expansion",
+   "errors": "none for R8/R9 failures",
+   "precedence": "Overrides R8 and R9 only. Does not override R5 propagation.",
+   "bounds": "A literal failed token can then be consumed by parsing as an ordinary token (for example as an argument value).",
+   "state": "The remembered failure lives in the same invocation-scoped cache as R7."
+  },
+  {
+   "id": "R11",
+   "text": "Shell completion uses the same expansion. For ShellComplete.get_completions(args, incomplete) (and therefore complete() for bash, zsh, fish and powershell), the root context is created resilient, the args are expanded by R2/R10, and every decision that previously looked at args uses the expanded list. That covers whether '--' is present, whether the last expanded token is an option waiting for its value, and which argument is next. Example: argv ['@opts.txt'] where opts.txt holds '--name' completes the values of --name for incomplete 'al'. If opts.txt holds '--', an incomplete word '--na' is not treated as an option name, because the unchanged precedence below applies. The incomplete word itself is never expanded, never altered, and never counted as a read. It is passed on exactly as given, so an incomplete '@a.txt' reaches the parameter's shell_complete as '@a.txt' and a.txt is not read for it. Token-occurrence identity is the position in the original argv: only the word at the incomplete position is exempt. An earlier token with the same text is a separate occurrence and is expanded. For bash/zsh/powershell the args are the words before the cursor word. For fish the existing behaviour is unchanged: the single last arg is removed when it equals the incomplete word, and earlier equal tokens stay and are expanded. Unchanged click 8.5.1 precedence for an option-looking incomplete word: if the incomplete word starts with one of the context's option prefix characters and '--' is not in the expanded args, the command's option names are completed. This holds even when the last expanded token is an option that wants a value, and even when the response-file prefix is '-'. Otherwise the existing rules apply, in the same order as before. Interaction with R7: one get_completions call reads each file once. Interaction with R2: completion expands only at the root context, so sub-contexts created while resolving the command path do not re-read.",
+   "inputs": "args (list[str]), incomplete (str), ctx_args containing response_file_prefix/response_file_reader",
+   "output": "list of CompletionItem computed from expanded args; incomplete unchanged",
+   "errors": "none from response files (R10). Non-OSError reader exceptions propagate (R5).",
+   "precedence": "1) '--' in expanded args decides whether an option-looking incomplete is option-name completion (unchanged); 2) otherwise an option awaiting a value (by expanded args); 3) otherwise the first unfilled argument; 4) otherwise subcommand names. Response files change only which tokens feed this order, not the order.",
+   "bounds": "Incomplete '' is allowed and never expanded. An incomplete equal to a prefix-only word like '@' is just a literal.",
+   "state": "One invocation-scoped cache per get_completions/complete() call (R7); two calls read the file twice."
+  },
+  {
+   "id": "R12",
+   "text": "ROUTE MATRIX. main(): same: expansion by R2 at the root context. In standalone mode a failure exits with code 2 and prints 'Error: <message>'. With standalone_mode=False the UsageError propagates and its .message is the exact string. CliRunner.invoke: same as main(), as it calls main. Each invoke is a new invocation: the reader is called again and nothing is cached across invokes. ctx.invoke(cmd, ...): N/A, because it parses no argv, so it never examines tokens, never calls a reader and never expands, even if the prefix is set. ctx.forward(cmd, ...): N/A for the same reason. Nested groups: same for tokens, which are expanded once by the root for every level (tokens in subcommand and sub-subcommand positions included); different for settings: a nested group's or subcommand's own prefix/reader (context_settings or constructor) has no effect, with no expansion and no reader call at that level. chain=True groups: same: the root expands the whole argv before the chain is split, so one file may contribute tokens for several chained commands (a file holding 'a', '--x', '1', 'b' feeds both commands in order), and chained sub-contexts do not expand again. Shell completion path: same expansion with the resilient behaviour of R10/R11 and the incomplete word exempt. A group's own re-parse for an unknown option-looking first token, and the creation of every sub-context, do not re-expand and do not re-read.",
+   "inputs": "entry points listed",
+   "output": "as stated per route",
+   "errors": "as R8/R9 for main/CliRunner; none for N/A routes",
+   "precedence": "none beyond R2 ('root only').",
+   "bounds": "none",
+   "state": "Reset between separate CliRunner.invoke / main / get_completions calls (new cache each time). A single invocation, even a chain, shares one cache."
+  }
+ ],
+ "relied_on": [
+  {
+   "fact": "Extra keyword arguments given to Command.main() are forwarded to the Context constructor (via make_context), and keys of Command.context_settings that are not already in those extras are merged in.",
+   "example": "click.Command('c', context_settings={'help_option_names': ['-h']}) makes '-h' print help; cli.main(['x'], standalone_mode=False, obj=5) gives the context obj 5.",
+   "used_by": [
+    "R1",
+    "R2"
+   ]
+  },
+  {
+   "fact": "A UsageError reaching main() in standalone mode makes the process exit with code 2 and prints a line 'Error: <message>' (CliRunner output includes it). With standalone_mode=False it propagates, and exc.message is the message string.",
+   "example": "CliRunner().invoke(cli, ['--bad']) -> result.exit_code == 2 and 'Error: No such option: --bad' in result.output",
+   "used_by": [
+    "R2",
+    "R8",
+    "R9",
+    "R12"
+   ]
+  },
+  {
+   "fact": "A tokens after the first '--' is positional: the parser consumes the '--' itself and passes everything after it on as arguments even if it looks like an option or starts with '@'. A click.argument with nargs=-1 yields a tuple of all remaining positional tokens in order.",
+   "example": "@click.command() @click.argument('files', nargs=-1) ... invoked with ['a', '--', '-x', '@y'] gives files == ('a', '-x', '@y')",
+   "used_by": [
+    "R3",
+    "R4",
+    "R6"
+   ]
+  },
+  {
+   "fact": "By default there is no response-file handling: '@x' is a plain token and is accepted as an ordinary argument value.",
+   "example": "invoking a command with a nargs=-1 argument and args ['@x.txt'] gives ('@x.txt',)",
+   "used_by": [
+    "R1",
+    "R3"
+   ]
+  },
+  {
+   "fact": "A Group does not interleave: the first non-option token after the group's own options names the subcommand, and all following tokens (options included) are passed to that subcommand's context.",
+   "example": "group with option --g and subcommand sub having option --n: ['--g', 'v', 'sub', '--n', '1'] runs sub with n == '1' and group g == 'v'",
+   "used_by": [
+    "R2",
+    "R12"
+   ]
+  },
+  {
+   "fact": "A chain=True group splits the remaining tokens among consecutive subcommands, each subcommand parsing its own options and passing leftover tokens on to the next command.",
+   "example": "chain group with commands a (option --x) and b (option --y): ['a', '--x', '1', 'b', '--y', '2'] runs a with x '1' then b with y '2'; return values go to the result callback as a list",
+   "used_by": [
+    "R12"
+   ]
+  },
+  {
+   "fact": "A Group with no_args_is_help (the default unless invoke_without_command is set) invoked with an empty args list prints its help and exits through NoArgsIsHelpError; the check uses the list it is given at parse time.",
+   "example": "CliRunner().invoke(grp, []).output equals the output for any other invocation that reaches parse_args with an empty list",
+   "used_by": [
+    "R2"
+   ]
+  },
+  {
+   "fact": "ctx.invoke(other_cmd, **kw) creates a sub-context for other_cmd without parsing any argv tokens and fills missing params from defaults; ctx.forward does the same with the current ctx.params.",
+   "example": "inside cli callback: ctx.invoke(sub, name='x') runs sub's callback with name='x' and parses nothing",
+   "used_by": [
+    "R12"
+   ]
+  },
+  {
+   "fact": "Sub-contexts created while resolving subcommands inherit settings from their parent, such as terminal_width, color and help_option_names, when not given explicitly.",
+   "example": "child = Context(cmd, parent=Context(cmd, terminal_width=50)); child.terminal_width == 50",
+   "used_by": [
+    "R1"
+   ]
+  },
+  {
+   "fact": "A Command subclass overriding parse_args(ctx, args) is called by make_context with the list it was handed, and the caller's original list object is not modified by make_context.",
+   "example": "class C(click.Command): def parse_args(self, ctx, args): seen.append(list(args)); return super().parse_args(ctx, args)",
+   "used_by": [
+    "R2"
+   ]
+  },
+  {
+   "fact": "Shell completion creates the root context with resilient_parsing=True via cli.make_context(prog_name, args.copy(), **ctx_args), where ctx_args are the extras given to the ShellComplete instance. In that mode parser UsageErrors (such as a missing required parameter or an unknown option) do not raise.",
+   "example": "BashComplete(cli, {}, 'prog', '_PROG_COMPLETE').get_completions(['--nope'], '') returns a list without raising",
+   "used_by": [
+    "R10",
+    "R11"
+   ]
+  },
+  {
+   "fact": "ShellComplete.get_completions(args, incomplete) returns CompletionItem objects with .value. If the incomplete word starts with an option prefix character and '--' is not in args, the command's option names (for example '--name' and '--help') starting with it are offered. Otherwise, if the last token of args is the name of a non-flag option, that option's shell_complete(ctx, param, incomplete) is used, and a callable returning strings becomes items with those values. Otherwise the first argument without a command-line value is completed, then subcommand names.",
+   "example": "@click.option('--name', shell_complete=lambda c, p, i: ['alice', 'albert']): get_completions(['--name'], 'al') -> values ['alice', 'albert']; get_completions(['--name'], '--') -> ['--name', '--help'] (option names win because the incomplete looks like an option)",
+   "used_by": [
+    "R11"
+   ]
+  },
+  {
+   "fact": "BashComplete/ZshComplete/PowerShellComplete take args as the words after the program name and before the cursor word (cwords[1:cword]) and the incomplete word as the word at the cursor (empty if past the end). FishComplete takes all words after the program name as args and the incomplete word from COMP_CWORD, then drops the last arg only if it equals the incomplete word.",
+   "example": "COMP_WORDS='prog @a @a', COMP_CWORD=2 (bash) gives args ['@a'] and incomplete '@a'; for fish with COMP_CWORD='@a' the last '@a' is dropped, leaving ['@a']",
+   "used_by": [
+    "R11"
+   ]
+  },
+  {
+   "fact": "Context.to_info_dict() returns exactly the keys command, info_name, allow_extra_args, allow_interspersed_args, ignore_unknown_options, auto_envvar_prefix.",
+   "example": "set(ctx.to_info_dict()) == {'command','info_name','allow_extra_args','allow_interspersed_args','ignore_unknown_options','auto_envvar_prefix'}",
+   "used_by": [
+    "R1"
+   ]
+  }
+ ],
+ "traps": [
+  "Expanding inside Command.parse_args (at every level) re-reads and re-expands for subcommands and for Group.resolve_command's re-parse, so a failed or literal '@x' token gets retried and the reader is called twice. Expansion must happen once, at the root, in make_context (R2, R7, R10).",
+  "Using a visited-set instead of the open-file stack for cycle detection wrongly rejects diamond includes and repeated '@x.txt @x.txt', while an open-stack that is not checked before the cache misses cycles (R7 vs R8).",
+  "Cache keyed by the spelled path string instead of normcase(abspath) reads 'a.txt' and 'sub/../a.txt' twice. A module-level or class-level cache returns stale text on the next CliRunner.invoke (R7).",
+  "'--' met inside an included file must stop expansion of the rest of the outer file and of argv too, not only of that file. With prefix '-' the token '--' must still not be a file token for file '-' (R6, R3).",
+  "Includes resolve against the including file's directory, not the cwd, and absolute names are untouched (R5).",
+  "Completion that expands args for the context but then feeds the raw args to the incomplete-word logic mis-detects '--' and option-awaiting-value. Completion that expands again for that purpose reads files twice (R11, R7).",
+  "The incomplete word must not be expanded, and an earlier identical-text token must still be expanded: identity is position, not text (R11).",
+  "A failed file under resilient parsing must stay a literal token and must be remembered, so it is not retried when named again (R10).",
+  "no_args_is_help must be judged after expansion (R2). The empty-name token '@' and exactly len(prefix) tokens stay literal (R3 bound)."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ]
+}

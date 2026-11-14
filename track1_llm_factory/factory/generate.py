@@ -53,7 +53,8 @@ class Calls:
             self.i += 1
             assert rec["stage"] == stage, f"replay mismatch: {rec['stage']} != {stage}"
             return rec["response"]
-        return llm.call(self.tel, stage, system, user)
+        model = __import__("os").environ.get("JUDGE_MODEL") if stage == "fairness_judge" else None
+        return llm.call(self.tel, stage, system, user, model=model)
 
 
 # ---------- repo helpers ----------
@@ -255,7 +256,13 @@ def build(card_id: str, seed: int, replay: bool = False, harder_than: str | None
             feature=prev_design.get("feature"), resolved=verdict["resolve_at_3"],
             rules="\n".join(f"- {r.get('id')}: {r.get('text')}" for r in prev_design.get("rules", [])),
             prior_files=prior_files(harder_than))
-    design = llm.extract_json(ask("design", system, design_prompt))
+    dfile = __import__("os").environ.get("FACTORY_DESIGN_FILE")
+    if dfile:
+        # Repaired contract supplied from a reviewed design (disclosed manual/agent intervention).
+        design = json.loads(Path(dfile).read_text())
+        lineage = dict(lineage or {}, design_from=dfile)
+    else:
+        design = llm.extract_json(ask("design", system, design_prompt))
     (run_dir / "design.json").write_text(json.dumps(design, indent=1))
     n_rules = len(design.get("rules", []))
     gate = novelty_hits(design)
