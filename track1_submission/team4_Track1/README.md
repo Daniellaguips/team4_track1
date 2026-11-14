@@ -220,11 +220,13 @@ index ≈35 s). Build window used: ≈11:16–12:20 local for the pipeline, task
 
 ## Team
 
-Team **team4** (5 members, in person). Each member, please add or correct your line:
+Team **team4** (4 members, in person):
 
 - **Kyle Tian**: blueprint factory, 5 tasks, gates and validation evidence (built with an AI coding
   agent operating on his workspace).
 - **Daniella**: plan (co-written with Claude and Codex, independently rated by Claude Fable 5.2
   and Codex), the Haiku benchmark of all 5 tasks via the organizer OpenRouter key, hardness research,
-  and a separate LLM-driven generator path (not part of this package).
-- **TODO**: remaining three members.
+  submission packaging (Docker verification, demo script, slides) and a separate LLM-driven generator
+  path with a difficulty feedback loop (`track1_llm_factory/` in the repo).
+- **Arian Berisha**: team member.
+- **Ibrahim Faruquee**: team member.
