@@ -228,5 +228,8 @@ Team **team4** (4 members, in person):
   and Codex), the Haiku benchmark of all 5 tasks via the organizer OpenRouter key, hardness research,
   submission packaging (Docker verification, demo script, slides) and a separate LLM-driven generator
   path with a difficulty feedback loop (`track1_llm_factory/` in the repo).
-- **Arian Berisha**: team member.
+- **Arian Berisha**: researched where Haiku-class agents fail on feature tasks (`HaikuSolver.md`:
+  short behaviour-only specs, parallel routes, preservation rules, fairness pitfalls) and wrote the
+  next-generation v7 prompt set for the LLM generator (`PROMPTS.md`); both in the repo under
+  `track1_llm_factory/plan/`.
 - **Ibrahim Faruquee**: team member.
