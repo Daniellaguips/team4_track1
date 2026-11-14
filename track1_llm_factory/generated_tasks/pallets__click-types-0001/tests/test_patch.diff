@@ -1,0 +1,605 @@
+diff --git a/tests/test_types/test_click_duration.py b/tests/test_types/test_click_duration.py
+new file mode 100644
+index 0000000..772dbfd
+--- /dev/null
++++ b/tests/test_types/test_click_duration.py
+@@ -0,0 +1,599 @@
++import json
++import re
++import subprocess
++import sys
++import warnings
++from datetime import timedelta
++
++import pytest
++from click.testing import CliRunner
++
++import click
++from click.types import ParamType
++
++
++def Duration(*args, **kwargs):
++    # Resolved lazily so that a missing ``click.Duration`` fails each test
++    # individually instead of breaking collection of the whole module.
++    return click.Duration(*args, **kwargs)
++
++
++def _fail(dur, value, message):
++    with pytest.raises(click.BadParameter) as ei:
++        dur(value)
++    assert ei.value.message == message
++
++
++def _invalid(value):
++    return f"{value!r} is not a valid duration."
++
++
++# ---------------------------------------------------------------- R1
++
++
++@pytest.mark.parametrize(
++    ("value", "expected"),
++    [
++        ("1h30m", 5400),
++        ("  2w 3d 4h 5m 6s ", 1483506),
++        ("1.1m", 66),
++        ("0.1h0.2m", 372),
++        ("0s", 0),
++        ("007s", 7),
++        ("0h0m", 0),
++        ("1h\t30m", 5400),
++        ("1w1d", 691200),
++        ("1h   30m", 5400),
++    ],
++)
++def test_r1_valid_strings(value, expected):
++    result = Duration()(value)
++    assert result == expected
++    assert type(result) is int
++
++
++@pytest.mark.parametrize(
++    "value",
++    [
++        "",
++        "   ",
++        "-1h",
++        "+1h",
++        ".5h",
++        "1.h",
++        "1 h",
++        "1H",
++        "5y",
++        "90",
++        "1.5",
++        "h",
++        "1h,30m",
++        "\u0663h",
++        "1h\n30m",
++        "1h\r30m",
++        "1h30",
++    ],
++)
++def test_r1_invalid_strings(value):
++    _fail(Duration(), value, _invalid(value))
++
++
++def test_r1_length_limit_exact_256_accepted():
++    value = "0" * 255 + "s"
++    assert len(value) == 256
++    assert Duration()(value) == 0
++    padded = "  " + value + "\t"
++    assert Duration()(padded) == 0
++
++
++def test_r1_length_limit_257_rejected():
++    value = "0" * 256 + "s"
++    assert len(value) == 257
++    _fail(Duration(), value, _invalid(value))
++
++
++def test_r1_error_uses_original_unstripped_repr():
++    value = "  5y  "
++    _fail(Duration(), value, "'  5y  ' is not a valid duration.")
++
++
++def test_r1_grammar_checked_before_other_rules():
++    # Invalid grammar wins over everything else.
++    value = "9999999999y"
++    _fail(Duration(max=1), value, _invalid(value))
++
++
++# ---------------------------------------------------------------- R2
++
++
++def test_r2_int_and_timedelta_inputs():
++    assert Duration()(90) == 90
++    assert type(Duration()(90)) is int
++    assert Duration()(0) == 0
++    assert Duration()(timedelta(seconds=90)) == 90
++    assert type(Duration()(timedelta(seconds=90))) is int
++    assert Duration(as_timedelta=True)(90) == timedelta(seconds=90)
++    assert Duration(as_timedelta=True)(timedelta(seconds=90)) == timedelta(seconds=90)
++    assert Duration(as_timedelta=True)(0) == timedelta(0)
++
++
++@pytest.mark.parametrize(
++    "value",
++    [
++        -1,
++        True,
++        False,
++        1.5,
++        b"1h",
++        [],
++        timedelta(seconds=-1),
++        timedelta(days=-1),
++    ],
++)
++def test_r2_invalid_types_and_negatives(value):
++    _fail(Duration(), value, _invalid(value))
++    _fail(Duration(as_timedelta=True), value, _invalid(value))
++
++
++def test_r2_timedelta_with_microseconds_in_int_mode():
++    value = timedelta(microseconds=500000)
++    _fail(Duration(), value, f"{value!r} is not a whole number of seconds.")
++    assert Duration(as_timedelta=True)(value) == value
++
++
++def test_r2_none_returns_none():
++    assert Duration()(None) is None
++    assert Duration(as_timedelta=True)(None) is None
++
++
++# ---------------------------------------------------------------- R3
++
++
++@pytest.mark.parametrize(
++    ("value", "expected"),
++    [("1h30m", 5400), ("2w 3d 4h 5m 6s", 1483506)],
++)
++def test_r3_valid_order(value, expected):
++    assert Duration()(value) == expected
++
++
++@pytest.mark.parametrize("value", ["1m1h", "1s1m", "1m1h1h", "1d1w", "1h2w"])
++def test_r3_order_error(value):
++    _fail(
++        Duration(),
++        value,
++        f"{value!r} has units out of order; use largest to smallest.",
++    )
++
++
++@pytest.mark.parametrize(
++    ("value", "unit"),
++    [("1h1h", "h"), ("1h30m1h", "h"), ("1s1s", "s"), ("1d2h3d", "d")],
++)
++def test_r3_duplicate_error(value, unit):
++    _fail(Duration(), value, f"{value!r} repeats the unit {unit!r}.")
++
++
++def test_r3_duplicate_message_example():
++    _fail(Duration(), "1h1h", "'1h1h' repeats the unit 'h'.")
++
++
++def test_r3_order_checked_before_overflow():
++    value = "1s9999999d"
++    _fail(
++        Duration(),
++        value,
++        f"{value!r} has units out of order; use largest to smallest.",
++    )
++
++
++# ---------------------------------------------------------------- R4
++
++
++@pytest.mark.parametrize(
++    ("value", "expected"),
++    [("1.5h", 5400), ("0.1h0.2m", 372), ("1.1m", 66), ("1." + "0" * 50 + "s", 1)],
++)
++def test_r4_exact_int(value, expected):
++    assert Duration()(value) == expected
++
++
++def test_r4_exact_timedelta():
++    assert Duration(as_timedelta=True)("0.5s") == timedelta(microseconds=500000)
++    assert Duration(as_timedelta=True)("0.000001s") == timedelta(microseconds=1)
++    assert Duration(as_timedelta=True)("1.1m") == timedelta(seconds=66)
++
++
++@pytest.mark.parametrize("as_td", [False, True])
++def test_r4_long_decimals_not_rounded(as_td):
++    value = "1." + "0" * 100 + "1s"
++    kind = "microseconds" if as_td else "seconds"
++    _fail(
++        Duration(as_timedelta=as_td),
++        value,
++        f"{value!r} is not a whole number of {kind}.",
++    )
++
++
++# ---------------------------------------------------------------- R5
++
++
++def test_r5_int_mode_whole_seconds():
++    _fail(Duration(), "0.5s", "'0.5s' is not a whole number of seconds.")
++    assert Duration()("1.5h") == 5400
++
++
++def test_r5_timedelta_mode_whole_microseconds():
++    result = Duration(as_timedelta=True)("0.5s")
++    assert isinstance(result, timedelta)
++    assert result == timedelta(microseconds=500000)
++    assert Duration(as_timedelta=True)("1.5h") == timedelta(seconds=5400)
++
++
++@pytest.mark.parametrize(
++    ("as_td", "kind"), [(False, "seconds"), (True, "microseconds")]
++)
++def test_r5_sub_microsecond_fails_both_modes(as_td, kind):
++    _fail(
++        Duration(as_timedelta=as_td),
++        "0.0000005s",
++        f"'0.0000005s' is not a whole number of {kind}.",
++    )
++
++
++def test_r5_precedence_over_range():
++    _fail(
++        Duration(min=60),
++        "59.5s",
++        "'59.5s' is not a whole number of seconds.",
++    )
++    _fail(
++        Duration(min=60, as_timedelta=True),
++        "59.5s",
++        "'59.5s' is out of range: expected x>=60.",
++    )
++
++
++# ---------------------------------------------------------------- R6
++
++
++def test_r6_cap_inclusive():
++    assert Duration()("3650d") == 315360000
++    assert Duration()(315360000) == 315360000
++    assert Duration(as_timedelta=True)(timedelta(days=3650)) == timedelta(days=3650)
++
++
++@pytest.mark.parametrize(
++    "value",
++    ["3651d", 315360001, timedelta(seconds=315360001), "3650d1s", "3650d0.5s"],
++)
++def test_r6_over_cap(value):
++    msg = f"{value!r} is too large; the maximum is 315360000 seconds."
++    _fail(Duration(), value, msg)
++    _fail(Duration(as_timedelta=True), value, msg)
++
++
++def test_r6_precedes_range():
++    _fail(
++        Duration(max=10),
++        "3651d",
++        "'3651d' is too large; the maximum is 315360000 seconds.",
++    )
++
++
++# ---------------------------------------------------------------- R7
++
++
++@pytest.mark.parametrize(
++    ("kwargs", "value", "described"),
++    [
++        ({"min": 60, "max": 3600}, "30s", "60<=x<=3600"),
++        ({"min": 60, "max": 3600}, "3601s", "60<=x<=3600"),
++        ({"min": 60, "min_open": True}, "1m", "x>60"),
++        ({"min": 60}, "59s", "x>=60"),
++        ({"max": 3600}, "3601s", "x<=3600"),
++        ({"max": 3600, "max_open": True}, "1h", "x<3600"),
++        ({"min": 60, "max": 3600, "min_open": True, "max_open": True}, "1m", "60<x<3600"),
++        ({"min": 60, "max": 3600, "min_open": True, "max_open": True}, "1h", "60<x<3600"),
++        ({"min": 60, "max": 3600, "max_open": True}, "1h", "60<=x<3600"),
++    ],
++)
++def test_r7_out_of_range(kwargs, value, described):
++    _fail(
++        Duration(**kwargs),
++        value,
++        f"{value!r} is out of range: expected {described}.",
++    )
++
++
++def test_r7_message_example():
++    _fail(
++        Duration(min=60, max=3600),
++        "30s",
++        "'30s' is out of range: expected 60<=x<=3600.",
++    )
++
++
++def test_r7_inclusive_bounds_accept():
++    assert Duration(min=60)("1m") == 60
++    assert Duration(max=3600)("1h") == 3600
++    assert Duration(min=60, max=60)("1m") == 60
++    assert Duration(min=60, max=3600)("30m") == 1800
++
++
++def test_r7_int_and_timedelta_inputs_report_original_repr():
++    td = timedelta(seconds=30)
++    _fail(Duration(min=60), 30, "30 is out of range: expected x>=60.")
++    _fail(Duration(min=60), td, f"{td!r} is out of range: expected x>=60.")
++
++
++def test_r7_open_without_bound_has_no_effect():
++    assert Duration(min_open=True)("0s") == 0
++    assert Duration(max=100, min_open=True)("0s") == 0
++    assert Duration(min=0, max_open=True)("5s") == 5
++
++
++def test_r7_bounds_are_seconds_in_timedelta_mode():
++    assert Duration(min=60, as_timedelta=True)("1m") == timedelta(minutes=1)
++    _fail(
++        Duration(max=60, as_timedelta=True),
++        "60.5s",
++        "'60.5s' is out of range: expected x<=60.",
++    )
++
++
++# ---------------------------------------------------------------- R8
++
++
++@pytest.mark.parametrize(
++    "kwargs",
++    [
++        {"min": -1},
++        {"max": -1},
++        {"min": True},
++        {"max": False},
++        {"max": 1.5},
++        {"min": "1"},
++        {"min": 5, "max": 1.5},
++    ],
++)
++def test_r8_non_negative_integers_check(kwargs):
++    with pytest.raises(ValueError) as ei:
++        Duration(**kwargs)
++    assert str(ei.value) == "min and max must be non-negative integers."
++
++
++def test_r8_min_greater_than_max():
++    with pytest.raises(ValueError) as ei:
++        Duration(min=5, max=1)
++    assert str(ei.value) == "min must not be greater than max."
++
++
++@pytest.mark.parametrize(
++    "kwargs",
++    [
++        {"min": 3, "max": 3, "min_open": True},
++        {"min": 3, "max": 3, "max_open": True},
++        {"min": 3, "max": 3, "min_open": True, "max_open": True},
++    ],
++)
++def test_r8_empty_range(kwargs):
++    with pytest.raises(ValueError) as ei:
++        Duration(**kwargs)
++    assert str(ei.value) == "the range is empty."
++
++
++def test_r8_single_value_range_valid():
++    d = Duration(min=3, max=3)
++    assert d("3s") == 3
++    with pytest.raises(click.BadParameter):
++        d("4s")
++
++
++def test_r8_keyword_only():
++    with pytest.raises(TypeError):
++        Duration(1)  # type: ignore[misc]
++    with pytest.raises(TypeError):
++        Duration(None, None)  # type: ignore[misc]
++
++
++def test_r8_attributes_stored():
++    d = Duration(min=1, max=2, min_open=True, max_open=False, as_timedelta=True)
++    assert d.min == 1
++    assert d.max == 2
++    assert d.min_open is True
++    assert d.max_open is False
++    assert d.as_timedelta is True
++
++
++# ---------------------------------------------------------------- R9
++
++
++def _make_cli(**option_kwargs):
++    @click.command()
++    @click.option("--t", **option_kwargs)
++    def cli(t):
++        click.echo(repr(t))
++
++    return cli
++
++
++def test_r9_default_string_and_int():
++    runner = CliRunner()
++    r = runner.invoke(_make_cli(type=Duration(), default="1h30m"), [])
++    assert r.exit_code == 0
++    assert r.output.strip() == "5400"
++    r = runner.invoke(_make_cli(type=Duration(), default=90), [])
++    assert r.exit_code == 0
++    assert r.output.strip() == "90"
++
++
++def test_r9_cli_valid_value():
++    r = CliRunner().invoke(_make_cli(type=Duration()), ["--t", "2m 5s"])
++    assert r.exit_code == 0
++    assert r.output.strip() == "125"
++
++
++@pytest.mark.parametrize(
++    ("arg", "message"),
++    [
++        ("1x", "'1x' is not a valid duration."),
++        ("1m1h", "'1m1h' has units out of order; use largest to smallest."),
++        ("1h1h", "'1h1h' repeats the unit 'h'."),
++        ("3651d", "'3651d' is too large; the maximum is 315360000 seconds."),
++        ("0.5s", "'0.5s' is not a whole number of seconds."),
++    ],
++)
++def test_r9_cli_error_wrapping(arg, message):
++    r = CliRunner().invoke(_make_cli(type=Duration()), ["--t", arg])
++    assert r.exit_code == 2
++    assert "Invalid value for" in r.output
++    assert message in r.output
++
++
++def test_r9_cli_range_error():
++    r = CliRunner().invoke(
++        _make_cli(type=Duration(min=60, max=3600)), ["--t", "30s"]
++    )
++    assert r.exit_code == 2
++    assert "Invalid value for" in r.output
++    assert "'30s' is out of range: expected 60<=x<=3600." in r.output
++
++
++def test_r9_none_param_and_ctx():
++    assert Duration().convert("1h", None, None) == 3600
++    assert Duration(as_timedelta=True).convert("1h", None, None) == timedelta(hours=1)
++    with pytest.raises(click.BadParameter):
++        Duration().convert("bad", None, None)
++
++
++def test_r9_check_order_overall():
++    # R3 before R6
++    _fail(
++        Duration(),
++        "1m9999d",
++        "'1m9999d' has units out of order; use largest to smallest.",
++    )
++    # R6 before R5
++    _fail(
++        Duration(),
++        "3650d0.5s",
++        "'3650d0.5s' is too large; the maximum is 315360000 seconds.",
++    )
++
++
++# ---------------------------------------------------------------- R10
++
++
++def test_r10_name_and_flags():
++    assert click.Duration.name == "duration"
++    assert Duration().name == "duration"
++    assert Duration().is_composite is False
++    assert Duration().arity == 1
++
++
++def test_r10_to_info_dict():
++    assert Duration().to_info_dict() == {
++        "param_type": "Duration",
++        "name": "duration",
++        "as_timedelta": False,
++        "min": None,
++        "max": None,
++        "min_open": False,
++        "max_open": False,
++    }
++    assert Duration(
++        min=1, max=9, min_open=True, max_open=True, as_timedelta=True
++    ).to_info_dict() == {
++        "param_type": "Duration",
++        "name": "duration",
++        "as_timedelta": True,
++        "min": 1,
++        "max": 9,
++        "min_open": True,
++        "max_open": True,
++    }
++
++
++@pytest.mark.parametrize(
++    "kwargs",
++    [{}, {"min": 1}, {"max": 5, "max_open": True}, {"as_timedelta": True}],
++)
++def test_r10_repr(kwargs):
++    assert repr(Duration(**kwargs)) == "DURATION"
++
++
++def test_r10_help_metavar():
++    r = CliRunner().invoke(_make_cli(type=Duration()), ["--help"])
++    assert r.exit_code == 0
++    assert "DURATION" in r.output
++
++
++# ---------------------------------------------------------------- R11
++
++
++def test_r11_packaging():
++    assert click.Duration is click.types.Duration
++    assert issubclass(click.types.Duration, ParamType)
++    assert click.types.Duration.__module__ == "click.types"
++
++
++def test_r11_no_heavy_imports():
++    script = b"""\
++import builtins, json
++found = set()
++real_import = builtins.__import__
++
++def tracking_import(module, locals=None, globals=None, fromlist=None, level=0):
++    rv = real_import(module, locals, globals, fromlist, level)
++    if globals and globals['__name__'].startswith('click') and level == 0:
++        found.add(module)
++    return rv
++
++builtins.__import__ = tracking_import
++import click
++print(json.dumps(sorted(found)))
++"""
++    proc = subprocess.run(
++        [sys.executable, "-"], input=script, stdout=subprocess.PIPE, check=True
++    )
++    imported = set(json.loads(proc.stdout.decode("utf-8")))
++    assert not imported & {"fractions", "decimal", "math"}
++
++
++def test_r11_no_warnings_emitted():
++    with warnings.catch_warnings():
++        warnings.simplefilter("error")
++        d = Duration(min=1, max=100000)
++        assert d("1h") == 3600
++        assert Duration(as_timedelta=True)("0.5s") == timedelta(microseconds=500000)
++        with pytest.raises(click.BadParameter):
++            d("nope")
++
++
++def test_r11_instance_reuse_no_state():
++    d = Duration()
++    _fail(d, "1h1h", "'1h1h' repeats the unit 'h'.")
++    assert d("1h") == 3600
++    _fail(d, "1m1h", "'1m1h' has units out of order; use largest to smallest.")
++    assert d("1h") == 3600
++    assert d("1h30m") == 5400
++
++
++def test_r11_instance_shared_across_commands():
++    d = Duration()
++    runner = CliRunner()
++    for _ in range(2):
++        r = runner.invoke(_make_cli(type=d), ["--t", "bad"])
++        assert r.exit_code == 2
++        r = runner.invoke(_make_cli(type=d), ["--t", "1m"])
++        assert r.exit_code == 0
++        assert r.output.strip() == "60"
++
++
++def test_r11_separate_instances_independent():
++    a = Duration(min=60)
++    b = Duration()
++    assert b("1s") == 1
++    _fail(a, "1s", "'1s' is out of range: expected x>=60.")
++    assert re.fullmatch(r"DURATION", repr(a))

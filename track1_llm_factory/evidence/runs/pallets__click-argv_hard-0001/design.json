@@ -1,0 +1,162 @@
+{
+ "feature": "Opt-in @response-file argument expansion (Context.response_file_prefix)",
+ "summary": "A Context may be given a response_file_prefix (for example '@'). While parsing, every command line token that starts with that prefix is replaced by the lines of the named file, before the option parser sees them. Expanded and escaped tokens are literal and never expanded again. Tokens after '--' are never expanded, even when the Group parser consumes the '--' and hands the rest to a subcommand context. The feature works across Group, chain=True groups and subcommands, custom context classes (via an overridable read hook), and shell completion. It also provides an invocation-scoped record of which files were read. Without a prefix, behavior is byte-identical to today.",
+ "public_api": [
+  "click.Context(..., response_file_prefix: str | None = None)  (new last keyword parameter)",
+  "Context.response_file_prefix  (attribute holding the effective prefix or None)",
+  "Context.read_response_file(self, path: str) -> list[str]  (overridable hook)",
+  "Context.response_files  (read-only property returning a tuple[str, ...])",
+  "Command.make_context / Command.main / CliRunner.invoke accept response_file_prefix=... through **extra / context_settings"
+ ],
+ "keywords": [
+  "response_file_prefix",
+  "read_response_file",
+  "response_files",
+  "parse_args",
+  "make_context",
+  "_resolve_context",
+  "get_completions",
+  "context_settings",
+  "meta",
+  "no_args_is_help"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "Context.__init__ gains a new LAST keyword parameter response_file_prefix (default None) and stores the effective value on ctx.response_file_prefix. If the argument is None, the value is inherited from the parent context (None when there is no parent). If the argument is not None, it must be a non-empty str. Anything else (including '' and non-str values such as 5) raises ValueError('response_file_prefix must be a non-empty string.'). This validation runs even when the parent has a valid prefix. A child context cannot disable an inherited prefix, because None means inherit.",
+   "inputs": "Context(cmd, response_file_prefix=X) with X in {None, '@', '', 5}; with or without a parent that has a prefix",
+   "output": "ctx.response_file_prefix == X when X is a valid str; parent's value (or None) when X is None",
+   "errors": "ValueError: response_file_prefix must be a non-empty string.",
+   "precedence": "explicit non-None argument > inherited parent value > None",
+   "bounds": "length >= 1; multi-character prefixes such as '@@' or '+f:' are allowed",
+   "state": "none"
+  },
+  {
+   "id": "R2",
+   "text": "Because Command.make_context already merges context_settings underneath **extra, the effective prefix for a context is resolved in this order. (1) An explicit response_file_prefix keyword given to make_context/main/CliRunner.invoke (**extra). (2) The command's own context_settings['response_file_prefix']. (3) The parent context's effective prefix. (4) None. For example, Group.context_settings={'response_file_prefix':'@'} makes every subcommand context inherit '@', while a subcommand whose own context_settings sets '+' uses '+' in its own context.",
+   "inputs": "combinations of main(response_file_prefix=...), context_settings, parent prefix",
+   "output": "ctx.response_file_prefix of each context in the chain",
+   "errors": "none (invalid values fall under R1)",
+   "precedence": "kwarg > context_settings > parent > None, tested pairwise",
+   "bounds": "none",
+   "state": "none"
+  },
+  {
+   "id": "R3",
+   "text": "Expansion happens at the start of Command.parse_args(ctx, args) (so it covers main(), make_context(), CliRunner.invoke, and the make_context calls Group.invoke performs for subcommands in both normal and chain mode) and only when ctx.response_file_prefix is not None. Group.parse_args reaches this through super().parse_args. The no_args_is_help check (in both Group.parse_args and Command.parse_args) is evaluated on the ORIGINAL args before any expansion. So ['@empty'] where the file is empty does not trigger NoArgsIsHelpError, while [] still does. Each token t of the args that is a str is classified, in this order. (a) t == prefix (bare prefix): kept unchanged as a literal token. (b) t starts with prefix+prefix: replaced by t[len(prefix):], a literal token (the escape; '@@x' becomes '@x'). (c) t starts with prefix: path = t[len(prefix):]; the token is replaced by the tokens returned by ctx.read_response_file(path), spliced in at the same position, in order. (d) Anything else, and non-str tokens, are untouched. Context.invoke() and Context.forward() never expand anything. When the effective prefix is None, parse_args behaves exactly as before: the same token objects reach the parser and no wrapping occurs.",
+   "inputs": "args lists containing tokens like '@f', '@@f', '@', 'plain', 5",
+   "output": "expanded token list handed to the option parser",
+   "errors": "none (read failures: R7)",
+   "precedence": "classification order (a) > (b) > (c) > (d); the no_args_is_help check precedes expansion",
+   "bounds": "a response file may produce zero tokens (the '@empty' token simply vanishes)",
+   "state": "none"
+  },
+  {
+   "id": "R4",
+   "text": "The default Context.read_response_file(path) opens path (relative paths resolve against the current working directory) with encoding='utf-8' and newline='', reads the whole text, and splits it on '\\n'. One trailing '\\r' is removed from each piece. Each remaining piece becomes ONE token, with no shell splitting and no whitespace stripping, except that a piece is skipped if it is exactly the empty string or if its first character is '#'. A line containing only spaces is therefore kept as a token of spaces. A final newline therefore adds no token. It returns the list of tokens. OSError and UnicodeDecodeError propagate unchanged from this method.",
+   "inputs": "file text such as '--name\\nbob\\n# note\\n\\n  \\nx y\\n'",
+   "output": "['--name', 'bob', '  ', 'x y']",
+   "errors": "OSError / UnicodeDecodeError propagate from the hook itself (R7 converts them)",
+   "precedence": "none",
+   "bounds": "empty file -> []; a file with a single line and no trailing newline -> one token",
+   "state": "none"
+  },
+  {
+   "id": "R5",
+   "text": "Expanded tokens are literal. Every token that came out of a file, every escaped token from R3(b), and every token after the '--' cut-off (R6) must never be expanded again, neither by the same parse_args call nor later by any other context. 'Later' includes the subcommand contexts of a Group or chain group, and a second parse_args call on the same context, which Group.resolve_command makes when it re-parses a leading option-looking token. Click's own parsing (Group parse -> ctx._protected_args/ctx.args -> sub make_context) must preserve this. In particular, a file line '@other' yields the literal value '@other' (no recursion), and '@@x' typed at the top-level group arrives as the plain string '@x' in the subcommand's argument value, without the subcommand context trying to open a file called 'x'. Tokens inside a file are never un-escaped, so the line '@@x' stays '@@x'. Values seen by callbacks, ctx.args and parameter values compare equal to plain str.",
+   "inputs": "file containing '@other' and '@@y'; argv 'sub @@x' with prefix on the group",
+   "output": "sub receives '@other', '@@y', '@x' as plain strings",
+   "errors": "none",
+   "precedence": "literal-ness (R5) overrides the classification of R3 for any token already processed",
+   "bounds": "no recursion depth, because nested expansion is not supported",
+   "state": "literal-ness must travel with the token through Group parsing into subcontexts"
+  },
+  {
+   "id": "R6",
+   "text": "The first token equal to '--' in the OUTPUT stream (the stream after earlier expansions, left to right) ends expansion. The '--' token itself and every token after it, original or produced, are passed on as literal tokens (R5) and never expanded. A '--' that is produced by a response file counts the same way as a typed '--': the original tokens that follow it on the command line are then left unexpanded. Because Group's parser consumes a top-level '--' and gives the rest to the subcommand context, tokens after '--' must stay unexpanded in that subcommand context as well. For example, with prefix '@': `cli -- sub @f` gives sub the literal '@f'. `cli sub -- @f` also gives sub the literal '@f' (even though the Group's parse_args scans this list first). `cli @opts @f` with opts containing '--' leaves '@f' literal. A '--' seen in a context's input list that is already literal also ends scanning in that context.",
+   "inputs": "argv with '--' typed or produced by a file, in groups, chains, and plain commands",
+   "output": "tokens after the cut-off arrive unmodified as values",
+   "errors": "none: an unreadable file located after the cut-off is never opened",
+   "precedence": "the '--' cut-off beats R3(b) and R3(c): after the cut-off '@@x' stays '@@x' and '@f' is not opened",
+   "bounds": "tokens BEFORE the first '--' are expanded normally",
+   "state": "the cut-off status of later tokens must survive being handed from the Group context to subcommand contexts"
+  },
+  {
+   "id": "R7",
+   "text": "If ctx.read_response_file(path) raises OSError or UnicodeDecodeError while expanding a token, parse_args calls ctx.fail with the exact message f\"Response file {path!r} could not be read.\" (path is the string after the prefix; repr quoting). This gives a UsageError carrying that ctx, so under CliRunner the exit code is 2, the usage block of that context's command is printed, and the last line is \"Error: Response file 'missing.txt' could not be read.\". No OS error text is appended. If ctx.resilient_parsing is True (shell completion), no error is raised: the unreadable token stays in place unchanged, is treated as already processed (never retried by a subcontext), and the file is not recorded in ctx.response_files. Exceptions of other types raised by an overridden read_response_file propagate unchanged.",
+   "inputs": "'@missing.txt' (nonexistent), a binary non-UTF-8 file, resilient_parsing=True",
+   "output": "UsageError (exit code 2) or the token left unchanged in resilient mode",
+   "errors": "UsageError: Response file 'missing.txt' could not be read.",
+   "precedence": "resilient_parsing=True overrides the error behavior",
+   "bounds": "the first failing token aborts parsing, and later tokens are not examined",
+   "state": "a failed read adds nothing to ctx.response_files"
+  },
+  {
+   "id": "R8",
+   "text": "Groups and chains. When a Group context has a prefix, its parse_args expands the ENTIRE remaining token list, including tokens that belong to subcommands (so `cli sub @f` is expanded by the group context before 'sub' is resolved), using the group context's read_response_file. A file may therefore supply the subcommand name, for example a file containing 'sub\\n--x\\n1' used as `cli @f`. Each subcommand context then runs the same algorithm using ITS OWN effective prefix on tokens that are not already literal (R5). A group whose prefix is None leaves tokens unexpanded, and a subcommand whose effective prefix is non-None still expands unmarked '@f'-style tokens it receives. With chain=True the same holds for every subcommand in the chain, and the expansion of the whole token list happens once, in the group context, before any chained subcommand context is created.",
+   "inputs": "nested Group with chain True/False; group prefix None and sub prefix '+'; group prefix '@' and sub prefix '+'",
+   "output": "each context sees fully expanded tokens exactly once",
+   "errors": "an unreadable file reported by a subcontext uses that subcontext's usage text (R7)",
+   "precedence": "group-level expansion happens first, so a group with prefix '@' expands '@f' tokens that appear in a subcommand's arguments, whatever prefix the subcommand uses; a subcontext with prefix '+' only expands unmarked '+f' tokens",
+   "bounds": "none",
+   "state": "R5 literal-ness is the only state passed between contexts"
+  },
+  {
+   "id": "R9",
+   "text": "Context.response_files is a read-only property returning a tuple of the path strings (the part after the prefix) passed to successful ctx.read_response_file calls, in the order the reads happened. A file named twice is listed twice. All contexts of one invocation chain (root, subcontexts, chain subcontexts, and contexts made by custom context classes) share ONE record: reading it from any context returns the same contents, evaluated at access time. E.g. inside a subcommand callback, ctx.response_files and ctx.find_root().response_files are equal and include reads performed by the root group context. A new root context (a new CliRunner.invoke / main / make_context without parent) starts with an empty record, so nothing leaks between invocations. Reads performed during completion (resilient) are recorded on the completion context only.",
+   "inputs": "'cli @a @a sub @b' with a Group/Command tree",
+   "output": "('a', 'a', 'b') from any context in the chain",
+   "errors": "none",
+   "precedence": "none",
+   "bounds": "empty tuple when nothing was expanded or the prefix is None",
+   "state": "invocation-scoped, shared via the existing parent-shared Context.meta mechanism or equivalent, never module-level or class-level; reset for every root context"
+  },
+  {
+   "id": "R10",
+   "text": "Extension point. Expansion always calls ctx.read_response_file(path) on the context whose parse_args is running, so a custom context_class (set on Command.context_class or via context_settings/_make_sub_context subclasses) can override it, for example to serve virtual files from a dict. The returned list of str is used verbatim as the produced tokens with no line parsing, comment skipping or empty-line skipping. The default parser of R4 lives only in the default hook. A custom Context subclass that forwards **kwargs to super().__init__ must work with the feature unchanged. The group-level expansion of R8 uses the GROUP's context hook even for tokens that belong to subcommands whose own context_class differs. Overrides of Command.parse_args or Group.parse_args in user subclasses that call super().parse_args(ctx, args) keep working.",
+   "inputs": "class VCtx(Context): def read_response_file(self, path): return FILES[path]  (raises FileNotFoundError for unknown paths)",
+   "output": "virtual-file tokens are spliced in; a FileNotFoundError becomes the R7 UsageError",
+   "errors": "same as R7",
+   "precedence": "the hook of the expanding context wins over the hook of the context that would later parse the tokens",
+   "bounds": "a hook returning [] removes the token",
+   "state": "successful reads are still recorded (R9), including for overridden hooks"
+  },
+  {
+   "id": "R11",
+   "text": "Shell completion. (a) In ShellComplete.get_completions, after the context is resolved by _resolve_context and before _resolve_incomplete is applied, if ctx.response_file_prefix is not None AND the raw incomplete string starts with the prefix AND does not start with prefix+prefix AND the literal '--' is not in args, then the result is exactly [CompletionItem(incomplete, type='file')] (so Bash prints 'file,@fi'). The expected shell behavior is path completion. This applies regardless of whether the previous word is an option expecting a value. The bare prefix qualifies, so incomplete '@' yields the file item. An incomplete such as '--name=@f' does not start with the prefix, so it takes the normal path. (b) In every other case completion is unchanged. (c) Complete args before the incomplete word are expanded through the normal make_context(resilient_parsing=True) path of _resolve_context, because ctx_args carries response_file_prefix. So a response file that supplies a subcommand name or options affects which context and parameter get completed, and unreadable files are skipped silently (R7).",
+   "inputs": "COMP_WORDS='cli @fi' / 'cli @@fi' / 'cli -- @fi' / 'cli @opts ' where opts file holds 'sub'",
+   "output": "[file item] / normal completions / normal completions / subcommand's completions",
+   "errors": "none",
+   "precedence": "the file completion check (a) takes precedence over option-name, option-value, argument and command-name completions",
+   "bounds": "none",
+   "state": "none"
+  },
+  {
+   "id": "R12",
+   "text": "These existing behaviors stay byte-identical. (1) With no prefix anywhere, all existing tests and outputs are unchanged. (2) Context.to_info_dict() returns exactly the same keys as before (no response_file_prefix key). (3) Help output, usage lines, and Command.to_info_dict are unchanged even when a prefix is set. (4) A token beginning with the prefix, with a prefix set, is never treated specially by the option parser. The parser only ever sees post-expansion tokens. (5) '--opt=@f' style tokens are not expanded because they do not start with the prefix. (6) Context.invoke, Context.forward and Command.invoke never read files. (7) No new module-level import is added to any click module beyond what tests/test_imports.py already allows; any new standard-library import must be done lazily inside the function that needs it, and no module import emits a warning (pytest filterwarnings=error).",
+   "inputs": "existing test-suite, to_info_dict, --help",
+   "output": "unchanged",
+   "errors": "none",
+   "precedence": "this rule has priority over any new behavior if they appear to conflict",
+   "bounds": "none",
+   "state": "none"
+  }
+ ],
+ "traps": [
+  "Re-expansion in subcommand contexts. Group.invoke feeds ctx._protected_args + ctx.args back into sub.make_context, and each sub parse_args would expand again. This turns '@@x' into '@x' and then opens file 'x'. File-produced and escaped tokens must be marked literal so they survive Group parsing, and Group.resolve_command's parse_args re-parse must not expand them either.",
+  "The Group's parser consumes the '--' token before the subcommand context sees its arguments. Tokens that follow '--' must therefore be marked literal during the Group-level expansion; otherwise the sub context cannot know it was after '--'. The '--' cut-off also applies when the '--' comes from a response file.",
+  "Recording response_files in a plain instance attribute set in Context.__init__ does not share across parent/child contexts. Storing in a module-level or class-level list leaks between CliRunner.invoke calls. The record must be shared along the parent chain and be fresh for every root context.",
+  "no_args_is_help must be decided on the original args: an expansion that produces no tokens must not trigger NoArgsIsHelpError, and a Group must not report 'Missing command.' before expansion.",
+  "to_info_dict is pinned byte-for-byte by existing tests, so adding a key there breaks them.",
+  "Bare prefix '@' stays literal while '@@' is the escape, so the order of checks matters (bare, doubled, path).",
+  "Option-style tokens from files are real options (parser sees post-expansion tokens), but a produced '--' stops option processing as usual. Expansion must neither skip the tokens after a file's '--' in the file nor expand later original tokens.",
+  "Completion must check for '--' in args and for the doubled prefix before returning the file item, and the expansion of earlier args must not raise in resilient mode."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ]
+}

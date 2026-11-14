@@ -1,0 +1,5 @@
+{
+ "ok": false,
+ "stage": "fairness/judge",
+ "report": "tests depend on unstated behavior:\n- The Examples table row for `--a`/`--b` contradicts itself: it says help prints `Net:` first, then says first-occurrence order puts `Options` first. The tests expect `['Options', 'Net']` by default, which only follows from R3/R5 and not from this example.\n- test_r9_chain_sibling_completion expects `complete(grp, ['alpha'], '') == ['zed', 'beta']`, so the already-invoked chain command `alpha` is excluded. R9 never states this exclusion (it relies on the existing `protected_args` filter), and it does not say that the exclusion is applied after the ordering.\n- R9 says chain-sibling results use 'the effective order of that parent's context'. It does not say whether this means the parent command's own `section_order` or only the context value. The test only passes if the parent group's own `section_order` is honored."
+}

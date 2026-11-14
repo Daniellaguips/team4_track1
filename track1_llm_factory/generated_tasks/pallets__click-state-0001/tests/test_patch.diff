@@ -1,0 +1,1127 @@
+diff --git a/tests/test_invocation_ledger_an_opt_in_invocation_scoped_event_log_shared_by_every_context_in_a_run.py b/tests/test_invocation_ledger_an_opt_in_invocation_scoped_event_log_shared_by_every_context_in_a_run.py
+new file mode 100644
+index 0000000..c9fc24f
+--- /dev/null
++++ b/tests/test_invocation_ledger_an_opt_in_invocation_scoped_event_log_shared_by_every_context_in_a_run.py
+@@ -0,0 +1,1121 @@
++import click
++import click.testing
++import pytest
++from click.testing import CliRunner
++
++
++def _noop_cmd(name="c"):
++    return click.Command(name, callback=lambda: None)
++
++
++def _run(cli, args=(), **kw):
++    return CliRunner(ledger=True).invoke(cli, list(args), **kw)
++
++
++def _simple_group():
++    @click.group()
++    def g():
++        pass
++
++    @g.command()
++    def sub():
++        pass
++
++    return g
++
++
++# ---------------------------------------------------------------- R1
++
++
++@pytest.mark.parametrize("bad", [1, 0, "x", ()])
++@pytest.mark.parametrize("with_parent", [False, True])
++def test_r1_invalid_ledger_values(bad, with_parent):
++    cmd = _noop_cmd()
++    parent = click.Context(cmd) if with_parent else None
++    with pytest.raises(TypeError) as e:
++        click.Context(cmd, parent=parent, ledger=bad)
++    assert str(e.value) == "'ledger' must be a bool, a list or None."
++
++
++@pytest.mark.parametrize("initial", [[], [("pre", "x")]])
++def test_r1_root_list_adopted_by_identity(initial):
++    lst = list(initial)
++    ctx = click.Context(_noop_cmd(), ledger=lst)
++    assert ctx.ledger_enabled is True
++    ctx.record("x", "y")
++    assert lst == [*initial, ("x", "y")]
++    assert ctx.ledger == (*initial, ("x", "y"))
++
++
++@pytest.mark.parametrize(
++    ("value", "enabled"), [(True, True), (False, False), (None, False)]
++)
++def test_r1_root_bool_and_none(value, enabled):
++    ctx = click.Context(_noop_cmd(), ledger=value)
++    assert ctx.ledger_enabled is enabled
++    assert ctx.ledger == ()
++
++
++def test_r1_default_is_disabled():
++    ctx = click.Context(_noop_cmd())
++    assert ctx.ledger_enabled is False
++    assert ctx.ledger == ()
++
++
++@pytest.mark.parametrize("value", [True, []])
++def test_r1_child_enables_whole_tree(value):
++    cmd = _noop_cmd()
++    root = click.Context(cmd)
++    child1 = click.Context(cmd, parent=root, ledger=value)
++    child2 = click.Context(cmd, parent=root)
++    assert root.ledger_enabled is True
++    assert child1.ledger_enabled is True
++    assert child2.ledger_enabled is True
++    child2.record("e", "n")
++    assert root.ledger == (("e", "n"),)
++    assert child1.ledger == (("e", "n"),)
++
++
++def test_r1_child_list_not_adopted():
++    cmd = _noop_cmd()
++    lst = []
++    root = click.Context(cmd)
++    child = click.Context(cmd, parent=root, ledger=lst)
++    child.record("x")
++    assert lst == []
++    assert root.ledger == (("x", None),)
++
++
++@pytest.mark.parametrize("value", [False, None])
++def test_r1_child_cannot_disable(value):
++    cmd = _noop_cmd()
++    root = click.Context(cmd, ledger=True)
++    child = click.Context(cmd, parent=root, ledger=value)
++    assert child.ledger_enabled is True
++    assert root.ledger_enabled is True
++
++
++def test_r1_state_shared_by_reference():
++    cmd = _noop_cmd()
++    root = click.Context(cmd, ledger=True)
++    child = click.Context(cmd, parent=root)
++    assert child._ledger_state is root._ledger_state
++
++
++def test_r1_sub_context_and_make_context_share_state():
++    cmd = _noop_cmd()
++    root = click.Context(cmd, ledger=True)
++    sub = root._make_sub_context(cmd)
++    sub.record("a", "b")
++    other = click.Command("o", callback=lambda: None)
++    mc = other.make_context("o", [], parent=root)
++    assert mc.ledger_enabled is True
++    assert root.ledger == (("a", "b"), ("parse", "o"))
++
++
++@pytest.mark.parametrize(
++    ("settings", "extra", "expected"),
++    [
++        ({"ledger": True}, {}, True),
++        ({"ledger": True}, {"ledger": False}, False),
++        ({}, {"ledger": True}, True),
++        ({}, {}, False),
++        ({"ledger": False}, {"ledger": True}, True),
++    ],
++)
++def test_r1_context_settings_precedence(settings, extra, expected):
++    cmd = click.Command("c", callback=lambda: None, context_settings=settings)
++    ctx = cmd.make_context("c", [], **extra)
++    assert ctx.ledger_enabled is expected
++
++
++# ---------------------------------------------------------------- R2
++
++
++def test_r2_disabled_record_is_noop():
++    ctx = click.Context(_noop_cmd())
++    assert ctx.record("x", "y") is None
++    assert ctx.ledger == ()
++
++
++def test_r2_record_appends_and_returns_none():
++    ctx = click.Context(_noop_cmd(), ledger=True)
++    assert ctx.record("x", "y") is None
++    assert ctx.ledger == (("x", "y"),)
++
++
++def test_r2_ledger_is_tuple_snapshot():
++    ctx = click.Context(_noop_cmd(), ledger=True)
++    ctx.record("a", "b")
++    snap = ctx.ledger
++    assert isinstance(snap, tuple)
++    ctx.record("c", "d")
++    assert snap == (("a", "b"),)
++    assert ctx.ledger == (("a", "b"), ("c", "d"))
++
++
++@pytest.mark.parametrize("enabled", [True, False])
++@pytest.mark.parametrize("event", ["", 5, None, b"x"])
++def test_r2_invalid_event(event, enabled):
++    ctx = click.Context(_noop_cmd(), ledger=enabled)
++    with pytest.raises(TypeError) as e:
++        ctx.record(event, None)
++    assert str(e.value) == f"Ledger event must be a non-empty string, got {event!r}."
++
++
++@pytest.mark.parametrize("enabled", [True, False])
++@pytest.mark.parametrize("name", [5, b"x", 1.5])
++def test_r2_invalid_name(name, enabled):
++    ctx = click.Context(_noop_cmd(), ledger=enabled)
++    with pytest.raises(TypeError) as e:
++        ctx.record("x", name)
++    assert str(e.value) == f"Ledger name must be a string or None, got {name!r}."
++
++
++def test_r2_event_error_beats_name_error():
++    ctx = click.Context(_noop_cmd(), ledger=True)
++    with pytest.raises(TypeError) as e:
++        ctx.record("", 5)
++    assert str(e.value) == "Ledger event must be a non-empty string, got ''."
++
++
++def test_r2_resilient_no_op_but_validates_and_not_inherited():
++    cmd = _noop_cmd()
++    root = click.Context(cmd, ledger=True, resilient_parsing=True)
++    root.record("x", "y")
++    assert root.ledger == ()
++    with pytest.raises(TypeError):
++        root.record("", None)
++    child = click.Context(cmd, parent=root)
++    child.record("z", "w")
++    assert root.ledger == (("z", "w"),)
++
++
++@pytest.mark.parametrize(
++    ("event", "name"), [("custom", "n"), ("custom", None), ("custom", "")]
++)
++def test_r2_user_events_and_empty_name(event, name):
++    ctx = click.Context(_noop_cmd(), ledger=True)
++    ctx.record(event, name)
++    assert ctx.ledger == ((event, name),)
++
++
++def test_r2_context_class_override_sees_builtin_events():
++    seen = []
++
++    class Rec(click.Context):
++        def record(self, event, name=None):
++            seen.append((event, name))
++            super().record(event, name)
++
++    cmd = click.Command("c", callback=lambda: None)
++    cmd.context_class = Rec
++    res = CliRunner(ledger=True).invoke(cmd, [])
++    assert seen == [("parse", "c"), ("invoke", "c")]
++    assert res.ledger == (("parse", "c"), ("invoke", "c"))
++
++
++# ---------------------------------------------------------------- R3
++
++
++def test_r3_single_command_parse_then_invoke():
++    res = _run(_noop_cmd("cli"))
++    assert res.exit_code == 0
++    assert res.ledger == (("parse", "cli"), ("invoke", "cli"))
++
++
++def test_r3_info_name_none():
++    cmd = _noop_cmd()
++    ctx = cmd.make_context(None, [], ledger=True)
++    assert ctx.ledger == (("parse", None),)
++
++
++def test_r3_parse_error_records_nothing():
++    @click.command()
++    @click.option("--x", required=True)
++    def cli(x):
++        pass
++
++    res = _run(cli)
++    assert res.exit_code == 2
++    assert res.ledger == ()
++
++
++def test_r3_unexpected_extra_args_records_nothing():
++    res = _run(_noop_cmd("cli"), ["extra"])
++    assert res.exit_code == 2
++    assert res.ledger == ()
++
++
++def test_r3_no_args_is_help_records_nothing():
++    res = _run(_simple_group())
++    assert res.ledger == ()
++
++
++def test_r3_subcommand_parse_failure_keeps_earlier_events():
++    @click.group()
++    def g():
++        pass
++
++    @g.command()
++    @click.option("--x", required=True)
++    def sub(x):
++        pass
++
++    res = _run(g, ["sub"])
++    assert res.exit_code == 2
++    assert res.ledger == (("parse", "g"), ("invoke", "g"))
++
++
++def test_r3_group_records_single_parse():
++    res = _run(_simple_group(), ["sub"])
++    assert [e for e in res.ledger if e == ("parse", "g")] == [("parse", "g")]
++
++
++def test_r3_subclass_override_gets_event_from_super():
++    class C(click.Command):
++        def parse_args(self, ctx, args):
++            ctx.record("before", "x")
++            return super().parse_args(ctx, args)
++
++    cmd = C("c", callback=lambda: None)
++    res = _run(cmd)
++    assert res.ledger == (("before", "x"), ("parse", "c"), ("invoke", "c"))
++
++
++def test_r3_eager_callback_precedes_parse():
++    def cb(ctx, param, value):
++        ctx.record("eager", "e")
++        return value
++
++    @click.command()
++    @click.option("--e", is_flag=True, is_eager=True, expose_value=False, callback=cb)
++    def cli():
++        pass
++
++    res = _run(cli)
++    assert res.ledger == (("eager", "e"), ("parse", "cli"), ("invoke", "cli"))
++
++
++def test_r3_resilient_parse_not_recorded():
++    ctx = _noop_cmd().make_context("c", [], ledger=True, resilient_parsing=True)
++    assert ctx.ledger == ()
++
++
++# ---------------------------------------------------------------- R4
++
++
++def test_r4_group_with_subcommand_order():
++    res = _run(_simple_group(), ["sub"])
++    assert res.ledger == (
++        ("parse", "g"),
++        ("invoke", "g"),
++        ("parse", "sub"),
++        ("invoke", "sub"),
++    )
++
++
++def test_r4_chain_order():
++    @click.group(chain=True)
++    def g():
++        pass
++
++    @g.command()
++    def a():
++        pass
++
++    @g.command()
++    def b():
++        pass
++
++    res = _run(g, ["a", "b"])
++    assert res.exit_code == 0
++    assert res.ledger == (
++        ("parse", "g"),
++        ("invoke", "g"),
++        ("parse", "a"),
++        ("parse", "b"),
++        ("invoke", "a"),
++        ("invoke", "b"),
++    )
++
++
++def test_r4_nested_groups_order():
++    @click.group()
++    def root():
++        pass
++
++    @root.group()
++    def inner():
++        pass
++
++    @inner.command()
++    def leaf():
++        pass
++
++    res = _run(root, ["inner", "leaf"])
++    assert res.exit_code == 0
++    assert res.ledger == (
++        ("parse", "root"),
++        ("invoke", "root"),
++        ("parse", "inner"),
++        ("invoke", "inner"),
++        ("parse", "leaf"),
++        ("invoke", "leaf"),
++    )
++
++
++def test_r4_invoke_without_command_records_group_invoke():
++    @click.group(invoke_without_command=True)
++    def g():
++        pass
++
++    res = _run(g, [])
++    assert res.ledger == (("parse", "g"), ("invoke", "g"))
++
++
++def test_r4_missing_command_no_invoke():
++    @click.group(no_args_is_help=False)
++    def g():
++        pass
++
++    res = _run(g, [])
++    assert res.exit_code == 2
++    assert res.ledger == (("parse", "g"),)
++
++
++def test_r4_callbackless_command_records_invoke():
++    res = _run(click.Command("c"))
++    assert res.ledger == (("parse", "c"), ("invoke", "c"))
++
++
++def test_r4_plain_function_via_ctx_invoke_adds_nothing():
++    @click.command()
++    @click.pass_context
++    def cli(ctx):
++        ctx.invoke(lambda: 1)
++
++    res = _run(cli)
++    assert res.ledger == (("parse", "cli"), ("invoke", "cli"))
++
++
++# ---------------------------------------------------------------- R5
++
++
++def test_r5_direct_command_call():
++    other = click.Command("o", callback=lambda: 5)
++    ctx = click.Context(click.Command("root"), ledger=True)
++    assert ctx.invoke(other) == 5
++    assert ctx.ledger == (("call", "o"),)
++
++
++def test_r5_repeated_calls_and_none_name():
++    other = click.Command(None, callback=lambda: None)
++    ctx = click.Context(click.Command("root"), ledger=True)
++    ctx.invoke(other)
++    ctx.invoke(other)
++    assert ctx.ledger == (("call", None), ("call", None))
++
++
++def test_r5_missing_callback_records_nothing():
++    ctx = click.Context(click.Command("root"), ledger=True)
++    with pytest.raises(TypeError) as e:
++        ctx.invoke(click.Command("nocb"))
++    assert str(e.value) == "The given command does not have a callback that can be invoked."
++    assert ctx.ledger == ()
++
++
++def test_r5_plain_function_records_nothing():
++    ctx = click.Context(click.Command("root"), ledger=True)
++    assert ctx.invoke(lambda: 3) == 3
++    assert ctx.ledger == ()
++
++
++def test_r5_call_inside_command_and_inner_events_follow():
++    def other_cb():
++        click.get_current_context().record("inner", "x")
++
++    other = click.Command("other", callback=other_cb)
++
++    @click.command()
++    @click.pass_context
++    def main(ctx):
++        ctx.invoke(other)
++
++    res = _run(main)
++    assert res.exit_code == 0
++    assert res.ledger == (
++        ("parse", "main"),
++        ("invoke", "main"),
++        ("call", "other"),
++        ("inner", "x"),
++    )
++
++
++# ---------------------------------------------------------------- R6
++
++
++def test_r6_forward_then_call():
++    other = click.Command("other", callback=lambda: None)
++
++    @click.command()
++    @click.pass_context
++    def main(ctx):
++        ctx.forward(other)
++
++    res = _run(main)
++    assert res.exit_code == 0
++    assert res.ledger == (
++        ("parse", "main"),
++        ("invoke", "main"),
++        ("forward", "other"),
++        ("call", "other"),
++    )
++
++
++def test_r6_non_command_raises_and_records_nothing():
++    ctx = click.Context(click.Command("root"), ledger=True)
++    with pytest.raises(TypeError) as e:
++        ctx.forward(lambda: 1)
++    assert str(e.value) == "Callback is not a command."
++    assert ctx.ledger == ()
++
++
++def test_r6_missing_callback_leaves_forward_only():
++    ctx = click.Context(click.Command("root"), ledger=True)
++    with pytest.raises(TypeError):
++        ctx.forward(click.Command("nocb"))
++    assert ctx.ledger == (("forward", "nocb"),)
++
++
++def test_r6_nested_forward():
++    @click.command()
++    def c():
++        pass
++
++    @click.command()
++    @click.pass_context
++    def b(ctx):
++        ctx.forward(c)
++
++    @click.command()
++    @click.pass_context
++    def a(ctx):
++        ctx.forward(b)
++
++    res = _run(a)
++    assert res.exit_code == 0
++    assert res.ledger == (
++        ("parse", "a"),
++        ("invoke", "a"),
++        ("forward", "b"),
++        ("call", "b"),
++        ("forward", "c"),
++        ("call", "c"),
++    )
++
++
++def test_r6_context_class_override_sees_forward_and_call():
++    seen = []
++
++    class Rec(click.Context):
++        def record(self, event, name=None):
++            seen.append(event)
++            super().record(event, name)
++
++    other = click.Command("other", callback=lambda: None)
++    ctx = Rec(click.Command("root"), ledger=True)
++    ctx.forward(other)
++    assert seen == ["forward", "call"]
++
++
++# ---------------------------------------------------------------- R7
++
++
++def test_r7_result_after_subcommand():
++    g = _simple_group()
++
++    @g.result_callback()
++    def rc(value):
++        pass
++
++    res = _run(g, ["sub"])
++    assert res.exit_code == 0
++    assert res.ledger == (
++        ("parse", "g"),
++        ("invoke", "g"),
++        ("parse", "sub"),
++        ("invoke", "sub"),
++        ("result", "g"),
++    )
++
++
++def test_r7_no_result_callback_no_event():
++    res = _run(_simple_group(), ["sub"])
++    assert all(e[0] != "result" for e in res.ledger)
++    assert all(e[0] != "call" for e in res.ledger)
++
++
++def test_r7_chain_single_result_after_invokes():
++    @click.group(chain=True)
++    def g():
++        pass
++
++    @g.command()
++    def a():
++        pass
++
++    @g.command()
++    def b():
++        pass
++
++    @g.result_callback()
++    def rc1(value):
++        return value
++
++    @g.result_callback()
++    def rc2(value):
++        return value
++
++    res = _run(g, ["a", "b"])
++    assert res.exit_code == 0
++    assert res.ledger[-3:] == (("invoke", "a"), ("invoke", "b"), ("result", "g"))
++    assert [e for e in res.ledger if e[0] == "result"] == [("result", "g")]
++
++
++def test_r7_invoke_without_command():
++    @click.group(invoke_without_command=True)
++    def g():
++        pass
++
++    @g.result_callback()
++    def rc(value):
++        pass
++
++    res = _run(g, [])
++    assert res.ledger == (("parse", "g"), ("invoke", "g"), ("result", "g"))
++
++
++def test_r7_nested_inner_result_first():
++    @click.group()
++    def root():
++        pass
++
++    @root.group()
++    def inner():
++        pass
++
++    @inner.command()
++    def leaf():
++        pass
++
++    @root.result_callback()
++    def rc_root(value):
++        pass
++
++    @inner.result_callback()
++    def rc_inner(value):
++        pass
++
++    res = _run(root, ["inner", "leaf"])
++    assert res.exit_code == 0
++    assert res.ledger[-2:] == (("result", "inner"), ("result", "root"))
++
++
++def test_r7_no_result_when_group_fails():
++    @click.group(no_args_is_help=False)
++    def g():
++        pass
++
++    @g.result_callback()
++    def rc(value):
++        pass
++
++    res = _run(g, [])
++    assert res.exit_code == 2
++    assert res.ledger == (("parse", "g"),)
++
++
++def test_r7_no_result_when_subcommand_parse_fails():
++    @click.group()
++    def g():
++        pass
++
++    @g.command()
++    @click.option("--x", required=True)
++    def sub(x):
++        pass
++
++    @g.result_callback()
++    def rc(value):
++        pass
++
++    res = _run(g, ["sub"])
++    assert res.ledger == (("parse", "g"), ("invoke", "g"))
++
++
++# ---------------------------------------------------------------- R8
++
++
++def test_r8_deprecated_command():
++    @click.command(deprecated=True)
++    def old():
++        pass
++
++    res = _run(old)
++    assert res.exit_code == 0
++    assert res.ledger == (
++        ("parse", "old"),
++        ("invoke", "old"),
++        ("deprecated", "old"),
++    )
++    assert res.stderr != ""
++
++
++def test_r8_deprecated_option_precedes_parse():
++    @click.command()
++    @click.option("--old", deprecated=True)
++    def cli(old):
++        pass
++
++    res = _run(cli, ["--old", "1"])
++    assert res.exit_code == 0
++    assert res.ledger == (
++        ("deprecated", "old"),
++        ("parse", "cli"),
++        ("invoke", "cli"),
++    )
++
++
++def test_r8_deprecated_argument_uses_human_readable_name():
++    @click.command()
++    @click.argument("thing", required=False, deprecated=True)
++    def cli(thing):
++        pass
++
++    res = _run(cli, ["v"])
++    assert res.exit_code == 0
++    assert res.ledger[0] == ("deprecated", "THING")
++
++
++def test_r8_multiple_use_single_entry():
++    @click.command()
++    @click.option("--old", multiple=True, deprecated=True)
++    def cli(old):
++        pass
++
++    res = _run(cli, ["--old", "a", "--old", "b"])
++    assert [e for e in res.ledger if e[0] == "deprecated"] == [("deprecated", "old")]
++
++
++def test_r8_default_value_records_nothing():
++    @click.command()
++    @click.option("--old", default="d", deprecated=True)
++    def cli(old):
++        pass
++
++    res = _run(cli)
++    assert res.ledger == (("parse", "cli"), ("invoke", "cli"))
++
++
++def test_r8_resilient_records_nothing():
++    cmd = click.Command(
++        "c",
++        callback=lambda **kw: None,
++        params=[click.Option(["--old"], deprecated=True)],
++    )
++    ctx = cmd.make_context("c", ["--old", "x"], ledger=True, resilient_parsing=True)
++    assert ctx.ledger == ()
++
++
++@pytest.mark.parametrize("args", [[], ["--old", "1"]])
++def test_r8_notice_text_unchanged_by_recording(args):
++    @click.command(deprecated=True)
++    @click.option("--old", deprecated="use --new")
++    def cli(old):
++        pass
++
++    on = CliRunner(ledger=True).invoke(cli, args)
++    off = CliRunner(ledger=False).invoke(cli, args)
++    assert on.stderr == off.stderr
++    assert on.stdout == off.stdout
++    assert on.exit_code == off.exit_code
++
++
++# ---------------------------------------------------------------- R9
++
++
++def _ledger_cli():
++    @click.group()
++    @click.ledger_option()
++    def cli():
++        pass
++
++    @cli.command()
++    def sub():
++        pass
++
++    return cli
++
++
++def test_r9_root_option_prints_all_events():
++    res = CliRunner().invoke(_ledger_cli(), ["--ledger", "sub"])
++    assert res.exit_code == 0
++    assert res.stderr.splitlines() == [
++        "parse: cli",
++        "invoke: cli",
++        "parse: sub",
++        "invoke: sub",
++    ]
++    assert res.ledger == ()
++
++
++def test_r9_not_given_prints_nothing():
++    res = CliRunner().invoke(_ledger_cli(), ["sub"])
++    assert res.exit_code == 0
++    assert res.stderr == ""
++
++
++def test_r9_subcommand_only_prints_from_its_parse():
++    @click.group()
++    def g():
++        pass
++
++    @g.command()
++    @click.ledger_option()
++    def sub():
++        pass
++
++    res = CliRunner().invoke(g, ["sub", "--ledger"])
++    assert res.exit_code == 0
++    assert res.stderr.splitlines() == ["parse: sub", "invoke: sub"]
++
++
++def test_r9_both_levels_print_twice():
++    @click.group()
++    @click.ledger_option()
++    def g():
++        pass
++
++    @g.command()
++    @click.ledger_option()
++    def sub():
++        pass
++
++    res = CliRunner().invoke(g, ["--ledger", "sub", "--ledger"])
++    assert res.exit_code == 0
++    expected = ["parse: g", "invoke: g", "parse: sub", "invoke: sub"]
++    assert res.stderr.splitlines() == expected * 2
++
++
++def test_r9_no_duplicates_when_already_enabled():
++    res = CliRunner(ledger=True).invoke(_ledger_cli(), ["--ledger", "sub"])
++    assert res.stderr.splitlines() == [
++        "parse: cli",
++        "invoke: cli",
++        "parse: sub",
++        "invoke: sub",
++    ]
++    assert len(res.ledger) == 4
++
++
++def test_r9_event_without_name_and_late_events_included():
++    @click.command()
++    @click.ledger_option()
++    @click.pass_context
++    def cli(ctx):
++        ctx.record("custom")
++        ctx.record("other", "n")
++
++    res = CliRunner().invoke(cli, ["--ledger"])
++    assert res.stderr.splitlines() == [
++        "parse: cli",
++        "invoke: cli",
++        "custom",
++        "other: n",
++    ]
++
++
++def test_r9_ctx_exit_prints():
++    @click.command()
++    @click.ledger_option()
++    @click.pass_context
++    def cli(ctx):
++        ctx.exit()
++
++    res = CliRunner().invoke(cli, ["--ledger"])
++    assert res.exit_code == 0
++    assert res.stderr.splitlines() == ["parse: cli", "invoke: cli"]
++
++
++def test_r9_eager_so_deprecated_recorded():
++    @click.command()
++    @click.ledger_option()
++    @click.option("--old", deprecated=True)
++    def cli(old):
++        pass
++
++    res = CliRunner().invoke(cli, ["--old", "1", "--ledger"])
++    assert res.exit_code == 0
++    lines = res.stderr.splitlines()
++    dep = [i for i, line in enumerate(lines) if line.startswith("deprecated")]
++    assert len(dep) == 1
++    assert "parse: cli" in lines
++    assert dep[0] < lines.index("parse: cli")
++
++
++def test_r9_chain_and_nested():
++    @click.group(chain=True)
++    @click.ledger_option()
++    def g():
++        pass
++
++    @g.command()
++    def a():
++        pass
++
++    @g.command()
++    def b():
++        pass
++
++    res = CliRunner().invoke(g, ["--ledger", "a", "b"])
++    assert res.exit_code == 0
++    assert res.stderr.splitlines() == [
++        "parse: g",
++        "invoke: g",
++        "parse: a",
++        "parse: b",
++        "invoke: a",
++        "invoke: b",
++    ]
++
++
++def test_r9_option_attributes():
++    @click.command()
++    @click.ledger_option()
++    def cli():
++        pass
++
++    opt = cli.params[0]
++    assert opt.opts == ["--ledger"]
++    assert opt.is_flag is True
++    assert opt.expose_value is False
++    assert opt.is_eager is True
++    assert opt.help == "Print the invocation ledger to stderr when the run ends."
++
++
++def test_r9_custom_decl_and_callback_replaced():
++    def bad(ctx, param, value):
++        raise RuntimeError("must be replaced")
++
++    @click.command()
++    @click.ledger_option("--trace", callback=bad)
++    def cli():
++        pass
++
++    res = CliRunner().invoke(cli, ["--trace"])
++    assert res.exit_code == 0
++    assert res.stderr.splitlines() == ["parse: cli", "invoke: cli"]
++
++
++# ---------------------------------------------------------------- R10
++
++
++def test_r10_runner_attribute():
++    assert CliRunner().ledger is False
++    assert CliRunner(ledger=True).ledger is True
++
++
++def test_r10_result_defaults():
++    res = click.testing.Result(CliRunner(), b"", b"", b"", None, 0, None)
++    assert res.ledger == ()
++    res2 = click.testing.Result(
++        CliRunner(), b"", b"", b"", None, 0, None, ledger=(("a", "b"),)
++    )
++    assert res2.ledger == (("a", "b"),)
++
++
++@pytest.mark.parametrize(
++    ("runner_ledger", "call_ledger", "recorded"),
++    [
++        (True, None, True),
++        (False, None, False),
++        (False, True, True),
++        (True, False, False),
++        (True, True, True),
++    ],
++)
++def test_r10_effective_ledger(runner_ledger, call_ledger, recorded):
++    res = CliRunner(ledger=runner_ledger).invoke(
++        _noop_cmd("cli"), [], ledger=call_ledger
++    )
++    if recorded:
++        assert res.ledger == (("parse", "cli"), ("invoke", "cli"))
++    else:
++        assert res.ledger == ()
++
++
++def test_r10_runner_beats_context_settings():
++    cmd = click.Command(
++        "c", callback=lambda: None, context_settings={"ledger": False}
++    )
++    res = CliRunner(ledger=True).invoke(cmd, [])
++    assert res.ledger == (("parse", "c"), ("invoke", "c"))
++
++
++def test_r10_ledger_kept_on_exception():
++    @click.command()
++    def cli():
++        raise RuntimeError("boom")
++
++    res = _run(cli)
++    assert isinstance(res.exception, RuntimeError)
++    assert res.exit_code == 1
++    assert res.ledger == (("parse", "cli"), ("invoke", "cli"))
++
++
++def test_r10_ledger_kept_on_usage_error():
++    @click.group()
++    def g():
++        pass
++
++    @g.command()
++    @click.option("--x", required=True)
++    def sub(x):
++        pass
++
++    res = _run(g, ["sub"])
++    assert res.exit_code == 2
++    assert res.ledger == (("parse", "g"), ("invoke", "g"))
++
++
++def test_r10_ledger_is_tuple_of_tuples():
++    res = _run(_noop_cmd("cli"))
++    assert isinstance(res.ledger, tuple)
++    assert all(isinstance(e, tuple) for e in res.ledger)
++
++
++# ---------------------------------------------------------------- R11
++
++
++def test_r11_successive_invokes_independent():
++    runner = CliRunner(ledger=True)
++    g = _simple_group()
++    r1 = runner.invoke(g, ["sub"])
++    r2 = runner.invoke(g, ["sub"])
++    expected = (
++        ("parse", "g"),
++        ("invoke", "g"),
++        ("parse", "sub"),
++        ("invoke", "sub"),
++    )
++    assert r1.ledger == expected
++    assert r2.ledger == expected
++
++
++def test_r11_successive_make_context_independent():
++    cmd = _noop_cmd()
++    c1 = cmd.make_context("c", [], ledger=True)
++    c2 = cmd.make_context("c", [], ledger=True)
++    assert c1.ledger == (("parse", "c"),)
++    assert c2.ledger == (("parse", "c"),)
++    c1.record("only", "one")
++    assert c2.ledger == (("parse", "c"),)
++
++
++def test_r11_custom_context_class_child_shares_state():
++    class MyCtx(click.Context):
++        def __init__(self, *args, **kwargs):
++            super().__init__(*args, **kwargs)
++
++    cmd = _noop_cmd()
++    root = click.Context(cmd, ledger=True)
++    child = MyCtx(cmd, parent=root)
++    assert child.ledger_enabled is True
++    child.record("x", "y")
++    assert root.ledger == (("x", "y"),)
++
++
++def test_r11_reused_context_accumulates_and_close_keeps():
++    ctx = click.Context(_noop_cmd(), ledger=True)
++    ctx.record("a", "1")
++    ctx.close()
++    ctx.record("b", "2")
++    ctx.close()
++    assert ctx.ledger == (("a", "1"), ("b", "2"))
++
++
++def test_r11_result_ledger_is_snapshot():
++    captured = []
++
++    @click.command()
++    @click.pass_context
++    def cli(ctx):
++        captured.append(ctx)
++
++    res = _run(cli)
++    snapshot = res.ledger
++    captured[0].record("late", "x")
++    assert res.ledger == snapshot
++    assert ("late", "x") not in res.ledger
++    assert ("late", "x") in captured[0].ledger
++
++
++# ---------------------------------------------------------------- R12
++
++
++@pytest.mark.parametrize(
++    "args",
++    [["--help"], ["sub", "--help"], ["sub", "--old", "1"], ["sub"], ["nosuch"]],
++)
++def test_r12_output_identical_with_and_without_recording(args):
++    @click.group()
++    def g():
++        click.echo("group")
++
++    @g.command()
++    @click.option("--old", deprecated=True)
++    def sub(old):
++        click.echo(f"sub {old}")
++
++    on = CliRunner(ledger=True).invoke(g, args)
++    off = CliRunner(ledger=False).invoke(g, args)
++    assert on.stdout == off.stdout
++    assert on.stderr == off.stderr
++    assert on.output == off.output
++    assert on.exit_code == off.exit_code
++    assert on.return_value == off.return_value
++
++
++@pytest.mark.parametrize("enabled", [True, False])
++def test_r12_no_ledger_key_in_info_dict(enabled):
++    cmd = click.Command("c", callback=lambda: None)
++    with click.Context(cmd, ledger=enabled) as ctx:
++        info = ctx.to_info_dict()
++    assert "ledger" not in info
++    assert "ledger" not in info["command"]
++
++
++def test_r12_recording_does_not_mutate_context_data():
++    seen = []
++
++    @click.command()
++    @click.option("--name", default="n")
++    @click.pass_context
++    def cli(ctx, name):
++        before = (dict(ctx.params), list(ctx.args), dict(ctx.meta), ctx.obj)
++        ctx.record("u", "n")
++        ctx.record("v")
++        after = (dict(ctx.params), list(ctx.args), dict(ctx.meta), ctx.obj)
++        seen.append((before, after))
++
++    res = _run(cli, ["--name", "x"], obj=None)
++    assert res.exit_code == 0
++    before, after = seen[0]
++    assert before == after
++    assert before[0] == {"name": "x"}
++
++
++def test_r12_result_repr_unchanged():
++    res = click.testing.Result(CliRunner(), b"", b"", b"", None, 0, None)
++    assert repr(res) == "<Result okay>"

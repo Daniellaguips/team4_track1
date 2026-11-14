@@ -1,0 +1,283 @@
+diff --git a/src/click/__init__.py b/src/click/__init__.py
+index a34ab02..61f8c42 100644
+--- a/src/click/__init__.py
++++ b/src/click/__init__.py
+@@ -56,6 +56,7 @@ from .termui import unstyle as unstyle
+ from .types import BOOL as BOOL
+ from .types import Choice as Choice
+ from .types import DateTime as DateTime
++from .types import Duration as Duration
+ from .types import File as File
+ from .types import FLOAT as FLOAT
+ from .types import FloatRange as FloatRange
+diff --git a/src/click/types.py b/src/click/types.py
+index b6e98a9..55577d3 100644
+--- a/src/click/types.py
++++ b/src/click/types.py
+@@ -4,11 +4,13 @@ import abc
+ import collections.abc as cabc
+ import enum
+ import os
++import re
+ import stat
+ import sys
+ import typing as t
+ import uuid
+ from datetime import datetime
++from datetime import timedelta
+ from gettext import gettext as _
+ from gettext import ngettext
+ 
+@@ -885,6 +887,252 @@ class BoolParamType(ParamType[bool]):
+         return "BOOL"
+ 
+ 
++_DURATION_UNIT_SECONDS: dict[str, int] = {
++    "w": 604800,
++    "d": 86400,
++    "h": 3600,
++    "m": 60,
++    "s": 1,
++}
++_DURATION_UNIT_RANK: dict[str, int] = {"w": 0, "d": 1, "h": 2, "m": 3, "s": 4}
++_DURATION_MAX_SECONDS = 315360000
++_DURATION_MAX_LENGTH = 256
++_DURATION_TERM = r"[0-9]+(?:\.[0-9]+)?[wdhms]"
++_DURATION_RE = re.compile(rf"{_DURATION_TERM}(?:[ \t]*{_DURATION_TERM})*")
++_DURATION_TERM_RE = re.compile(r"([0-9]+(?:\.[0-9]+)?)([wdhms])")
++
++
++class DurationInfoDict(ParamTypeInfoDict):
++    as_timedelta: bool
++    min: int | None
++    max: int | None
++    min_open: bool
++    max_open: bool
++
++
++class Duration(ParamType[int | timedelta]):
++    """Converts human-written durations such as ``1h30m``, ``90s`` or
++    ``2d 4h`` into an exact number of seconds (``int``) or, with
++    ``as_timedelta=True``, a :class:`datetime.timedelta`.
++
++    Units are ``w``, ``d``, ``h``, ``m`` and ``s``, must appear from
++    largest to smallest and may not repeat. Arithmetic is exact; values
++    that are not a whole number of seconds (or microseconds in
++    ``as_timedelta`` mode) are rejected. Totals above 315360000 seconds
++    are rejected.
++
++    :param min: Minimum accepted number of seconds.
++    :param max: Maximum accepted number of seconds.
++    :param min_open: If true, ``min`` itself is not accepted.
++    :param max_open: If true, ``max`` itself is not accepted.
++    :param as_timedelta: Return a ``timedelta`` instead of an ``int``.
++    """
++
++    name = "duration"
++
++    min: int | None
++    max: int | None
++    min_open: bool
++    max_open: bool
++    as_timedelta: bool
++
++    def __init__(
++        self,
++        *,
++        min: int | None = None,
++        max: int | None = None,
++        min_open: bool = False,
++        max_open: bool = False,
++        as_timedelta: bool = False,
++    ) -> None:
++        for bound in (min, max):
++            if bound is not None and (
++                isinstance(bound, bool) or not isinstance(bound, int) or bound < 0
++            ):
++                raise ValueError("min and max must be non-negative integers.")
++
++        if min is not None and max is not None:
++            if min > max:
++                raise ValueError("min must not be greater than max.")
++
++            if min == max and (min_open or max_open):
++                raise ValueError("the range is empty.")
++
++        self.min = min
++        self.max = max
++        self.min_open = min_open
++        self.max_open = max_open
++        self.as_timedelta = as_timedelta
++
++    def to_info_dict(self) -> DurationInfoDict:
++        return {
++            "as_timedelta": self.as_timedelta,
++            "min": self.min,
++            "max": self.max,
++            "min_open": self.min_open,
++            "max_open": self.max_open,
++            **super().to_info_dict(),
++        }
++
++    def _describe_range(self) -> str:
++        if self.min is None:
++            op = "<" if self.max_open else "<="
++            return f"x{op}{self.max}"
++
++        if self.max is None:
++            op = ">" if self.min_open else ">="
++            return f"x{op}{self.min}"
++
++        lop = "<" if self.min_open else "<="
++        rop = "<" if self.max_open else "<="
++        return f"{self.min}{lop}x{rop}{self.max}"
++
++    def _invalid(
++        self, value: t.Any, param: Parameter | None, ctx: Context | None
++    ) -> t.NoReturn:
++        self.fail(
++            _("{value!r} is not a valid duration.").format(value=value), param, ctx
++        )
++
++    def _parse(
++        self, value: str, param: Parameter | None, ctx: Context | None
++    ) -> tuple[int, int]:
++        """Parse a string into an exact ``(numerator, denominator)``
++        total of seconds."""
++        text = value.strip()
++
++        if (
++            not text
++            or len(text) > _DURATION_MAX_LENGTH
++            or _DURATION_RE.fullmatch(text) is None
++        ):
++            self._invalid(value, param, ctx)
++
++        terms = _DURATION_TERM_RE.findall(text)
++        seen: set[str] = set()
++        prev_rank: int | None = None
++
++        for _number, unit in terms:
++            rank = _DURATION_UNIT_RANK[unit]
++
++            if unit in seen:
++                self.fail(
++                    _("{value!r} repeats the unit {unit!r}.").format(
++                        value=value, unit=unit
++                    ),
++                    param,
++                    ctx,
++                )
++
++            if prev_rank is not None and rank < prev_rank:
++                self.fail(
++                    _(
++                        "{value!r} has units out of order; use largest to smallest."
++                    ).format(value=value),
++                    param,
++                    ctx,
++                )
++
++            seen.add(unit)
++            prev_rank = rank
++
++        parsed = []
++        scale = 0
++
++        for number, unit in terms:
++            whole, _sep, frac = number.partition(".")
++            parsed.append((whole, frac, unit))
++            scale = len(frac) if len(frac) > scale else scale
++
++        numerator = 0
++
++        for whole, frac, unit in parsed:
++            scaled = int(whole + frac.ljust(scale, "0"))
++            numerator += scaled * _DURATION_UNIT_SECONDS[unit]
++
++        return numerator, 10**scale
++
++    def convert(
++        self, value: t.Any, param: Parameter | None, ctx: Context | None
++    ) -> int | timedelta:
++        if isinstance(value, str):
++            num, den = self._parse(value, param, ctx)
++        elif isinstance(value, bool) or not isinstance(value, (int, timedelta)):
++            self._invalid(value, param, ctx)
++        elif isinstance(value, int):
++            if value < 0:
++                self._invalid(value, param, ctx)
++
++            num, den = int(value), 1
++        else:
++            if value < timedelta(0):
++                self._invalid(value, param, ctx)
++
++            num, den = value // timedelta(microseconds=1), 1_000_000
++
++        if num > _DURATION_MAX_SECONDS * den:
++            self.fail(
++                _(
++                    "{value!r} is too large; the maximum is {limit} seconds."
++                ).format(value=value, limit=_DURATION_MAX_SECONDS),
++                param,
++                ctx,
++            )
++
++        result: int | timedelta
++
++        if self.as_timedelta:
++            micros = num * 1_000_000
++
++            if micros % den:
++                self.fail(
++                    _("{value!r} is not a whole number of microseconds.").format(
++                        value=value
++                    ),
++                    param,
++                    ctx,
++                )
++
++            result = timedelta(microseconds=micros // den)
++        else:
++            if num % den:
++                self.fail(
++                    _("{value!r} is not a whole number of seconds.").format(
++                        value=value
++                    ),
++                    param,
++                    ctx,
++                )
++
++            result = int(num // den)
++
++        out_of_range = False
++
++        if self.min is not None:
++            low = self.min * den
++            if num < low or (self.min_open and num == low):
++                out_of_range = True
++
++        if self.max is not None:
++            high = self.max * den
++            if num > high or (self.max_open and num == high):
++                out_of_range = True
++
++        if out_of_range:
++            self.fail(
++                _("{value!r} is out of range: expected {range}.").format(
++                    value=value, range=self._describe_range()
++                ),
++                param,
++                ctx,
++            )
++
++        return result
++
++    def __repr__(self) -> str:
++        return "DURATION"
++
++
+ class UUIDParameterType(ParamType[uuid.UUID]):
+     name = "uuid"
+ 

@@ -1,0 +1,5 @@
+{
+ "ok": false,
+ "stage": "fairness/judge",
+ "report": "tests depend on unstated behavior:\n- test_r2_unset_sentinel_is_absent obtains the UNSET sentinel from `click.Option(['--probe']).default`. The statement only mentions 'the internal UNSET sentinel'. It never says how to reach it, nor that an Option built without `default` keeps UNSET on `.default`. That depends on the existing click implementation, not on the statement."
+}

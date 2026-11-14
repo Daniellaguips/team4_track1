@@ -1,0 +1,166 @@
+{
+ "feature": "Invocation journal: an opt-in, invocation-scoped call ledger on Context",
+ "summary": "Adds an opt-in journal that records what happened during one CLI run. It logs command callbacks, deprecation notices, group result callbacks, ctx.invoke and ctx.forward calls, and user-defined events. The journal is a single list shared by every Context in an invocation tree. It follows nested groups, chain=True groups, ctx.invoke and ctx.forward, and is visible to custom context_class subclasses. CliRunner.invoke gets a fresh journal per call and exposes it as Result.journal. With the journal disabled, nothing in click changes.",
+ "public_api": [
+  "click.JournalEntry (NamedTuple: seq, event, path, detail), defined in core.py and exported from click/__init__.py",
+  "click.Context(..., journal: bool | list[JournalEntry] | None = None) (new last keyword parameter)",
+  "click.Context.journal (attribute: list[JournalEntry] | None)",
+  "click.Context.record(event: str, detail: str | None = None) -> JournalEntry | None",
+  "click.pass_journal (decorator in decorators.py, exported from click/__init__.py)",
+  "click.testing.CliRunner(..., journal: bool = False) and CliRunner.invoke(..., journal: bool | None = None)",
+  "click.testing.Result.journal (tuple[JournalEntry, ...])"
+ ],
+ "keywords": [
+  "journal",
+  "JournalEntry",
+  "record",
+  "pass_journal",
+  "Result.journal",
+  "_make_sub_context",
+  "forward",
+  "_process_result",
+  "context_settings",
+  "resilient_parsing"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "click.JournalEntry is a typing.NamedTuple defined in core.py with exactly these fields in this order: seq (int), event (str), path (str), detail (str | None). It is exported from click/__init__.py as `from .core import JournalEntry as JournalEntry`. It must not add any new module-level import to any click module, because tests/test_imports.py has an allowlist. It must use the already imported `typing as t`, so `t.NamedTuple`.",
+   "inputs": "JournalEntry(1, 'callback', 'cli', None)",
+   "output": "A 4-tuple. entry.seq == 1, entry.event == 'callback', entry.path == 'cli', entry.detail is None. Entries are immutable and compare equal by value.",
+   "errors": "none",
+   "precedence": "none",
+   "bounds": "none",
+   "state": "Entries carry no reference to a context. They are plain values."
+  },
+  {
+   "id": "R2",
+   "text": "Context.__init__ gains a LAST keyword parameter `journal: bool | list[JournalEntry] | None = None` and a public attribute `ctx.journal` (a list or None). Resolution, in this order: (a) if `journal` is a list, ctx.journal is that exact list object (not a copy), even when the parent has its own list. (b) If `journal is True`, ctx.journal is the parent's list when a parent exists and parent.journal is not None, otherwise a NEW empty list. (c) If `journal is False`, ctx.journal is None (journaling disabled for this context). (d) If `journal is None`, ctx.journal is parent.journal when a parent exists, otherwise None. (e) Any other value, including 0, 1, tuples and strings, is rejected. Check bool before truthiness: `0` and `1` are NOT accepted as booleans. Because contexts built by Command.make_context merge context_settings only for keys missing from `extra` (existing behavior), an explicit `journal=` passed to main()/make_context beats a `journal` key in Command.context_settings, which in turn beats inheritance from the parent (d). A context whose journal is None passes None down to descendants that pass journal=None. A descendant that passes True when its parent's journal is None starts a new independent list.",
+   "inputs": "Context(cmd, journal=True); Context(cmd, parent=p, journal=True) where p.journal is a list; Context(cmd, parent=p, journal=False); Context(cmd, parent=p) where p.journal is None and child journal=True; Context(cmd, journal=0)",
+   "output": "ctx.journal is a new []; ctx.journal is p.journal (identity); ctx.journal is None; a new independent []; TypeError respectively.",
+   "errors": "TypeError(\"'journal' must be a bool, a list, or None.\")",
+   "precedence": "Precedence for enablement: explicit `journal` argument (including main(journal=...) and the CliRunner-injected list) > Command.context_settings['journal'] > parent's journal > disabled. Contexts created by Context._make_sub_context (used by ctx.invoke and Group.to_info_dict) pass no journal argument and never read the target command's context_settings, so they only inherit.",
+   "bounds": "A list passed by the caller may already contain entries. It is used as-is.",
+   "state": "Every root Context that enables journaling without being given a list creates its own new list in __init__. There must be no class-level or module-level shared list. Every context in the invocation tree shares one list, so `child.journal is root.journal` holds."
+  },
+  {
+   "id": "R3",
+   "text": "Context.record(event, detail=None) appends one entry and returns it. Steps, in this order: (1) validate arguments. `event` must be a non-empty str, otherwise ValueError. `detail` must be a str or None, otherwise TypeError. Validation happens even when journaling is disabled or the context is resilient. (2) If self.journal is None or self.resilient_parsing is True (evaluated at call time), return None and append nothing. (3) Otherwise build JournalEntry(seq=len(self.journal) + 1, event=event, path=<path>, detail=detail), append it to self.journal, and return it. <path> is the info_name of each context from the root down to this context, skipping contexts whose info_name is None, joined by a single space (empty string if all are None). It is NOT ctx.command_path. command_path would add usage pieces of parent arguments and call get_params.",
+   "inputs": "ctx.record('x'); ctx.record('x', 'd'); ctx.record(''); ctx.record('x', 5); ctx.record('x') on a context with journal None; ctx.record('x') while ctx.resilient_parsing is True; a child with info_name 'sub' under root 'cli'; a list pre-filled with 2 entries",
+   "output": "JournalEntry(1,'x','cli',None); JournalEntry(2,'x','cli','d'); then ValueError; TypeError; None; None; path 'cli sub'; the next seq is 3.",
+   "errors": "ValueError('Journal event names must not be empty.') for an empty or non-str event; TypeError('Journal detail must be a str or None, not int.') where the type name is type(detail).__name__",
+   "precedence": "Validation (step 1) runs before the disabled/resilient early return (step 2). A disabled context still raises on bad arguments.",
+   "bounds": "seq is 1-based and equals len(list)+1 at append time, so it follows the shared list length, not a per-context counter.",
+   "state": "Entries from all contexts in the tree interleave in one list in real execution order."
+  },
+  {
+   "id": "R4",
+   "text": "Command.invoke(ctx) records the event 'callback' (detail None) through `ctx.record('callback')` ONLY when self.callback is not None. The record happens after the existing deprecation echo (R5) and immediately before `ctx.invoke(self.callback, **ctx.params)`. The record happens even if the callback later raises. Group.invoke already reaches this through super().invoke(ctx), so a group callback is recorded before its subcommand callback. A command without a callback records no 'callback' entry.",
+   "inputs": "cli -> sub where both have callbacks; a group with callback=None used via invoke_without_command",
+   "output": "[callback 'cli', callback 'cli sub'] in that order; the group with no callback produces no 'callback' entry.",
+   "errors": "none",
+   "precedence": "Ordering interaction with R5: for a deprecated command, the 'deprecated' entry precedes its 'callback' entry (same context). Ordering interaction with R6: callbacks of the group's subcommands precede the group's 'result' entry.",
+   "bounds": "Exactly one 'callback' entry per Command.invoke call that has a callback.",
+   "state": "Recorded on the context passed to Command.invoke, which is the command's own context."
+  },
+  {
+   "id": "R5",
+   "text": "Deprecation notices are journaled as event 'deprecated' through ctx.record, immediately BEFORE the existing red message is echoed to stderr, and under exactly the same conditions as the existing echo. (a) Command.invoke, when self.deprecated is truthy: detail is f'command:{self.name}'. (b) Parameter.handle_parse_result, when the existing condition holds (param deprecated, value is not UNSET, source < ParameterSource.DEFAULT_MAP): detail is f'{self.param_type_name}:{self.human_readable_name}', for example 'option:old_flag' or 'argument:SRC'. The entry is recorded on the context being parsed. The echoed bytes are byte-identical to today. Param entries occur at parse time, so for chain=True they all precede the first subcommand's own invocation (see R8). A deprecated command with callback=None still records its 'deprecated' entry.",
+   "inputs": "a deprecated command; a command with @option('--old', deprecated=True) given on the command line; the same option left at its default",
+   "output": "Entry ('deprecated', detail 'command:legacy'); entry ('deprecated', detail 'option:old'); no entry for the default case.",
+   "errors": "none",
+   "precedence": "R5 interacts with R3: when the context is resilient (completion), the existing echo still happens but record returns None, so no entry is stored. R5 interacts with R4: the 'deprecated' entry for a command always precedes its 'callback' entry.",
+   "bounds": "One entry per echoed message. A value taken from env var is source ENVIRONMENT (< DEFAULT_MAP), so it counts. default_map and default do not.",
+   "state": "Stored in the shared list in emission order."
+  },
+  {
+   "id": "R6",
+   "text": "Group result callbacks are journaled. In Group.invoke's inner `_process_result`, when self._result_callback is not None, call `ctx.record('result')` (detail None, ctx is the group's context) immediately before `ctx.invoke(self._result_callback, value, **ctx.params)`. A result callback registered several times (chained via result_callback() without replace=True) is still ONE entry per _process_result call, not one per registered function. If no result callback is set, nothing is recorded. This applies to the normal subcommand path, the chain path, and the invoke_without_command path with no subcommand.",
+   "inputs": "group with two stacked @cli.result_callback() functions, invoked with one subcommand; group with invoke_without_command and no subcommand and a result callback",
+   "output": "[... sub 'callback', then exactly one ('result', path 'cli')]; [callback 'cli', result 'cli'].",
+   "errors": "none",
+   "precedence": "For nested groups the inner group's 'result' entry precedes the outer group's 'result' entry, because the inner invoke finishes first (this extends the ordering in R4).",
+   "bounds": "Exactly 0 or 1 'result' entry per group invocation.",
+   "state": "Recorded on the group's own context."
+  },
+  {
+   "id": "R7",
+   "text": "Context.invoke(callback, ...) with a Command as first argument records event 'invoke' (detail None) on the NEW sub-context created by _make_sub_context. The entry is recorded after the missing-parameter defaults are filled and ctx.params is updated, and immediately before the callback runs, so if the TypeError for a missing callback or a default type-cast error occurs, nothing is recorded. Invoking a plain callable (not a Command) records nothing and creates no context. Context.forward must keep dispatching through `self.invoke(...)`, so subclass overrides of invoke still see forwards. A forward records event 'forward' INSTEAD of 'invoke', exactly one entry per forward call. Implement this with a private pending marker on the forwarding context that is set before self.invoke is called, consumed (read and cleared) by invoke at record time, and ALSO cleared in a `finally` in forward. A callback run by a forward that itself calls ctx.invoke(other_cmd) must then record 'invoke', not 'forward'. A failed forward must not leave the marker set for a later invoke.",
+   "inputs": "ctx.invoke(other_cmd, x=1); ctx.forward(other_cmd); ctx.invoke(plain_fn); ctx.forward(other_cmd) where other_cmd's default casting raises, then ctx.invoke(third_cmd); ctx.forward(other_cmd) where other_cmd's callback does ctx.invoke(third_cmd)",
+   "output": "('invoke','cli other',None); ('forward','cli other',None); no entry; no 'forward' entry from the failed attempt, then ('invoke','cli third',None); ('forward','cli other') followed by ('invoke', ...) with the path of the new inner sub-context, not a second 'forward'.",
+   "errors": "Existing errors unchanged: TypeError('The given command does not have a callback that can be invoked.') and TypeError('Callback is not a command.')",
+   "precedence": "R7 interacts with R5: since ctx.invoke bypasses Command.invoke, a deprecated target command produces NO 'deprecated' and NO 'callback' entry via invoke/forward, only 'invoke'/'forward'.",
+   "bounds": "Exactly one 'invoke' or 'forward' entry per successful Context.invoke/forward of a Command.",
+   "state": "The sub-context inherits the shared list through its parent (R2 (d)). The pending marker is per forwarding context object and never survives past a single dispatch."
+  },
+  {
+   "id": "R8",
+   "text": "ROUTE MATRIX. Baseline = `main()` with journal enabled on the root context via main(journal=True), main(journal=<list>) or context_settings. Entries produced there: 'deprecated' (R5), 'callback' (R4), 'result' (R6). Per route: (1) main(): baseline; same. The list is reachable only through ctx.journal or a list the caller passed in, because main() returns the callback's value. (2) CliRunner.invoke: same entries as main() for the same command and args, and the list is returned as Result.journal (R9); different only in how the list is obtained. (3) ctx.invoke(Command): different. Produces only 'invoke' (R7). No 'callback', no 'deprecated', no param-deprecation entries (nothing is parsed). The target's context_settings['journal'] is ignored, because _make_sub_context passes no journal argument. (4) ctx.invoke(plain callable): N/A. No new context is created and no entry is recorded; the callable runs in the calling context. (5) ctx.forward: different. Produces only a single 'forward' entry (R7), otherwise like route 3. (6) Nested groups (group inside group, non-chain): same event kinds as main(). Order: outer 'deprecated'(command)/'callback', inner group parse-time param 'deprecated' entries, inner 'deprecated'(command)/'callback', leaf parse-time param entries, leaf 'deprecated'(command)/'callback', inner 'result', outer 'result'. Paths join info_names: 'cli inner leaf'. (7) chain=True group: same event kinds, different ORDER. Group 'deprecated'(command)/'callback' first, then ALL subcommands are parsed (so every sub's parameter-deprecation entries appear, in command-line order), and only then each sub in command-line order records its own 'deprecated'(command) and 'callback'; one 'result' for the group at the end. A subcommand whose context_settings has journal=False is skipped entirely (its parse-time entries and its callback entries are absent), while the group's 'result' is still recorded. A chain group cannot contain another Group (existing RuntimeError, unchanged).",
+   "inputs": "cli (chain=True) with subs a (option --old deprecated, given) and b (deprecated command), invoked as `cli a --old b` with a result callback",
+   "output": "Entries in order: ('callback','cli'), ('deprecated','cli a','option:old'), ('callback','cli a'), ('deprecated','cli b','command:b'), ('callback','cli b'), ('result','cli'). With a and b each having their own parse-time entries, ALL parse-time entries for both come before the first sub's callback. seq values are 1..6 with no gaps.",
+   "errors": "none",
+   "precedence": "R8 follows from R2 for context_settings (honored in routes 1, 2, 6, 7 via make_context; ignored in routes 3 and 5) and from R4/R5/R6 ordering.",
+   "bounds": "none",
+   "state": "In all routes the same shared list object is used by every context in the tree; routes 3 and 5 never create a new list."
+  },
+  {
+   "id": "R9",
+   "text": "CliRunner gains `journal: bool = False` (constructor, stored as `self.journal`; added as a LAST keyword parameter) and CliRunner.invoke gains `journal: bool | None = None` (inserted before **extra as a keyword parameter; it is placed after `color`). The effective flag is `invoke.journal` when it is not None, otherwise `self.journal`. If the effective flag is True, invoke creates a NEW empty list at the start of every call and passes it as `journal=<that list>` to `cli.main(...)` (so the root Context uses that list per R2 (a)). If the effective flag is False, `journal` is NOT passed to main(), so the command's own context_settings decide (False does not force-disable). `Result` gains `journal: tuple[JournalEntry, ...]`, a snapshot `tuple(list)` taken in the same `finally` block that reads the output streams, so entries recorded before an exception or SystemExit are included. Result.__init__ gets `journal=()` as a LAST keyword parameter. If the effective flag is False, Result.journal is `()` even if the command enabled journaling itself via context_settings. Result.__repr__ is unchanged.",
+   "inputs": "runner = CliRunner(journal=True); runner.invoke(cli, []) twice; runner.invoke(cli, [], journal=False); CliRunner().invoke(cli, [], journal=True) where cli.context_settings = {'journal': False}",
+   "output": "The second call's Result.journal starts again at seq 1 and does not contain the first call's entries; the third call has Result.journal == (); the last call records entries (the explicit list from the runner overrides context_settings per R2).",
+   "errors": "none",
+   "precedence": "R9 interacts with R2: the runner-injected list is an explicit argument, so it beats context_settings['journal'] including False on the root command. It does not affect context_settings on subcommands, which still disable their own subtrees (R2, R8).",
+   "bounds": "A command that raises (catch_exceptions=True) still yields the entries recorded before the raise.",
+   "state": "Reset: every invoke call creates a fresh list, so consecutive invoke calls on the same runner (and the same command object) share no entries, and nothing is stored on the runner, the command or the class."
+  },
+  {
+   "id": "R10",
+   "text": "decorators.py adds `pass_journal(f)`, exported from click/__init__.py as `from .decorators import pass_journal as pass_journal`. It works like pass_obj: the wrapper calls `f(get_current_context().journal, *args, **kwargs)` and uses update_wrapper. It passes the live shared list (the same object as ctx.journal, not a copy) or None when journaling is disabled for the current context. It also works when the callback is entered through ctx.invoke(Command) or ctx.forward, where the current context is the sub-context, whose journal is inherited (R2 (d)).",
+   "inputs": "@click.command() @click.pass_journal def cmd(journal): ...",
+   "output": "`journal` is ctx.journal (identity) at call time; entries appended by later events (such as the group's 'result') are visible through the same list object; None when disabled.",
+   "errors": "none",
+   "precedence": "none",
+   "bounds": "none",
+   "state": "Reads the current context at call time, so it always reflects the list of the active invocation tree."
+  },
+  {
+   "id": "R11",
+   "text": "Extension points. Every AUTOMATIC entry (R4, R5, R6, R7) must be created by calling `record(event, detail)` on the subject context, so a custom Context subclass (command.context_class, or main(..., ) of a command with `context_class`) that overrides `record` sees all of them. The subject context is: the ctx argument of Command.invoke (callback and command-deprecated), the ctx being parsed in handle_parse_result (param-deprecated), the group's ctx (result), and the new sub-context (invoke/forward). Internal code must never append to `ctx.journal` directly. A subclass `record` override that does not call super() simply stores nothing, and click must not fail. A Command subclass overriding `invoke` and calling super().invoke(ctx) still produces exactly one 'callback' entry. A Context subclass whose `__init__` forwards **kwargs to super gets `journal` handling for free, and `_make_sub_context` (which uses type(self)) keeps the subclass for sub-contexts.",
+   "inputs": "class C(Context): def record(self, event, detail=None): seen.append((type(self).__name__, event)); return super().record(event, detail); cmd.context_class = C; run a group with a subcommand",
+   "output": "`seen` contains one tuple per automatic entry, all with type name 'C', in the same order as the journal.",
+   "errors": "none",
+   "precedence": "R11 interacts with R3: validation and the disabled/resilient filtering live inside record(), so an override that calls super() gets the standard filtering; an override that does not call super() bypasses R3 filtering entirely.",
+   "bounds": "none",
+   "state": "The subclass sees records from all contexts of the tree, including ones created by chain mode and ctx.invoke."
+  },
+  {
+   "id": "R12",
+   "text": "Backward compatibility, byte-identical when the journal is disabled (the default). With no journal argument anywhere: Context.journal is None everywhere; stdout, stderr and exit codes of every existing command (including the red deprecation messages, --help output and error messages) are unchanged; Context.to_info_dict(), Command.to_info_dict() and Parameter.to_info_dict() output gain NO journal key; no new warnings are emitted (pytest runs with filterwarnings=error); the positional order of all existing parameters of Context.__init__, CliRunner.__init__, CliRunner.invoke and Result.__init__ is unchanged; Context.invoke/forward keep their current signatures and return values; Group.to_info_dict (which builds sub-contexts via _make_sub_context) records nothing even when the journal is enabled. Enabling the journal also does not change any printed output or return value.",
+   "inputs": "the existing test-suite; Context(cmd).to_info_dict()",
+   "output": "All existing tests pass unchanged; the info dict keys are exactly the current set.",
+   "errors": "none",
+   "precedence": "R12 takes precedence over every other rule: when in doubt, disabled-journal behavior must equal the pre-feature behavior.",
+   "bounds": "none",
+   "state": "No module-level, class-level or runner-level mutable state is introduced."
+  }
+ ],
+ "traps": [
+  "A module/class-level or CliRunner-level list leaks entries between CliRunner.invoke calls. The list must be created per root Context and per runner.invoke call.",
+  "journal=True on a child context must reuse the parent's list when it has one, not create a new one; journal=0/1 must raise the TypeError rather than act like False/True; journal=False disables the subtree but must not disable siblings.",
+  "ctx.invoke(Command) builds contexts via _make_sub_context and must IGNORE the target's context_settings['journal'], while make_context-based routes (main, nested, chain) honor it.",
+  "ctx.forward must still call self.invoke, record 'forward' instead of 'invoke' exactly once, and must clear its pending marker in a finally and when consumed. Otherwise an inner ctx.invoke inside the forwarded callback is wrongly labelled 'forward', or a later invoke is mislabelled after a failure.",
+  "In chain=True groups, every subcommand is parsed (producing parameter-deprecation entries) before any subcommand callback runs, and the group callback comes first. A naive per-subcommand ordering is wrong.",
+  "record() must validate its arguments before the disabled/resilient early return, and must return None (not an entry) in resilient mode even though the deprecation echo still happens.",
+  "Stacked result_callback registrations produce a single 'result' entry, not one per wrapped function. The 'deprecated' entry must come before the 'callback' entry for the same context, and a deprecated command with callback=None still records 'deprecated'.",
+  "The path is built from info_name values (skipping None), not ctx.command_path. command_path includes parent argument usage pieces and would also call get_params, which can emit warnings.",
+  "seq is len(shared_list)+1, so a caller-provided pre-filled list continues numbering rather than restarting at 1.",
+  "CliRunner journal=False means 'do not inject a list', not 'force disable'. An explicit True from the runner overrides a root context_settings journal=False."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ]
+}

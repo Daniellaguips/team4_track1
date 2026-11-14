@@ -1,0 +1,16 @@
+{
+ "instance_id": "pallets__click-sources-0001",
+ "model": "anthropic/claude-sonnet-5.5",
+ "wall_seconds": 513,
+ "model_calls": 7,
+ "attempts": 3,
+ "n_input_tokens": 435650,
+ "n_output_tokens": 84618,
+ "n_cache_tokens": 265332,
+ "cost_usd": 1.2465,
+ "ok": false,
+ "failed_stage": "fairness/judge",
+ "card": "sources",
+ "seed": 1,
+ "prompts_version": "v6.3-hard"
+}
