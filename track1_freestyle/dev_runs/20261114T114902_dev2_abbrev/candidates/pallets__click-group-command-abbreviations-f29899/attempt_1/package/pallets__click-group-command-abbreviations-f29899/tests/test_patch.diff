@@ -1,0 +1,194 @@
+diff --git a/tests/test_command_abbreviations.py b/tests/test_command_abbreviations.py
+new file mode 100644
+index 0000000..6900711
+--- /dev/null
++++ b/tests/test_command_abbreviations.py
+@@ -0,0 +1,188 @@
++import click
++from click.testing import CliRunner
++
++
++def _group(**kw):
++    @click.group(**kw)
++    @click.pass_context
++    def cli(ctx):
++        pass
++
++    for name in ("start", "status", "stop", "run", "runner"):
++        def make(n):
++            @cli.command(n)
++            def _c():
++                click.echo(n)
++        make(name)
++    return cli
++
++
++def _run(cli, args):
++    return CliRunner().invoke(cli, args)
++
++
++def test_attribute_default_and_opt_in():
++    """[R1] attribute stored, default False."""
++    assert click.Group().allow_abbreviations is False
++    assert click.Group(allow_abbreviations=True).allow_abbreviations is True
++    assert _group(allow_abbreviations=True).allow_abbreviations is True
++
++
++def test_off_by_default():
++    """[R1]"""
++    r = _run(_group(), ["sto"])
++    assert r.exit_code == 2
++    assert "Error: No such command 'sto'." in r.output
++
++
++def test_unique_prefix_invokes_command():
++    """[R3][R4]"""
++    cli = _group(allow_abbreviations=True)
++    assert _run(cli, ["sto"]).output == "stop\n"
++    assert _run(cli, ["star"]).output == "start\n"
++    assert _run(cli, ["statu"]).output == "status\n"
++
++
++def test_exact_name_wins():
++    """[R2]"""
++    cli = _group(allow_abbreviations=True)
++    assert _run(cli, ["run"]).output == "run\n"
++    assert _run(cli, ["runn"]).output == "runner\n"
++
++
++def test_ambiguous_prefix_error():
++    """[R5]"""
++    r = _run(_group(allow_abbreviations=True), ["st"])
++    assert r.exit_code == 2
++    assert "Error: Ambiguous command 'st'. Could be: start, status, stop." in r.output
++    assert "Usage: cli [OPTIONS] COMMAND [ARGS]..." in r.output
++
++
++def test_ambiguous_two_candidates():
++    """[R5]"""
++    r = _run(_group(allow_abbreviations=True), ["sta"])
++    assert r.exit_code == 2
++    assert "Error: Ambiguous command 'sta'. Could be: start, status." in r.output
++
++
++def test_no_candidate_and_empty_token():
++    """[R3][R6]"""
++    cli = _group(allow_abbreviations=True)
++    r = _run(cli, ["xyz"])
++    assert r.exit_code == 2
++    assert "Error: No such command 'xyz'." in r.output
++    r = _run(cli, [""])
++    assert r.exit_code == 2
++    assert "Error: No such command ''." in r.output
++
++
++def test_full_name_is_used_for_subcontext():
++    """[R4]"""
++    seen = []
++
++    @click.group(allow_abbreviations=True)
++    @click.pass_context
++    def cli(ctx):
++        seen.append(ctx.invoked_subcommand)
++
++    @cli.command()
++    def status():
++        pass
++
++    @cli.command()
++    def stop():
++        pass
++
++    r = _run(cli, ["stat", "--help"])
++    assert r.exit_code == 0
++    assert r.output.startswith("Usage: cli status")
++    _run(cli, ["stat"])
++    assert seen[-1] == "status"
++
++
++def test_hidden_commands():
++    """[R3] hidden handling; exact name always works."""
++    @click.group(allow_abbreviations=True)
++    def g():
++        pass
++
++    @g.command(hidden=True)
++    def secret():
++        click.echo("secret")
++
++    @g.command()
++    def serve():
++        click.echo("serve")
++
++    assert _run(g, ["se"]).output == "serve\n"
++    assert _run(g, ["secret"]).output == "secret\n"
++
++
++def test_chain_mode():
++    """[R7]"""
++    @click.group(chain=True, allow_abbreviations=True)
++    def cli():
++        pass
++
++    for n in ("build", "bundle", "test"):
++        def make(n):
++            @cli.command(n)
++            def _c():
++                click.echo(n)
++        make(n)
++
++    r = _run(cli, ["bui", "te"])
++    assert r.exit_code == 0, r.output
++    assert r.output == "build\ntest\n"
++    r = _run(cli, ["b"])
++    assert r.exit_code == 2
++    assert "Error: Ambiguous command 'b'. Could be: build, bundle." in r.output
++
++
++def test_normalized_names_and_token():
++    """[R2][R3][R5] names are normalized for comparison; registered name is invoked."""
++    @click.group(allow_abbreviations=True,
++                 context_settings={"token_normalize_func": lambda s: s.replace("_", "-").lower()})
++    def cli():
++        pass
++
++    @cli.command("list_users")
++    def lu():
++        click.echo("users")
++
++    @cli.command("list_groups")
++    def lg():
++        click.echo("groups")
++
++    assert _run(cli, ["LIST-U"]).output == "users\n"
++    r = _run(cli, ["LIST"])
++    assert r.exit_code == 2
++    assert "Error: Ambiguous command 'list'. Could be: " in r.output
++
++
++def test_command_collection_uses_list_commands():
++    """[R3] candidates come from list_commands/get_command."""
++    a = click.Group("a")
++    b = click.Group("b")
++
++    @a.command()
++    def deploy():
++        click.echo("deploy")
++
++    @b.command()
++    def destroy():
++        click.echo("destroy")
++
++    cli = click.CommandCollection(sources=[a, b], allow_abbreviations=True)
++    assert _run(cli, ["dep"]).output == "deploy\n"
++    assert _run(cli, ["des"]).output == "destroy\n"
++
++
++def test_resilient_parsing_does_not_raise():
++    """[R5] resilient parsing treats an ambiguous token as unknown."""
++    cli = _group(allow_abbreviations=True)
++    ctx = cli.make_context("cli", ["st"], resilient_parsing=True)
++    name, cmd, rest = cli.resolve_command(ctx, ["st"])
++    assert cmd is None and name is None and rest == []
++    ctx = cli.make_context("cli", ["sto"], resilient_parsing=True)
++    assert cli.resolve_command(ctx, ["sto"])[0] == "stop"

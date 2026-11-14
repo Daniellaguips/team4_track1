@@ -1,0 +1,14 @@
+[
+  "tests/test_option_conflicts.py::test_attribute_normalization",
+  "tests/test_option_conflicts.py::test_info_dict_unchanged",
+  "tests/test_option_conflicts.py::test_one_side_alone_is_fine",
+  "tests/test_option_conflicts.py::test_both_on_command_line_fails",
+  "tests/test_option_conflicts.py::test_order_on_command_line_irrelevant_and_symmetric",
+  "tests/test_option_conflicts.py::test_defaults_and_default_map_do_not_count",
+  "tests/test_option_conflicts.py::test_environment_source",
+  "tests/test_option_conflicts.py::test_explicit_false_flag_counts",
+  "tests/test_option_conflicts.py::test_error_hint_lists_all_option_strings",
+  "tests/test_option_conflicts.py::test_multiple_pairs_order_and_dedup",
+  "tests/test_option_conflicts.py::test_unknown_and_self_names_ignored",
+  "tests/test_option_conflicts.py::test_skipped_during_resilient_parsing"
+]

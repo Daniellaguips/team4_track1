@@ -1,0 +1,15 @@
+[
+  "tests/test_command_abbreviations.py::test_attribute_default_and_opt_in",
+  "tests/test_command_abbreviations.py::test_off_by_default",
+  "tests/test_command_abbreviations.py::test_unique_prefix_invokes_command",
+  "tests/test_command_abbreviations.py::test_exact_name_wins",
+  "tests/test_command_abbreviations.py::test_ambiguous_prefix_error",
+  "tests/test_command_abbreviations.py::test_ambiguous_two_candidates",
+  "tests/test_command_abbreviations.py::test_no_candidate_and_empty_token",
+  "tests/test_command_abbreviations.py::test_full_name_is_used_for_subcontext",
+  "tests/test_command_abbreviations.py::test_hidden_commands",
+  "tests/test_command_abbreviations.py::test_chain_mode",
+  "tests/test_command_abbreviations.py::test_normalized_names_and_token",
+  "tests/test_command_abbreviations.py::test_command_collection_uses_list_commands",
+  "tests/test_command_abbreviations.py::test_resilient_parsing_does_not_raise"
+]
