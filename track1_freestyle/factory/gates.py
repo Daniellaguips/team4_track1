@@ -212,33 +212,229 @@ def isolation(pkg: Path, draft, gold: str) -> dict:
 
 
 # ---------------------------------------------------------------- execution gates
-def gold_gate(r: dict) -> dict:
-    ok = r.get("reward") == 1.0 and r["f2p_passed"] == r["f2p_total"] and r["p2p_passed"] == r["p2p_total"]
-    return _res("gold", ok, "container", **_summ(r))
+# pytest's final line, e.g. "==== 16 failed, 1315 passed, 23 skipped in 3.93s ====" or
+# "==== no tests ran in 0.01s ====". -q runs print it without the "=" padding.
+_PYTEST_FINAL = re.compile(r"^=*\s*((?:\d+ \w+(?:, )?)+|no tests ran) in [\d.]+s(?: \([^)]*\))?\s*=*$")
+_RUN_MARKERS = {"internal_error": re.compile(r"^INTERNALERROR>", re.M),
+                "interrupted": re.compile(r"^!+ .*Interrupted", re.M),
+                "collection_error": re.compile(r"^_+ ERROR collecting ", re.M)}
+PYTEST_EXIT = {0: "ok", 1: "tests failed", 2: "interrupted", 3: "internal error", 4: "usage error",
+               5: "no tests collected"}
 
 
-def nop_gate(r: dict, f2p: list[str]) -> dict:
-    st = r.get("statuses", {})
-    # Absence must come from the missing feature, not from a broken harness: the P2P set is fully
-    # green and every feature test was collected and reported (FAILED, not missing/ERROR at import).
-    collected = all(n in st for n in f2p)
-    ok = (r.get("reward") == 0.0 and r["f2p_passed"] == 0 and r["p2p_passed"] == r["p2p_total"])
-    return _res("nop", ok, "container", f2p_all_reported=collected, **_summ(r),
-                f2p_status_counts=_counts([st.get(n, "MISSING") for n in f2p]))
+def pytest_summary(log: str | None) -> dict | None:
+    """Counts from the last pytest summary line plus crash markers; None if there is no summary."""
+    if not log:
+        return None
+    final = None
+    for line in log.splitlines():
+        m = _PYTEST_FINAL.match(line.strip())
+        if m:
+            final = m.group(1)
+    if final is None:
+        return None
+    counts = {"passed": 0, "failed": 0, "errors": 0, "skipped": 0, "xfailed": 0, "xpassed": 0}
+    for n, word in re.findall(r"(\d+) (\w+)", final):
+        word = {"error": "errors", "warning": "warnings"}.get(word, word)
+        counts[word] = counts.get(word, 0) + int(n)
+    counts["no_tests_ran"] = final == "no tests ran"
+    counts["markers"] = sorted(k for k, rx in _RUN_MARKERS.items() if rx.search(log))
+    return counts
 
 
-def mutation_gate(results: dict[str, dict]) -> dict:
-    killed = {m: (r.get("reward") is not None and r["f2p_passed"] < r["f2p_total"]) for m, r in results.items()}
+_FAIL_HEADER = re.compile(r"^_{3,} (.+?) _{3,}$")
+_EXC_LINE = re.compile(r"^E\s+([A-Za-z_][\w.]*(?:Error|Exception|Exit|Interrupt))\b")
+# A feature test "failing" with one of these is reporting broken code, not rejected behaviour.
+IMPORT_CLASS = {"SyntaxError", "IndentationError", "TabError", "ImportError", "ModuleNotFoundError"}
+
+
+def failure_exceptions(log: str | None) -> dict[str, set[str]]:
+    """Exception type names raised in each block of pytest's FAILURES section, keyed by the block
+    header (the nodeid after the file, with '::' shown as '.')."""
+    out: dict[str, set[str]] = {}
+    if not log:
+        return out
+    inside, cur = False, None
+    for line in log.splitlines():
+        if re.match(r"^=+ FAILURES =+$", line):
+            inside = True
+            continue
+        if inside and re.match(r"^=+ .* =+$", line):
+            break
+        if not inside:
+            continue
+        m = _FAIL_HEADER.match(line)
+        if m:
+            cur = out.setdefault(m.group(1), set())
+        elif cur is not None:
+            e = _EXC_LINE.match(line)
+            if e:
+                cur.add(e.group(1).rsplit(".", 1)[-1])
+            elif re.match(r"^E\s+assert\b", line):
+                cur.add("AssertionError")
+    return out
+
+
+def _failure_key(nodeid: str) -> str:
+    return nodeid.split("::", 1)[-1].replace("::", ".")
+
+
+def classify_run(r: dict, f2p: list[str], p2p: list[str]) -> dict:
+    """Per-test statuses for the expected F2P/P2P ids, recomputed from raw parser records, plus every
+    reason the run cannot be trusted as a test verdict (``problems``)."""
+    problems = []
+    for label, ids in (("F2P", f2p), ("P2P", p2p)):
+        dup = sorted({n for n in ids if ids.count(n) > 1})
+        if dup:
+            problems.append(f"duplicate ids in expected {label} list: {dup[:5]}")
+    if not f2p:
+        problems.append("expected F2P list is empty")
+    overlap = sorted(set(f2p) & set(p2p))
+    if overlap:
+        problems.append(f"ids in both F2P and P2P: {overlap[:5]}")
+    if r.get("stage_fail"):
+        problems.append(f"stage failed before tests ran: {r['stage_fail']}")
+    if r.get("reward") is None:
+        problems.append(f"no grading result ({r.get('error', 'reward is null')})")
+    if "test_sh_exit" in r and r["test_sh_exit"] != 0 and not r.get("stage_fail"):
+        problems.append(f"verifier entry point exit status {r['test_sh_exit']}")
+
+    records = r.get("records")
+    if records is None:  # legacy result without raw records
+        records = list(r.get("statuses", {}).items())
+    if not records and r.get("reward") is not None:
+        problems.append("parser produced no test records")
+    by_name: dict[str, list[str]] = {}
+    for n, s in records:
+        by_name.setdefault(n, []).append(s)
+    exact_dups = sorted(n for n, ss in by_name.items() if len(ss) != len(set(ss)))
+    if exact_dups:
+        problems.append(f"repeated identical test records: {exact_dups[:5]}")
+    file_errors = sorted(n for n, ss in by_name.items() if "::" not in n and "ERROR" in ss)
+    if file_errors:
+        problems.append(f"collection/import errors: {file_errors[:5]}")
+
+    def status(n):
+        ss = sorted(set(by_name.get(n, [])))
+        if not ss:
+            return "MISSING"
+        return ss[0] if len(ss) == 1 else "INCONSISTENT(" + "+".join(ss) + ")"
+
+    f2p_st = {n: status(n) for n in dict.fromkeys(f2p)}
+    p2p_st = {n: status(n) for n in dict.fromkeys(p2p)}
+
+    if r.get("reward") is not None:
+        summ = pytest_summary(r.get("pytest_log"))
+        if "pytest_log" in r and summ is None:
+            problems.append("no pytest summary line (crashed, killed, or never ran)")
+        if summ:
+            if summ["no_tests_ran"]:
+                problems.append("pytest ran no tests")
+            if summ["errors"]:
+                problems.append(f"pytest reported {summ['errors']} error(s) (collection/setup/teardown)")
+            if summ["markers"]:
+                problems.append(f"pytest run markers: {summ['markers']}")
+            n_pass = sum(1 for _, s in records if s == "PASSED")
+            n_fail = sum(1 for _, s in records if s == "FAILED")
+            if (n_pass, n_fail) != (summ["passed"] + summ["xpassed"], summ["failed"]):
+                problems.append(f"parser records ({n_pass} passed, {n_fail} failed) disagree with pytest "
+                                f"summary ({summ['passed'] + summ['xpassed']} passed, {summ['failed']} failed)")
+        # Recompute the grade.py contract from the records and the expected lists.
+        fp = sum(s == "PASSED" for s in f2p_st.values())
+        pp = sum(s == "PASSED" for s in p2p_st.values())
+        ft, pt = len(f2p_st), len(p2p_st)
+        reward = 0.0 if pt and pp < pt else 1.0 if ft and fp >= ft else (round(fp / ft, 4) if ft else 0.0)
+        want = {"reward": reward, "f2p_passed": fp, "f2p_total": ft, "p2p_passed": pp, "p2p_total": pt}
+        got = {k: r.get(k) for k in want}
+        if got != want:
+            problems.append(f"grader totals {got} disagree with recomputation {want}")
+    return {"problems": problems, "f2p": f2p_st, "p2p": p2p_st,
+            "f2p_status_counts": _counts(f2p_st.values()), "p2p_status_counts": _counts(p2p_st.values())}
+
+
+def gold_gate(r: dict, f2p: list[str], p2p: list[str]) -> dict:
+    c = classify_run(r, f2p, p2p)
+    ok = (not c["problems"] and r.get("reward") == 1.0
+          and all(s == "PASSED" for s in c["f2p"].values()) and all(s == "PASSED" for s in c["p2p"].values()))
+    return _res("gold", ok, "container", **_summ(r), problems=c["problems"],
+                f2p_status_counts=c["f2p_status_counts"], p2p_status_counts=c["p2p_status_counts"])
+
+
+def nop_gate(r: dict, f2p: list[str], p2p: list[str]) -> dict:
+    # Absence must come from the missing feature, not from a broken harness: every feature test was
+    # collected and FAILED in its own call (not missing, ERROR, skipped or reported twice), the
+    # P2P set is fully green, and the run itself is healthy.
+    c = classify_run(r, f2p, p2p)
+    f2p_all_reported = all(s != "MISSING" for s in c["f2p"].values())
+    ok = (not c["problems"] and r.get("reward") == 0.0
+          and all(s == "FAILED" for s in c["f2p"].values()) and all(s == "PASSED" for s in c["p2p"].values()))
+    return _res("nop", ok, "container", f2p_all_reported=f2p_all_reported, **_summ(r),
+                problems=c["problems"], f2p_status_counts=c["f2p_status_counts"],
+                p2p_status_counts=c["p2p_status_counts"],
+                not_failed={n: s for n, s in c["f2p"].items() if s != "FAILED"},
+                p2p_not_passed={n: s for n, s in c["p2p"].items() if s != "PASSED"})
+
+
+def mutant_verdict(r: dict, f2p: list[str], p2p: list[str]) -> dict:
+    """killed: a healthy run in which a collected feature test FAILED. invalid: the run cannot be
+    read as a behavioural verdict (patch did not apply, import/syntax/collection error, crash)."""
+    c = classify_run(r, f2p, p2p)
+    bad = {n: s for n, s in {**c["f2p"], **c["p2p"]}.items() if s not in ("PASSED", "FAILED")}
+    exc = failure_exceptions(r.get("pytest_log"))
+    failed = sorted(n for n, s in c["f2p"].items() if s == "FAILED")
+    broken = {n: sorted(exc.get(_failure_key(n), set()) & IMPORT_CLASS) for n in failed}
+    broken = {n: e for n, e in broken.items() if e}
+    behavioural = [n for n in failed if n not in broken]
+    if c["problems"] or bad:
+        v = "invalid"
+    elif behavioural:
+        v = "killed"
+    elif broken:
+        v = "invalid"
+    else:
+        v = "survived"
+    return {"verdict": v, "problems": c["problems"], "non_verdict_tests": dict(list(bad.items())[:10]),
+            "f2p_failed": failed, "f2p_failed_by_import_or_syntax_error": broken,
+            "p2p_failed": sorted(n for n, s in c["p2p"].items() if s == "FAILED"), **_summ(r)}
+
+
+def mutation_gate(results: dict[str, dict], f2p: list[str], p2p: list[str]) -> dict:
+    per = {m: mutant_verdict(r, f2p, p2p) for m, r in results.items()}
+    killed = {m: v["verdict"] == "killed" for m, v in per.items()}
     return _res("mutation", all(killed.values()) and bool(killed), "container",
                 killed=killed, score=f"{sum(killed.values())}/{len(killed)}",
-                per_mutant={m: _summ(r) for m, r in results.items()})
+                verdicts={m: v["verdict"] for m, v in per.items()}, per_mutant=per)
 
 
-def full_suite_gate(p: subprocess.CompletedProcess) -> dict:
-    tail = (p.stdout or "").strip().splitlines()[-3:]
-    m = re.search(r"(\d+) failed", "\n".join(tail))
-    ok = p.returncode == 0 and not m
-    return _res("full_suite_under_gold", ok, "container", tail=tail,
+def full_suite_gate(p: subprocess.CompletedProcess, log: str | None) -> dict:
+    """``p`` ran ``container.full_suite_script()``; ``log`` is the complete pytest output it saved."""
+    out = p.stdout or ""
+    problems = []
+    stage = re.findall(r"^T1_STAGE_FAIL=(\w+)\s*$", out, re.M)
+    if stage:
+        problems.append(f"stage failed: {stage[-1]}")
+    rc = re.findall(r"^T1_PYTEST_EXIT=(\d+)\s*$", out, re.M)
+    pytest_exit = int(rc[-1]) if rc else None
+    if pytest_exit is None and not stage:
+        problems.append("pytest exit status not recorded (script did not reach pytest)")
+    elif pytest_exit not in (None, 0):
+        problems.append(f"pytest exit {pytest_exit} ({PYTEST_EXIT.get(pytest_exit, 'unknown')})")
+    if p.returncode != 0:
+        problems.append(f"container exit {p.returncode}")
+    summ = pytest_summary(log)
+    if pytest_exit is not None:
+        if summ is None:
+            problems.append("no pytest summary line in saved log")
+        else:
+            if summ["no_tests_ran"] or not summ["passed"]:
+                problems.append("no passing tests")
+            if summ["failed"] or summ["errors"]:
+                problems.append(f"{summ['failed']} failed, {summ['errors']} error(s)")
+            if summ["markers"]:
+                problems.append(f"pytest run markers: {summ['markers']}")
+    tail = (log or "").strip().splitlines()[-3:]
+    return _res("full_suite_under_gold", not problems, "container", pytest_exit=pytest_exit,
+                container_exit=p.returncode, summary=summ, problems=problems, tail=tail,
                 note="entire existing suite + feature tests with gold applied (extra, not graded)")
 
 

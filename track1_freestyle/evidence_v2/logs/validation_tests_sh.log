@@ -1,0 +1,55 @@
+# 2026-11-14T19:18:13Z host=Darwin arm64 Python 3.11.13 pytest 9.0.2 T1_TEST_SH=/bin/sh (GNU bash, version 3.2.57(1)-release (arm64-apple-darwin24))
+# branch=v2/validation-hardening-collision-spec base_head=327ecb61ede179e0e0f27ffc27bcc0b908a84794 (working-tree changes under test)
+$ T1_TEST_SH=/bin/sh python -m pytest validation_tests -v -p no:cacheprovider
+============================= test session starts ==============================
+platform darwin -- Python 3.11.13, pytest-9.0.2, pluggy-1.7.0 -- /private/tmp/t1v2/venv/bin/python
+rootdir: /Users/shuooo/Documents/Documents - KyleShuo’s MacBook Air/RAM_course/Project/team4_track1/track1_freestyle
+collecting ... collected 44 items
+
+validation_tests/test_historical_replay.py::test_v1_batch_present PASSED [  2%]
+validation_tests/test_historical_replay.py::test_v1_saved_runs_still_accepted[pallets__click-duration-param-type-9f8a40] PASSED [  4%]
+validation_tests/test_historical_replay.py::test_v1_saved_runs_still_accepted[pallets__click-group-command-abbreviations-583fa0] PASSED [  6%]
+validation_tests/test_historical_replay.py::test_v1_saved_runs_still_accepted[pallets__click-help-command-sections-56c8e3] PASSED [  9%]
+validation_tests/test_historical_replay.py::test_v1_saved_runs_still_accepted[pallets__click-option-conflicts-with-921c06] PASSED [ 11%]
+validation_tests/test_historical_replay.py::test_v1_saved_runs_still_accepted[pallets__click-prompt-max-attempts-ac2a26] PASSED [ 13%]
+validation_tests/test_validation_gates.py::test_gold_correct_is_accepted PASSED [ 15%]
+validation_tests/test_validation_gates.py::test_nop_correct_is_accepted PASSED [ 18%]
+validation_tests/test_validation_gates.py::test_nop_rejects_missing_f2p_record PASSED [ 20%]
+validation_tests/test_validation_gates.py::test_nop_rejects_absent_feature_test_file PASSED [ 22%]
+validation_tests/test_validation_gates.py::test_nop_rejects_collection_import_error PASSED [ 25%]
+validation_tests/test_validation_gates.py::test_nop_rejects_setup_error PASSED [ 27%]
+validation_tests/test_validation_gates.py::test_nop_rejects_already_passing_f2p PASSED [ 29%]
+validation_tests/test_validation_gates.py::test_nop_rejects_p2p_regression PASSED [ 31%]
+validation_tests/test_validation_gates.py::test_pass_plus_teardown_error_is_inconsistent PASSED [ 34%]
+validation_tests/test_validation_gates.py::test_repeated_identical_records_are_rejected PASSED [ 36%]
+validation_tests/test_validation_gates.py::test_tampered_grader_totals_are_rejected PASSED [ 38%]
+validation_tests/test_validation_gates.py::test_duplicate_expected_ids_are_rejected PASSED [ 40%]
+validation_tests/test_validation_gates.py::test_overlapping_f2p_p2p_is_rejected PASSED [ 43%]
+validation_tests/test_validation_gates.py::test_parser_dropping_records_is_detected PASSED [ 45%]
+validation_tests/test_validation_gates.py::test_missing_grading_result_and_bad_verifier_exit PASSED [ 47%]
+validation_tests/test_validation_gates.py::test_patch_apply_failure_is_reported PASSED [ 50%]
+validation_tests/test_validation_gates.py::test_mutant_behavioural_failure_is_killed PASSED [ 52%]
+validation_tests/test_validation_gates.py::test_mutant_survivor_is_reported PASSED [ 54%]
+validation_tests/test_validation_gates.py::test_mutant_syntax_error_at_import_is_invalid PASSED [ 56%]
+validation_tests/test_validation_gates.py::test_mutant_lazy_import_syntax_error_is_invalid PASSED [ 59%]
+validation_tests/test_validation_gates.py::test_mutant_lazy_import_behavioural_failure_is_killed PASSED [ 61%]
+validation_tests/test_validation_gates.py::test_mutant_that_did_not_apply_is_invalid PASSED [ 63%]
+validation_tests/test_validation_gates.py::test_mutation_gate_needs_every_mutant_killed PASSED [ 65%]
+validation_tests/test_validation_gates.py::test_full_suite_success PASSED [ 68%]
+validation_tests/test_validation_gates.py::test_full_suite_failure_hidden_by_tail_is_caught[collection_error] PASSED [ 70%]
+validation_tests/test_validation_gates.py::test_full_suite_failure_hidden_by_tail_is_caught[zero_tests] PASSED [ 72%]
+validation_tests/test_validation_gates.py::test_full_suite_failure_hidden_by_tail_is_caught[crash] PASSED [ 75%]
+validation_tests/test_validation_gates.py::test_full_suite_test_failure PASSED [ 77%]
+validation_tests/test_validation_gates.py::test_full_suite_patch_failure_is_propagated[gold] PASSED [ 79%]
+validation_tests/test_validation_gates.py::test_full_suite_patch_failure_is_propagated[tests] PASSED [ 81%]
+validation_tests/test_validation_gates.py::test_full_suite_unwritable_log_is_propagated PASSED [ 84%]
+validation_tests/test_validation_gates.py::test_full_suite_script_has_no_bash_only_syntax PASSED [ 86%]
+validation_tests/test_validation_gates.py::test_pytest_summary_parsing[================= 16 failed, 1315 passed, 23 skipped in 3.93s ==================-expect0] PASSED [ 88%]
+validation_tests/test_validation_gates.py::test_pytest_summary_parsing[2450 passed, 24 skipped, 31000 deselected, 1 xfailed in 6.06s-expect1] PASSED [ 90%]
+validation_tests/test_validation_gates.py::test_pytest_summary_parsing[=== 1 passed, 1 error in 0.02s ===-expect2] PASSED [ 93%]
+validation_tests/test_validation_gates.py::test_pytest_summary_parsing[==== 3 passed, 2 warnings in 65.23s (0:01:05) ====-expect3] PASSED [ 95%]
+validation_tests/test_validation_gates.py::test_pytest_summary_parsing[============================ no tests ran in 0.01s =============================-expect4] PASSED [ 97%]
+validation_tests/test_validation_gates.py::test_pytest_summary_absent_when_killed PASSED [100%]
+
+============================== 44 passed in 6.21s ==============================
+exit=0

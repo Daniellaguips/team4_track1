@@ -79,8 +79,8 @@ def run_candidate(family: str, knobs: dict, out_dir: Path, run_dir: Path, cov: d
 
             g = container.grade(pkg, gold, adir / "run_gold")
             n = container.grade(pkg, None, adir / "run_nop")
-            res.append(gates.gold_gate(g))
-            res.append(gates.nop_gate(n, f2p))
+            res.append(gates.gold_gate(g, f2p, p2p))
+            res.append(gates.nop_gate(n, f2p, p2p))
 
             # Auto-repair: a curated P2P test that is not green at base is a curation fault, not a
             # task fault: drop it and re-run. A P2P test green at base but red under gold is a gold
@@ -98,17 +98,20 @@ def run_candidate(family: str, knobs: dict, out_dir: Path, run_dir: Path, cov: d
             muts = {}
             for m in draft.mutants:
                 muts[m.name] = container.grade(pkg, repo.mutant_patch(draft, m), adir / f"run_mutant_{m.name}")
-            res.append(gates.mutation_gate(muts))
+            res.append(gates.mutation_gate(muts, f2p, p2p))
             (adir / "mutants.json").write_text(json.dumps(
                 {m.name: m.description for m in draft.mutants}, indent=1))
 
             _dump(adir, "gold.diff", gold)
             _dump(adir, "tests.diff", test_patch)
-            full = container.run(
-                "cd /app && git apply /sol/gold.diff && git apply /sol/tests.diff && "
-                "python -m pytest -q -p no:cacheprovider --color=no tests 2>&1 | tail -3",
-                mounts={str(adir.resolve()): "/sol:ro"})
-            res.append(gates.full_suite_gate(full))
+            fdir = adir / "full_suite"
+            fdir.mkdir(exist_ok=True)
+            full = container.run(container.full_suite_script(),
+                                 mounts={str(adir.resolve()): "/sol:ro", str(fdir.resolve()): "/out"})
+            (fdir / "container.log").write_text(f"exit={full.returncode}\n--- stdout\n{full.stdout[-20000:]}\n"
+                                                f"--- stderr\n{full.stderr[-20000:]}")
+            flog = fdir / "pytest.log"
+            res.append(gates.full_suite_gate(full, flog.read_text(errors="replace") if flog.exists() else None))
             failed = [r["gate"] for r in res if not r["ok"]]
             if not failed and not reason:
                 verdict, reason = "accepted", "all gates passed"

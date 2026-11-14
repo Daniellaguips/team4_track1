@@ -137,6 +137,12 @@ See `VARIATION_WRITEUP.md` for the variation strategy.
 Gates 7–9 run the package's own `tests/test.sh` in the image built from its own Dockerfile; the
 organizer `selfcheck.sh` then repeats 7–8 through real Harbor.
 
+> **V2 note.** In the V1 code that produced the shipped batch, the nop "every F2P reported FAILED"
+> condition was computed but not part of the decision, mutants counted as killed on any non-passing
+> F2P (including collection errors), and the extra full-suite run piped pytest through `tail`. These
+> are fixed on branch `v2/validation-hardening-collision-spec`; see `../docs/V2_VALIDATION_HARDENING.md`.
+> Saved V1 runs still pass the hardened gates when re-classified offline.
+
 Regression (P2P) curation: once per base, the suite runs under coverage with per-test contexts; for
 every function enclosing a gold hunk plus the blueprint's declared focus symbols, the 12 tests that
 execute most of its lines are kept (cap 90, only base-green, ids without spaces). Rationale per test

@@ -1,0 +1,27 @@
+# click cf19179e8e2fd54c601378cec9e0d21bb12b6fb1 (base) local macOS, Python 3.11.13, NOT the task image; 2026-11-14T19:17:41Z
+$ PYTHONPATH=src python -m pytest -p no:cacheprovider --color=no -rA -q tests/test_commands.py::test_group_add_command_name tests/test_commands.py::test_aliased_command_canonical_name tests/test_commands.py::test_unknown_command tests/test_commands.py::test_suggest_possible_commands tests/test_commands.py::test_invoked_subcommand tests/test_chain.py::test_basic_chaining tests/test_chain.py::test_chaining_help tests/test_chain.py::test_group_chaining tests/test_shell_completion.py::test_group tests/test_shell_completion.py::test_chained tests/test_shell_completion.py::test_hidden tests/test_basic.py::test_basic_group tests/test_basic.py::test_group_commands_dict tests/test_basic.py::test_group_from_list tests/test_basic.py::test_hidden_command tests/test_basic.py::test_hidden_group tests/test_info_dict.py::test_command
+PASSED tests/test_commands.py::test_group_add_command_name
+PASSED tests/test_commands.py::test_aliased_command_canonical_name
+PASSED tests/test_commands.py::test_unknown_command
+PASSED tests/test_commands.py::test_suggest_possible_commands[pause-Did you mean 'push'?]
+PASSED tests/test_commands.py::test_suggest_possible_commands[decline-(Did you mean one of: 'declare', 'refine'?)]
+PASSED tests/test_commands.py::test_invoked_subcommand
+PASSED tests/test_chain.py::test_basic_chaining
+PASSED tests/test_chain.py::test_chaining_help[args0-COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...]
+PASSED tests/test_chain.py::test_chaining_help[args1-ROOT HELP]
+PASSED tests/test_chain.py::test_chaining_help[args2-SDIST HELP]
+PASSED tests/test_chain.py::test_chaining_help[args3-BDIST HELP]
+PASSED tests/test_chain.py::test_chaining_help[args4-SDIST HELP]
+PASSED tests/test_shell_completion.py::test_group
+PASSED tests/test_shell_completion.py::test_chained
+PASSED tests/test_shell_completion.py::test_hidden
+PASSED tests/test_basic.py::test_basic_group
+PASSED tests/test_basic.py::test_group_commands_dict
+PASSED tests/test_basic.py::test_group_from_list
+PASSED tests/test_basic.py::test_hidden_command
+PASSED tests/test_basic.py::test_hidden_group
+PASSED tests/test_info_dict.py::test_command[Command]
+PASSED tests/test_info_dict.py::test_command[Group]
+PASSED tests/test_info_dict.py::test_command[Nested Group]
+23 passed, 1 xfailed in 0.19s
+pytest_exit=0

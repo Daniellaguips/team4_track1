@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import tempfile
@@ -66,20 +67,65 @@ def grade(pkg: Path, patch: str | None, out_dir: Path) -> dict:
     vdir.mkdir()
     sol = out_dir / "applied.diff"
     sol.write_text(patch or "")
-    cmd = ("set -e; cd /app; if [ -s /sol/applied.diff ]; then git apply /sol/applied.diff; fi; "
-           "set +e; bash /tests/test.sh; echo TEST_SH_EXIT=$?")
+    cmd = ("cd /app || { echo T1_STAGE_FAIL=cd; exit 90; }; "
+           "if [ -s /sol/applied.diff ]; then "
+           "git apply /sol/applied.diff || { echo T1_STAGE_FAIL=apply_patch; exit 91; }; fi; "
+           "bash /tests/test.sh; echo TEST_SH_EXIT=$?")
     t0 = time.time()
     p = run(cmd, mounts={str((pkg / "tests").resolve()): "/tests:ro",
                          str(out_dir.resolve()): "/sol:ro",
                          str(vdir.resolve()): "/logs/verifier"})
     (out_dir / "container.log").write_text(f"exit={p.returncode} secs={time.time()-t0:.1f}\n"
                                            f"--- stdout\n{p.stdout[-20000:]}\n--- stderr\n{p.stderr[-20000:]}")
+    d = read_result(out_dir, exit_code=p.returncode, stdout=p.stdout)
+    d["secs"] = round(time.time() - t0, 1)
+    return d
+
+
+def read_result(out_dir: Path, exit_code: int | None = None, stdout: str | None = None) -> dict:
+    """Load one grading run from disk. Without ``exit_code``/``stdout`` they are recovered from
+    ``container.log``, so saved historical runs can be re-classified offline."""
+    out_dir = Path(out_dir)
+    vdir = out_dir / "verifier"
+    if stdout is None or exit_code is None:
+        log = (out_dir / "container.log").read_text(errors="replace") \
+            if (out_dir / "container.log").exists() else ""
+        m = re.match(r"exit=(-?\d+)", log)
+        exit_code = int(m.group(1)) if m and exit_code is None else exit_code
+        stdout = log if stdout is None else stdout
+    m = re.findall(r"^TEST_SH_EXIT=(\d+)\s*$", stdout, re.M)
+    stage = re.findall(r"^T1_STAGE_FAIL=(\w+)\s*$", stdout, re.M)
+    meta = {"exit": exit_code, "test_sh_exit": int(m[-1]) if m else None,
+            "stage_fail": stage[-1] if stage else None}
+    pylog = vdir / "stdout.log"
+    meta["pytest_log"] = pylog.read_text(errors="replace") if pylog.exists() else None
     gd = vdir / "grading_details.json"
     if not gd.exists():
-        return {"reward": None, "error": "no grading_details.json", "exit": p.returncode}
+        return {"reward": None, "error": "no grading_details.json", "records": [], "statuses": {}, **meta}
     d = json.loads(gd.read_text())
-    d["exit"] = p.returncode
-    d["secs"] = round(time.time() - t0, 1)
     out = json.loads((vdir / "output.json").read_text()) if (vdir / "output.json").exists() else {}
-    d["statuses"] = {t["name"]: t["status"] for t in out.get("tests", [])}
+    d["records"] = [(t["name"], t["status"]) for t in out.get("tests", [])]
+    # Last record wins, exactly as grade.py builds its status map.
+    d["statuses"] = {n: s for n, s in d["records"]}
+    d.update(meta)
     return d
+
+
+# POSIX sh (no bash, no pipefail): pytest's own exit status is captured before any output
+# processing, and every earlier stage reports which step failed.
+FULL_SUITE_SH = """cd {app} || {{ echo T1_STAGE_FAIL=cd; exit 90; }}
+git apply {sol}/gold.diff || {{ echo T1_STAGE_FAIL=apply_gold; exit 91; }}
+git apply {sol}/tests.diff || {{ echo T1_STAGE_FAIL=apply_tests; exit 92; }}
+{pytest} > {out}/pytest.log 2>&1
+rc=$?
+echo T1_PYTEST_EXIT=$rc
+tail -n 3 {out}/pytest.log
+exit $rc
+"""
+
+FULL_SUITE_PYTEST = "python -m pytest -q -p no:cacheprovider --color=no tests"
+
+
+def full_suite_script(app: str = "/app", sol: str = "/sol", out: str = "/out",
+                      pytest: str = FULL_SUITE_PYTEST) -> str:
+    return FULL_SUITE_SH.format(app=app, sol=sol, out=out, pytest=pytest)
