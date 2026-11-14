@@ -16,6 +16,6 @@ The generator uses five predefined feature blueprints with parameterized variati
 
 See [implementation instructions](track1_freestyle/README.md), [variation strategy](track1_freestyle/VARIATION_WRITEUP.md), and `track1_freestyle/evidence/` for details. Paths referring to the original Erdos machine may need adapting locally. The downloaded virtual environment and nested Git metadata are excluded; recreate dependencies from the requirements files.
 
-## Download integrity issue
+## Archive integrity
 
-The supplied `track1_submission/TeamName_Track1.zip` is not a valid ZIP in this local download (786,432 bytes), so it is retained only as the received artifact, not a verified submission archive. Recreate it from the submission folder or transfer the original again before submitting.
+The first import (`945f5f5`) contained a truncated `track1_submission/TeamName_Track1.zip` (786,432 bytes) and many empty or missing files. Commits `88ea287` and `ee74c0e` replaced both folders with the complete originals from the Erdos machine. `TeamName_Track1.zip` is now 3,584,863 bytes, passes `unzip -t`, and passes `harness/validate_submission.py` with 0 errors.
