@@ -121,7 +121,7 @@ called: `get_command` (own commands first, then sources in order, first match wi
 check on a group found in a source), `list_commands` (sorted, without duplicates), `add_source`,
 help output (a hidden command that wins a name still hides that name), shell completion and
 invocation. No new warnings or errors are raised when defining, registering, looking up or
-invoking commands.
+invoking commands. The existing test suite must keep passing.
 
 ## Example
 
@@ -142,8 +142,7 @@ cli.get_command_providers(ctx, "missing")    # []
 ```
 """
 
-RECORD = '''@dataclasses.dataclass(frozen=True)
-class CommandProvider:
+RECORD = '''class CommandProvider(t.NamedTuple):
     """A place where a :class:`CommandCollection` finds a command for a
     name, as reported by :meth:`CommandCollection.get_command_providers`.
 
@@ -210,8 +209,6 @@ METHODS = '''
 
 CORE = "src/click/core.py"
 GOLD = [
-    Edit(CORE, "import collections.abc as cabc\nimport enum\n",
-         "import collections.abc as cabc\nimport dataclasses\nimport enum\n", "replace"),
     Edit(CORE, "class CommandCollection(Group):\n", RECORD, "before"),
     Edit(CORE, "            rv.update(source.list_commands(ctx))\n\n        return sorted(rv)\n", METHODS),
     Edit("src/click/__init__.py", "from .core import CommandCollection as CommandCollection\n",
@@ -279,8 +276,14 @@ MUTANTS = [
        (_SOURCE_LOOKUP, "            if isinstance(source, CommandCollection):\n"
                         "                rv.extend(source.get_command_providers(ctx, cmd_name))\n"
                         "                continue\n\n" + _SOURCE_LOOKUP)),
-    _m("mutable_record", "CommandProvider is a plain mutable dataclass",
-       ("@dataclasses.dataclass(frozen=True)\nclass CommandProvider:", "@dataclasses.dataclass\nclass CommandProvider:")),
+    _m("mutable_record", "CommandProvider is a plain class with writable attributes",
+       ("class CommandProvider(t.NamedTuple):", "class CommandProvider:"),
+       ("    group: Group\n    source_index: int | None\n    command: Command\n",
+        "    def __init__(self, group: Group, source_index: int | None, command: Command) -> None:\n"
+        "        self.group = group\n        self.source_index = source_index\n        self.command = command\n\n"
+        "    def __eq__(self, other: object) -> bool:\n"
+        "        return isinstance(other, CommandProvider) and (self.group, self.source_index, self.command) == (\n"
+        "            other.group, other.source_index, other.command\n        )\n")),
     _m("none_when_empty", "returns None instead of an empty list",
        (_RETURN, _RETURN.replace("return rv\n", "return rv or None  # type: ignore[return-value]\n"))),
     # Compatibility (R10) mutants: correct diagnostics, but an existing behaviour is changed on the way.
@@ -291,6 +294,9 @@ MUTANTS = [
         "            rv.extend(source.list_commands(ctx))\n")),
     _m("chain_check_dropped", "drops the chain-mode check from CommandCollection.get_command",
        ("                if self.chain:\n                    _check_nested_chain(self, cmd_name, rv)\n\n", "")),
+    _m("heavier_import", "builds the record with dataclasses, so `import click` loads a module it did not before",
+       ("import collections.abc as cabc\nimport enum\n", "import collections.abc as cabc\nimport dataclasses\nimport enum\n"),
+       ("class CommandProvider(t.NamedTuple):", "@dataclasses.dataclass(frozen=True)\nclass CommandProvider:")),
 ]
 
 FEATURE_TESTS = '''import warnings
@@ -413,7 +419,7 @@ def test_collisions_follow_list_commands_order():
     """R5: keys come in the order of the collection's list_commands."""
     class Reversed(click.CommandCollection):
         def list_commands(self, ctx):
-            return sorted(super().list_commands(ctx), reverse=True)
+            return list(reversed(super().list_commands(ctx)))
 
     a = _with(click.Group("a"), click.Command("alpha"), click.Command("beta"))
     b = _with(click.Group("b"), click.Command("alpha"), click.Command("beta"))
@@ -660,6 +666,8 @@ def build(knobs: dict) -> Draft:
                        "src/click/core.py::Group.format_commands", "src/click/core.py::Group.resolve_command",
                        "src/click/core.py::_complete_visible_commands", "src/click/core.py::_check_nested_chain"],
         mutants=MUTANTS,
+        # The new public type lives in click.core; Click pins which modules `import click` may load.
+        declared_p2p=["tests/test_imports.py::test_light_imports"],
         novelty_probes=[r"get_command_providers|get_command_collisions|class CommandProvider"],
         novelty_queries=["CommandCollection collision", "command providers", "shadowed command"],
         axes=AXES,

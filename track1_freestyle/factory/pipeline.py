@@ -74,7 +74,9 @@ def run_candidate(family: str, knobs: dict, out_dir: Path, run_dir: Path, cov: d
             touched = curate.touched_symbols(gold, draft.focus_symbols, base_tree)
             shutil.rmtree(base_tree, ignore_errors=True)
             p2p, why = curate.select_p2p(cov, touched, set(draft.test_files) | set(draft.compat_test_files))
-            upstream = [n for n in p2p if n not in drop_p2p]
+            if draft.declared_p2p:
+                why["declared_by_blueprint"] = draft.declared_p2p
+            upstream = [n for n in sorted(set(p2p) | set(draft.declared_p2p)) if n not in drop_p2p]
             authored = authored_p2p_ids(draft)
             p2p = upstream + authored
             (adir / "p2p_rationale.json").write_text(json.dumps(why, indent=1))

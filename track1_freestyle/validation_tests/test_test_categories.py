@@ -140,7 +140,7 @@ def test_v1_blueprints_have_no_authored_compat_tests():
     for fam in PLANNED:
         mod = REGISTRY[fam]
         d = mod.build(planner.knob_space(mod)[0])
-        assert d.compat_test_files == {}
+        assert d.compat_test_files == {} and d.declared_p2p == []
 
 
 def test_collision_blueprint_categories():
@@ -154,3 +154,6 @@ def test_collision_blueprint_categories():
     body = d.test_files["tests/test_command_collection_providers.py"]
     imports = re.findall(r"^(?:import|from) (\S+)", body, re.M)
     assert set(imports) <= {"warnings", "pytest", "click", "click.testing"}
+    # Declared upstream tests are pre-existing files, never the blueprint's own.
+    assert d.declared_p2p and not {n.split("::")[0] for n in d.declared_p2p} & (
+        set(d.test_files) | set(d.compat_test_files))
