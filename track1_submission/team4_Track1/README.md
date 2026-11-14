@@ -204,7 +204,9 @@ index ≈35 s). Build window used: ≈11:16–12:20 local for the pipeline, task
 - The fairness lint is heuristic; it was backed by reading every generated spec once.
 - `CommandCollection.list_commands` got no P2P test from coverage curation.
 - Gates/selfcheck were validated with rootless Podman (Harbor `-e podman`); all 15 benchmark trials
-  then built and ran these task images under **Docker** (Harbor 0.26.0) without changes. The Dockerfile unpacks
+  then built and ran these task images under **Docker** (Harbor 0.26.0) without changes.
+  The organizer `check_structure.py` + `selfcheck.sh` were also re-run under Docker on all 5 tasks:
+  5/5 pass, `ALL SOUND` (`evidence/docker/`). Live-demo commands and timings: `DEMO.md`. The Dockerfile unpacks
   `tmux`/`less` .debs without maintainer scripts so it also builds without subuid mappings.
 - `network_mode = "public"` (benchmark agents need egress per the guide); answers are not reachable
   over the network since the features do not exist upstream.
