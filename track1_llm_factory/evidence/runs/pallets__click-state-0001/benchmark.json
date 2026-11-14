@@ -1,0 +1,13 @@
+{
+ "instance_id": "pallets__click-state-0001",
+ "model": "openrouter/anthropic/claude-haiku-5.5",
+ "k": 3,
+ "rewards": [
+  1.0,
+  1.0,
+  1.0
+ ],
+ "resolve_at_3": "3/3",
+ "complete": true,
+ "recorded_at": "14:15"
+}

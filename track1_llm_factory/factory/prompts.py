@@ -1,6 +1,6 @@
 """Prompt templates (versioned; hashed into every call record)."""
 
-VERSION = "v6.6-feedback"
+VERSION = "v6.6.1-feedback"
 
 SYSTEM_HEADER = """You are a senior Python engineer designing benchmark tasks for AI coding agents on the
 real open-source repository pallets/click, pinned at release 8.5.1. Below is the relevant source of
@@ -163,10 +163,11 @@ Reply with ONLY a ```json block: {{"unstated": ["<issue>", ...]}} (empty list if
 HARDER = """
 
 REDESIGN (automatic difficulty feedback): a previous task for this card, "{feature}", was RESOLVED
-{resolved} by the benchmark agent, so it is retired. Its rules were:
+{resolved} by the benchmark agent, so it is retired. Its gold changed {prior_files}. Its full rules:
 {rules}
-Design a DIFFERENT feature for this card (not a variant of the one above) that is strictly harder:
-add 2-3 MORE cross-rule interactions with explicit precedence sentences, require changes in at least
-one MORE module than before, and make at least one rule change existing behavior that must stay
-byte-identical elsewhere. Every rule stays fully stated and observable — no hidden requirements.
+Design a DIFFERENT feature for this card (not a variant of the one above) meeting ABSOLUTE targets:
+at least 4 changed src files, at least 5 rules that each state an explicit precedence/interaction
+with another rule, and at least 2 rules that change existing behavior while stating exactly what
+must stay byte-identical elsewhere. Every rule stays fully stated and observable — no hidden
+requirements.
 """

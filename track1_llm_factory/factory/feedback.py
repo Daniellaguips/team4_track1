@@ -33,9 +33,27 @@ def log(msg: str) -> None:
 
 
 def rewards(iid: str) -> list[float]:
-    out = []
-    for gd in sorted((JOBS / f"hard-{iid}").glob("*/*/verifier/grading_details.json")):
-        out.append(float(json.loads(gd.read_text())["reward"]))
+    """Valid trial rewards from the NEWEST job dir only: model must match, no exception, reward set,
+    and every trial must carry the same task checksum."""
+    jobs = sorted(p for p in (JOBS / f"hard-{iid}").glob("*") if p.is_dir())
+    if not jobs:
+        return []
+    out, sums = [], set()
+    want = MODEL.split("/")[-1]
+    for res in sorted(jobs[-1].glob("*/result.json")):
+        r = json.loads(res.read_text())
+        mi = (r.get("agent_info") or {}).get("model_info") or {}
+        gd = res.parent / "verifier" / "grading_details.json"
+        if want not in json.dumps(mi) or r.get("exception_info") or not gd.exists():
+            continue
+        reward = json.loads(gd.read_text()).get("reward")
+        if reward is None:
+            continue
+        sums.add(r.get("task_checksum"))
+        out.append(float(reward))
+    if len(sums) > 1:
+        log(f"{iid}: trials have different task checksums {sums}; treating as incomplete")
+        return []
     return out
 
 
@@ -66,6 +84,10 @@ def maybe_redesign(iid: str, rec: dict) -> None:
         return
     card, seed = parse(iid)
     new_seed = seed + 100
+    new_iid = f"pallets__click-{card}-{new_seed:04d}"
+    if (RUNS / new_iid).exists() or (OUT / new_iid).exists():
+        log(f"{iid}: replacement {new_iid} already exists; refusing to overwrite (fail closed)")
+        return
     (RUNS / iid / "retired.json").write_text(json.dumps(
         {"retired": iid, "reason": f"resolve@3={rec['resolve_at_3']}", "replacement_seed": new_seed}, indent=1))
     log(f"{iid} resolve@3={rec['resolve_at_3']} → RETIRED; generating harder replacement {card} seed {new_seed}")
@@ -90,12 +112,19 @@ def loop() -> None:
             except json.JSONDecodeError:
                 continue
             if ok and (OUT / iid).is_dir():
-                started.touch()
+                if any(p.poll() is None for p in running.values()):
+                    continue  # one k=3 job at a time (v6.2 container cap)
                 log(f"BENCH START {iid}")
-                running[iid] = subprocess.Popen(
-                    ["harbor", "run", "-p", str(OUT / iid), "-a", "terminus-2", "-m", MODEL, "-k", str(K),
+                try:
+                    proc = subprocess.Popen(
+                        ["harbor", "run", "-p", str(OUT / iid), "-a", "terminus-2", "-m", MODEL, "-k", str(K),
                      "-n", str(K), "-o", str(JOBS / f"hard-{iid}"), "--no-delete", "-y"],
                     cwd=ROOT, stdout=open(JOBS / f"hard-{iid}.log", "w"), stderr=subprocess.STDOUT)
+                except OSError as e:
+                    log(f"BENCH SPAWN FAILED {iid}: {e}")
+                    continue
+                running[iid] = proc
+                started.write_text(json.dumps({"pid": proc.pid, "started": time.strftime("%H:%M")}))
         # also pick up benchmarks started outside the loop (marker present, no benchmark.json yet)
         for m in JOBS.glob("hard-*.started"):
             iid = m.name[len("hard-"):-len(".started")]

@@ -231,6 +231,8 @@ def build(card_id: str, seed: int, replay: bool = False, harder_than: str | None
     card = CARDS[card_id]
     iid = f"pallets__click-{card_id}-{seed:04d}"
     run_dir = RUNS / iid
+    if harder_than and not replay and (run_dir.exists() or (OUT / iid).exists()):
+        raise SystemExit(f"{iid} already exists; a redesign never overwrites a run (fail closed)")
     if not replay and run_dir.exists():
         shutil.rmtree(run_dir)
     tel = llm.Telemetry(run_dir)
@@ -251,7 +253,8 @@ def build(card_id: str, seed: int, replay: bool = False, harder_than: str | None
         lineage = {"replaces": harder_than, "replaced_resolve_at_3": verdict["resolve_at_3"]}
         design_prompt += prompts.HARDER.format(
             feature=prev_design.get("feature"), resolved=verdict["resolve_at_3"],
-            rules="\n".join(f"- {r.get('id')}: {str(r.get('text'))[:160]}" for r in prev_design.get("rules", [])))
+            rules="\n".join(f"- {r.get('id')}: {r.get('text')}" for r in prev_design.get("rules", [])),
+            prior_files=prior_files(harder_than))
     design = llm.extract_json(ask("design", system, design_prompt))
     (run_dir / "design.json").write_text(json.dumps(design, indent=1))
     n_rules = len(design.get("rules", []))
@@ -325,6 +328,15 @@ def evaluate(pkg, design, card, tree, iid, run_dir, ask, check) -> dict:
         return check.verify(task_dir, [], card["p2p"])
     except Exception as e:  # noqa: BLE001 — every failure becomes a repair diagnostic
         return {"ok": False, "stage": "build", "report": f"{type(e).__name__}: {str(e)[:3500]}"}
+
+
+def prior_files(prev_iid: str) -> str:
+    """Non-agent evidence for the redesign prompt: which src files the retired gold changed."""
+    patch = OUT / prev_iid / "solution" / "patch.diff"
+    if not patch.exists():
+        return "unknown"
+    files = sorted(set(re.findall(r"^\+\+\+ b/(\S+)", patch.read_text(), re.M)))
+    return f"{len(files)} files: {', '.join(files)}"
 
 
 def write_package(iid: str, tree: Path, pkg: dict) -> Path:
