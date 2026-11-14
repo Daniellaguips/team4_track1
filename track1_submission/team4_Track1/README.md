@@ -13,6 +13,11 @@ real Haiku benchmark of all 5 tasks (see Benchmark).
 | Harbor | 0.25.0 (pinned in `requirements.txt`) |
 | Generator model | none — deterministic blueprints, 0 model calls, $0 |
 
+> **Scored submission:** the 5 packages in `generated_tasks/` produced by this blueprint factory.
+> The LLM generator (`track1_llm_factory/` in the team repo) is supplementary research and is not part
+> of this scored batch. `bench/benchmark_status.json` ("blocked") is the original host's record and is
+> superseded by `bench/benchmark_results_openrouter.json` (real k=3 results).
+
 ## Status at a glance
 
 | Item | Status |
