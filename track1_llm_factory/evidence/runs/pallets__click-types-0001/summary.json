@@ -1,0 +1,16 @@
+{
+ "instance_id": "pallets__click-types-0001",
+ "model": "anthropic/claude-sonnet-5.5",
+ "wall_seconds": 263,
+ "model_calls": 6,
+ "attempts": 3,
+ "n_input_tokens": 156138,
+ "n_output_tokens": 41778,
+ "n_cache_tokens": 78468,
+ "cost_usd": 0.581,
+ "ok": true,
+ "failed_stage": null,
+ "card": "types",
+ "seed": 1,
+ "prompts_version": "v6.2-pilot"
+}

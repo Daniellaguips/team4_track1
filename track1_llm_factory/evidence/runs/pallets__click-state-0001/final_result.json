@@ -1,0 +1,9 @@
+{
+ "ok": false,
+ "stage": "p2p",
+ "f2p_ids": [],
+ "p2p_ids": [],
+ "report": "curated P2P path is not green in base+gold: tests/test_chain.py: ['tests/test_chain.py::test_group_chaining']",
+ "f2p_ids_count": 0,
+ "p2p_ids_count": 0
+}

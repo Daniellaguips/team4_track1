@@ -1,0 +1,16 @@
+{
+ "instance_id": "pallets__click-argv_hard-0001",
+ "model": "anthropic/claude-sonnet-5.5",
+ "wall_seconds": 615,
+ "model_calls": 6,
+ "attempts": 3,
+ "n_input_tokens": 365990,
+ "n_output_tokens": 101985,
+ "n_cache_tokens": 262044,
+ "cost_usd": 1.2539,
+ "ok": false,
+ "failed_stage": "fairness/judge",
+ "card": "argv_hard",
+ "seed": 1,
+ "prompts_version": "v6.3-hard"
+}

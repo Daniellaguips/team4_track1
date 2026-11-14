@@ -1,0 +1,18 @@
+[
+  "tests/test_duration_type.py::test_exported_and_basic_conversion",
+  "tests/test_duration_type.py::test_components_sum_on_command_line",
+  "tests/test_duration_type.py::test_surrounding_whitespace_is_stripped",
+  "tests/test_duration_type.py::test_invalid_grammar",
+  "tests/test_duration_type.py::test_invalid_message_uses_unstripped_text",
+  "tests/test_duration_type.py::test_repeated_unit_is_invalid",
+  "tests/test_duration_type.py::test_component_order",
+  "tests/test_duration_type.py::test_digits_only",
+  "tests/test_duration_type.py::test_int_default_follows_digits_rule",
+  "tests/test_duration_type.py::test_timedelta_passthrough",
+  "tests/test_duration_type.py::test_bounds_inclusive",
+  "tests/test_duration_type.py::test_below_minimum_message",
+  "tests/test_duration_type.py::test_above_maximum_message",
+  "tests/test_duration_type.py::test_bounds_apply_to_timedelta_values",
+  "tests/test_duration_type.py::test_help_metavar",
+  "tests/test_duration_type.py::test_info_dict"
+]

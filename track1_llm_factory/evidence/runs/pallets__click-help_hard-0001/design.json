@@ -1,0 +1,168 @@
+{
+ "feature": "help_sections",
+ "summary": "Opt-in titled help sections. Options (`Option(help_section=...)`) and subcommands (`Command(help_section=...)`) can be filed under custom headings instead of the default `Options:` / `Commands:`. Section order is controlled by `Command(section_order=...)` or an inheritable `Context(help_section_order=...)`. The same ordering drives `--help` output and shell-completion candidate order, through overridable `iter_option_sections` and `iter_command_sections` hooks. Existing output stays byte-identical when the feature is unused.",
+ "public_api": [
+  "click.Option(..., help_section: str | None = None)  # also via @click.option(..., help_section=...)",
+  "click.Command(..., help_section: str | None = None, section_order: Sequence[str] | None = None)  # also via @click.command / @click.group kwargs; Group forwards them",
+  "click.Context(..., help_section_order: Sequence[str] | None = None)  # also via context_settings",
+  "Command.help_section, Command.section_order (tuple[str, ...] | None), Option.help_section, Context.help_section_order (tuple[str, ...] | None)",
+  "Command.iter_option_sections(ctx) -> list[tuple[str, list[Option]]]",
+  "Group.iter_command_sections(ctx) -> list[tuple[str, list[tuple[str, Command]]]]",
+  "click.formatting.order_sections(titles: Iterable[str], order: Sequence[str]) -> list[str]",
+  "HelpFormatter.write_sections(sections: Iterable[tuple[str, Iterable[tuple[str, str]]]], col_max: int = 30, col_spacing: int = 2) -> None"
+ ],
+ "keywords": [
+  "help_section",
+  "section_order",
+  "help_section_order",
+  "iter_option_sections",
+  "iter_command_sections",
+  "order_sections",
+  "write_sections",
+  "format_commands",
+  "format_options",
+  "_complete_visible_commands",
+  "shell_complete",
+  "to_info_dict",
+  "context_settings"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "`Option(help_section=...)` and `Command(help_section=...)` (and therefore `Group(...)`, `@click.option`, `@click.command`, `@click.group`) accept `None` (the default) or a string. A string is stripped of surrounding whitespace and stored in the `help_section` attribute, so `help_section='  Admin '` stores `'Admin'`. Validation runs at construction, always (not only under `__debug__`). `Argument` does not accept `help_section` (plain Python TypeError for the unexpected keyword).",
+   "inputs": "help_section value",
+   "output": "attribute `.help_section` is the stripped string or None",
+   "errors": "non-str, non-None -> TypeError(\"'help_section' must be a string or None, got int.\") (the class name of the value, e.g. int, list). A string that is empty after stripping -> ValueError(\"'help_section' must not be empty.\")",
+   "precedence": "type check happens before the emptiness check",
+   "bounds": "None is valid; '' and '   ' are invalid",
+   "state": "none"
+  },
+  {
+   "id": "R2",
+   "text": "`Command(section_order=...)` and `Context(help_section_order=...)` accept `None` or a list/tuple of strings; a bare `str` is rejected. Items are stripped and the value is stored as a tuple of stripped titles. For `Context` the messages below use the name `help_section_order` instead of `section_order`. Items are checked left to right. For each item, the type check comes first, then the empty check, then the duplicate check against earlier stripped items. The first failure raises.",
+   "inputs": "section_order / help_section_order",
+   "output": "`.section_order` / `.help_section_order` is a tuple of stripped titles, or None",
+   "errors": "not list/tuple (including str) -> TypeError(\"'section_order' must be a list or tuple of strings, got str.\"). Non-str item -> TypeError(\"'section_order' items must be strings, got int.\"). Item empty after strip -> ValueError(\"'section_order' items must not be empty.\"). Duplicate after strip (e.g. ['A', ' A']) -> ValueError(\"'section_order' contains duplicate title 'A'.\")",
+   "precedence": "per-item order: type, then empty, then duplicate",
+   "bounds": "an empty list/tuple is valid and means 'explicitly no ordering'",
+   "state": "none"
+  },
+  {
+   "id": "R3",
+   "text": "The effective section order used to render or complete a command's sections is: the command's own `section_order` if it is not None, else `ctx.help_section_order` if it is not None, else the empty tuple. The test is `is not None`, not truthiness, so `section_order=()` on a command overrides a non-empty context value. A command's `section_order` is NOT inherited by sub-commands. Only `Context.help_section_order` is inherited, per R11. The effective order applies separately to option sections and to command sections.",
+   "inputs": "Command.section_order, ctx.help_section_order",
+   "output": "the order tuple passed to `order_sections`",
+   "errors": "none",
+   "precedence": "Command.section_order > ctx.help_section_order (including the value inherited from a parent context) > ()",
+   "bounds": "() on the command wins over a non-empty ctx value",
+   "state": "none"
+  },
+  {
+   "id": "R4",
+   "text": "`click.formatting.order_sections(titles, order)` returns a list of unique titles. Titles that appear in `order` come first, in `order`'s sequence, but only if they also occur in `titles`. Titles not in `order` follow in order of first occurrence in `titles`. Duplicate titles in `titles` are collapsed to one. Entries of `order` absent from `titles` are silently ignored. Matching is exact and case-sensitive, so 'admin' and 'Admin' are different titles. The function does not strip, and it does not mutate its arguments.",
+   "inputs": "titles iterable of str, order sequence of str",
+   "output": "list[str]; e.g. order_sections(['B','A','C','A'], ['C','Z','A']) == ['C','A','B']",
+   "errors": "none",
+   "precedence": "membership in `order` beats first occurrence",
+   "bounds": "empty `titles` -> []; empty `order` -> first-occurrence order",
+   "state": "pure function"
+  },
+  {
+   "id": "R5",
+   "text": "`Command.iter_option_sections(ctx)` walks `self.get_params(ctx)` in order (declaration order, with the automatic help option last) and keeps only `Option` instances whose `hidden` is False. It files each under its `help_section`, or under the default title `_('Options')` when None. An explicit title equal to the default title (e.g. help_section='Options') merges into the default section. Sections are ordered with `order_sections(first_occurrence_titles, effective_order)` per R3. Within a section, options keep `get_params` order. The first occurrence is computed only from the visible options, so a section whose members are all hidden does not exist and does not affect ordering. The automatic help option never has a section, so it lands in the default section. `format_options` renders these sections via `formatter.write_sections`. An option whose `get_help_record(ctx)` returns None is skipped, and a section left with no rows is omitted entirely.",
+   "inputs": "ctx, command params",
+   "output": "list of (title, [Option, ...]) pairs",
+   "errors": "none",
+   "precedence": "R3 order beats first occurrence. A hidden option never contributes to first occurrence, even if declared first.",
+   "bounds": "a command with only the help option yields [('Options', [help_option])]; add_help_option=False and no visible options yields []",
+   "state": "recomputed on every call, nothing is cached on the command"
+  },
+  {
+   "id": "R6",
+   "text": "`Group.iter_command_sections(ctx)` walks `self.list_commands(ctx)` in order. For each name it calls `self.get_command(ctx, name)` and skips None results and commands with `hidden` True. It files each under the command's `help_section`, or under the default title `_('Commands')` when None, and an explicit 'Commands' merges into the default. It returns (title, [(registered_name, command), ...]) pairs, ordered per R4 and R3, with first occurrence computed from the visible commands only. `format_commands` renders them. The truncation `limit` passed to `get_short_help_str` is computed ONCE over all visible commands as `formatter.width - 6 - max(len(name))`, never per section. Each section is rendered with its own `write_dl`, so columns are aligned independently per section. Deprecated commands stay in their own section (or the default) and keep their existing `(DEPRECATED...)` label. Nothing is moved because of deprecation. This works unchanged for `chain=True` groups, nested groups, and `CommandCollection`, whose merged `list_commands` order and sources' command objects supply the sections.",
+   "inputs": "group ctx",
+   "output": "ordered sections of (name, Command)",
+   "errors": "none",
+   "precedence": "section order (R3/R4) beats `list_commands` order between sections; `list_commands` order is preserved inside each section",
+   "bounds": "no visible commands -> []; no 'Commands:' section is printed",
+   "state": "recomputed per call"
+  },
+  {
+   "id": "R7",
+   "text": "`HelpFormatter.write_sections(sections, col_max=30, col_spacing=2)` iterates the (title, rows) pairs in the given order. A pair whose rows are empty is skipped. Every other pair is written as `with self.section(title): self.write_dl(rows, col_max, col_spacing)`. So a single non-empty section titled 'Options' produces exactly the bytes the old `format_options` produced.",
+   "inputs": "iterable of (str, iterable of (str, str))",
+   "output": "None; writes into the buffer",
+   "errors": "a malformed row propagates write_dl's existing TypeError('Expected two columns for definition list')",
+   "precedence": "none",
+   "bounds": "all sections empty -> nothing written, no blank paragraph",
+   "state": "none"
+  },
+  {
+   "id": "R8",
+   "text": "When no `help_section`, `section_order` or `help_section_order` is set anywhere, `--help` output, `Command.get_usage`, `to_info_dict` and shell-completion candidate order are byte-identical to the previous release. `Command.to_info_dict` adds the key 'help_section' only when it is not None. `Group.to_info_dict` and `Command.to_info_dict` add 'section_order' (as a list) only when it is not None. `Option.to_info_dict` adds 'help_section' only when it is not None. No new keys appear in any other case, and `Context.to_info_dict` is unchanged.",
+   "inputs": "any existing CLI",
+   "output": "same strings/dicts as before",
+   "errors": "none",
+   "precedence": "this rule overrides any temptation to always emit new keys",
+   "bounds": "key absent, not present-with-None",
+   "state": "none"
+  },
+  {
+   "id": "R9",
+   "text": "Command-name completion candidates follow help order. In `click.core`, `_complete_visible_commands(ctx, incomplete)` yields the names of `ctx.command.iter_command_sections(ctx)` flattened in section order and then in-section order, keeping only names that start with `incomplete`. This holds for `Group.shell_complete` and for the chain-sibling loop in `Command.shell_complete`. In the chain loop, each parent group's own `iter_command_sections` and the effective order of that parent's context are used, and the parent results are still appended after the command's own option results in the existing parent-walk order. With no sections this is the old sorted order. A subclass that overrides `iter_command_sections` changes both help and completion. A subclass that overrides only `format_commands` changes help output only and leaves completion untouched. Item `help` text is unchanged.",
+   "inputs": "ctx of a Group, incomplete str",
+   "output": "list[CompletionItem] with deterministic section-first ordering",
+   "errors": "none",
+   "precedence": "section order beats alphabetical order; hidden commands are excluded as before",
+   "bounds": "incomplete='' returns all visible commands",
+   "state": "none"
+  },
+  {
+   "id": "R10",
+   "text": "Option-name completion in `Command.shell_complete` (only when `incomplete` starts with a non-alphanumeric character) iterates `self.iter_option_sections(ctx)` flattened (section order, then in-section order) instead of `get_params`. Each option still yields `[*opts, *secondary_opts]` filtered by `startswith(incomplete)`. It still skips options that were already given on the command line, unless `multiple`. The section order is computed over ALL visible options BEFORE the already-given filter is applied, so a section that is entirely filtered out still counts for first-occurrence ordering of the others. `Argument` parameters and hidden options never appear. The automatic help option keeps its place in the default section.",
+   "inputs": "ctx, incomplete starting with '-'",
+   "output": "CompletionItems ordered like the `--help` Options listing",
+   "errors": "none",
+   "precedence": "R5 ordering applies first, then the already-given filter (existing behavior), then the prefix filter",
+   "bounds": "an option with a section named in section_order but all other options unsectioned: sectioned options come first",
+   "state": "reads ctx.get_parameter_source as before; no new state"
+  },
+  {
+   "id": "R11",
+   "text": "`Context.help_section_order` is validated per R2. If the `help_section_order` argument is None and the context has a parent, it takes the parent context's `help_section_order` (already a tuple or None), so sub-contexts created by `Group.invoke`, `make_context(parent=...)`, `_make_sub_context` and shell-completion context resolution inherit it. An explicit non-None value, including `()`, wins over the parent's. It can be supplied through `context_settings`, `main(**extra)` or `make_context(**extra)`; `context_settings` of a sub-command are applied by `make_context` as they are today.",
+   "inputs": "Context(...) args, parent",
+   "output": "ctx.help_section_order",
+   "errors": "same as R2 with name `help_section_order`",
+   "precedence": "explicit argument (incl. ()) > parent's inherited value > None",
+   "bounds": "root context without argument -> None",
+   "state": "attribute is per-Context; separate CliRunner.invoke calls build fresh contexts, so nothing leaks between invocations"
+  },
+  {
+   "id": "R12",
+   "text": "Section ordering is derived fresh at every call from the current `params`, `commands`, `list_commands`, `hidden` flags and effective order. Commands added with `add_command` or options appended to `params` after a previous `get_help()` or completion call show up in the next one. Calling `get_help` twice on the same command and context returns identical text, and `get_help` does not change `params`, `commands` or `_help_option`. Rendering a Group's help does not change the `section_order` / `help_section` of its subcommands.",
+   "inputs": "repeated help / completion calls",
+   "output": "identical results absent mutation, updated results after mutation",
+   "errors": "none",
+   "precedence": "none",
+   "bounds": "none",
+   "state": "no caching of section lists on Command, Group or Context"
+  }
+ ],
+ "traps": [
+  "First-occurrence ordering must ignore hidden options and hidden commands (and None from get_command). A hidden item declared first must not make its section 'first'. The same applies to completion.",
+  "Option completion must compute section order over all visible options and only afterwards drop already-given options. Filtering first changes the order of the remaining sections.",
+  "`section_order=()` on a command must override a non-empty ctx.help_section_order (an `is not None` test, not truthiness). A parent command's `section_order` must not leak into sub-commands. Only the context value is inherited.",
+  "The truncation limit for short help must stay global (max over all visible command names), not per section. Column widths, however, are per section because each section has its own write_dl.",
+  "to_info_dict must add the new keys only when set. Always emitting them (even as None) breaks existing exact-dict tests.",
+  "An explicit title equal to the default ('Options' / 'Commands') must merge with the default section. Because the help option is declared last, a default section containing only --help comes after sectioned options unless section_order says otherwise.",
+  "section_order duplicate detection happens after stripping (' A' duplicates 'A'), while order_sections itself does exact, unstripped, case-sensitive matching.",
+  "Completion for a user group whose subclass overrides only `format_commands` must keep default section ordering. The completion code must call `iter_command_sections`, not `format_commands`."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ]
+}

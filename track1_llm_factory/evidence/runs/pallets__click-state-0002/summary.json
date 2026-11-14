@@ -1,0 +1,16 @@
+{
+ "instance_id": "pallets__click-state-0002",
+ "model": "anthropic/claude-sonnet-5.5",
+ "wall_seconds": 149,
+ "model_calls": 3,
+ "attempts": 3,
+ "n_input_tokens": 237194,
+ "n_output_tokens": 24053,
+ "n_cache_tokens": 69152,
+ "cost_usd": 0.6181,
+ "ok": false,
+ "failed_stage": "fairness/judge",
+ "card": "state",
+ "seed": 2,
+ "prompts_version": "v6.5.1-codexfair"
+}

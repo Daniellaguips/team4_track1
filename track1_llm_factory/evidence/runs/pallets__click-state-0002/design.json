@@ -1,0 +1,177 @@
+{
+ "feature": "Invocation ledger: an opt-in, invocation-scoped event log on click.Context",
+ "summary": "Adds click.Ledger and click.LedgerEntry. A Context can carry a Ledger that is shared down the whole context tree. It records parameter resolution, command execution, deprecation notices, ctx.invoke, ctx.forward and result callbacks, in exact execution order. Recording goes through an overridable Context.record() hook. CliRunner.invoke exposes a per-call snapshot as Result.ledger and never leaks state between calls. With the feature off, every existing behaviour is byte-identical.",
+ "public_api": [
+  "click.Ledger (new, defined in new module src/click/ledger.py): Ledger(), .entries, len(), iter(), .count(kind=None, name=None), .clear(), .copy()",
+  "click.LedgerEntry (new NamedTuple in src/click/ledger.py): fields kind, name, path, detail",
+  "click.ledger.KINDS (tuple of the 7 valid kinds)",
+  "click.Context(..., ledger=None) (new LAST keyword parameter), Context.ledger attribute, Context.ledger_path property, Context.record(kind, name=None, detail=None)",
+  "click.pass_ledger (new decorator in decorators.py)",
+  "click.testing.CliRunner(..., ledger=False) (new LAST keyword parameter), click.testing.Result.ledger (new attribute, new LAST keyword parameter of Result.__init__)",
+  "context_settings key 'ledger'"
+ ],
+ "keywords": [
+  "ledger",
+  "LedgerEntry",
+  "Context.record",
+  "ledger_path",
+  "pass_ledger",
+  "handle_parse_result",
+  "Command.invoke",
+  "Group.invoke",
+  "_process_result",
+  "forward",
+  "_make_sub_context",
+  "context_settings",
+  "Result.ledger",
+  "CliRunner.invoke",
+  "deprecated",
+  "get_parameter_source",
+  "resilient_parsing",
+  "chain"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "New module src/click/ledger.py defines LedgerEntry, Ledger and KINDS, and its module-level imports are limited to `from __future__ import annotations`, `collections.abc as cabc` and `typing as t` (so tests/test_imports.py stays green). KINDS == ('param', 'command', 'invoke', 'forward', 'result', 'deprecated-command', 'deprecated-param'). LedgerEntry is a typing.NamedTuple with fields kind: str, name: str | None, path: str, detail: str | None. Ledger holds an append-only list. `Ledger.entries` returns a NEW tuple of LedgerEntry on each access. len(ledger) and iter(ledger) work. `ledger.count(kind=None, name=None)` returns the number of entries matching every filter that is not None (no filters means all). `ledger.clear()` removes every entry and returns None. `ledger.copy()` returns a new, independent Ledger with the same entries. repr(Ledger()) == '<Ledger 0 entries>' and repr of a ledger with n entries is '<Ledger n entries>' (always the plural word 'entries', even for 1). There is no public append method; Context.record (R3) is the only write path.",
+   "inputs": "Ledger.count(kind, name); Ledger.clear(); Ledger.copy()",
+   "output": "ints / tuples / new Ledger as described",
+   "errors": "ValueError('Unknown ledger kind: %r' % kind), i.e. f\"Unknown ledger kind: {kind!r}\", raised by count() whenever kind is not None and not in KINDS, even if the ledger is empty.",
+   "precedence": "The kind validation in count() runs before any filtering. count(kind='bogus', name='x') raises ValueError rather than returning 0.",
+   "bounds": "An empty ledger is falsy (len() == 0), like any container, so bool(Ledger()) is False. Internal code must use `is None` and never truthiness to test whether a ledger exists.",
+   "state": "entries is a snapshot. Mutating the returned tuple's source is impossible, and later records do not change an already-obtained tuple. copy() shares no state with the original."
+  },
+  {
+   "id": "R2",
+   "text": "Context gains the last keyword parameter `ledger: bool | Ledger | None = None` and the attribute `Context.ledger: Ledger | None`. Resolution in __init__: a Ledger instance is used as-is (the same object, not a copy); True creates a fresh independent Ledger(); False sets ctx.ledger = None; None inherits `parent.ledger` (the very same object) when there is a parent, otherwise None. Because make_context already merges `context_settings` into the Context kwargs only for keys NOT in `extra`, `context_settings={'ledger': True}` on a command works for free with that existing mechanism. An explicit `ledger=` passed to make_context/main (even `ledger=None`, which shadows context_settings as it does for every other key today) takes the existing 'extra wins' path. Contexts created by `Context._make_sub_context` (used by ctx.invoke(cmd), Group.to_info_dict) pass no ledger and therefore inherit.",
+   "inputs": "Context(cmd, ledger=...), command.context_settings['ledger']",
+   "output": "ctx.ledger as described",
+   "errors": "TypeError(\"'ledger' must be a bool, a Ledger or None, not <typename>\"), e.g. \"'ledger' must be a bool, a Ledger or None, not int\" for ledger=1 or \"... not str\" for ledger='yes'. The bool check must come before any int/truthiness check, so True/False are accepted and 1/0 are rejected.",
+   "precedence": "Precedence, highest first: explicit `ledger=` argument (True/False/instance) > context_settings['ledger'] > parent inheritance > None. A child with ledger=True gets its OWN fresh Ledger, and its descendants inherit that one, so entries recorded below it do NOT reach the parent's ledger. A child with ledger=False (or context_settings {'ledger': False}) records nothing, and neither do its descendants unless one of them re-enables with True/an instance. The parent's ledger still records the parent's own events.",
+   "bounds": "Only `bool`, `Ledger` and `None` are legal types. Subclasses of Ledger are accepted as instances.",
+   "state": "A Ledger shared by inheritance is one object for the whole tree, so entries from every level interleave in real execution order."
+  },
+  {
+   "id": "R3",
+   "text": "`Context.record(self, kind, name=None, detail=None) -> LedgerEntry | None` is the single public hook through which every internal event is recorded. Internal code must call `ctx.record(...)` on the relevant context and must never touch the ledger directly. The default implementation (1) validates `kind` against ledger.KINDS, (2) returns None without recording when self.ledger is None, (3) otherwise builds LedgerEntry(kind, name, self.ledger_path, detail), appends it to self.ledger and returns it. record() is called for every event even when ctx.ledger is None, so a custom `context_class` subclass overriding record() sees the events of its own contexts regardless of whether a ledger exists. A subclass that overrides record() without calling super() suppresses recording for its contexts. Events are delivered to the context on which they occur: 'invoke'/'forward' on the CALLING context, 'param'/'command'/'deprecated-*' on the context of the command being processed, 'result' on the group's context. A sub context of another class (its command's own context_class) uses its own class's record(). When ctx.resilient_parsing is True, NO event is recorded and record() is not called for any event, including 'deprecated-param', even though the existing deprecation echo to stderr still happens exactly as today.",
+   "inputs": "ctx.record('param', 'name', 'default')",
+   "output": "the new LedgerEntry, or None when ctx.ledger is None",
+   "errors": "ValueError(f\"Unknown ledger kind: {kind!r}\") for an unknown kind, raised even when ctx.ledger is None.",
+   "precedence": "Kind validation (ValueError) takes precedence over the ledger-is-None early return. Resilient parsing (no call at all) takes precedence over everything else. The hook override takes effect before any ledger checks because the default implementation is the only place that looks at ctx.ledger.",
+   "bounds": "name and detail are stored verbatim (name may be None for an unnamed command).",
+   "state": "record() does not modify ctx.params, ctx.meta or parameter sources."
+  },
+  {
+   "id": "R4",
+   "text": "`Context.ledger_path` (property) is the space-joined info_name of every context from the root down to this context, skipping contexts whose info_name is None; it is '' if all are None. It is NOT `command_path`: it must not contain usage pieces such as '[OPTIONS]' or argument metavars. Every LedgerEntry.path is the ledger_path of the context on which record() was called (see R3 for which context that is). Under CliRunner.invoke the root info_name is `cli.name or 'root'` (existing get_default_prog_name), so a subcommand 'greet' of a group named 'cli' records path 'cli greet'.",
+   "inputs": "ctx tree with info_names",
+   "output": "str",
+   "errors": "none",
+   "precedence": "ledger_path is computed from info_names only. It takes no account of command.name, so a command registered as add_command(cmd, 'alias') shows 'alias' in the path while the 'command' entry's name is cmd.name.",
+   "bounds": "Root context only: path is just its info_name, or '' when info_name is None.",
+   "state": "Computed on demand from the live parent chain, never cached."
+  },
+  {
+   "id": "R5",
+   "text": "Parameter events. At the END of Parameter.handle_parse_result, after the feature-switch arbitration block, call `ctx.record('param', self.name, detail)` exactly once per handle_parse_result call, where detail is `ctx.get_parameter_source(self.name).name.lower()` read AFTER arbitration, one of 'prompt', 'commandline', 'environment', 'default_map', 'default'. For a feature-switch option that lost arbitration the entry therefore carries the WINNING option's source, not the loser's own consumed source. Parameters with expose_value=False (including the automatic help option) record nothing. Entries are appended in processing order (eager parameters first, then invocation order from the command line, then declaration order for those not given), not declaration order. When a deprecated parameter is used explicitly (the existing condition: self.deprecated, value is not UNSET and source < DEFAULT_MAP), call `ctx.record('deprecated-param', self.name, reason)` at the same place as the existing stderr echo, where reason is the deprecation string, or None when `deprecated=True`. If process_value then raises (e.g. MissingParameter), the 'deprecated-param' entry already exists but NO 'param' entry is recorded for that parameter.",
+   "inputs": "any command run through parse_args",
+   "output": "one 'param' entry per processed exposed parameter",
+   "errors": "none beyond existing ones. Recording must never emit a warning (pytest runs with filterwarnings=error), so ctx.protected_args must not be used anywhere.",
+   "precedence": "For the same parameter 'deprecated-param' precedes 'param'. Arbitration result (existing behaviour) decides the detail, taking precedence over the option's own source. expose_value=False skipping takes precedence over everything (not even 'deprecated-param' is skipped differently: a deprecated expose_value=False parameter still records 'deprecated-param' but never 'param').",
+   "bounds": "Zero params means zero 'param' entries. A group's own parameters are recorded during the group's parse_args, before the group's 'command' entry.",
+   "state": "Entries land on the ledger of the context being parsed (inherited ledger rules of R2)."
+  },
+  {
+   "id": "R6",
+   "text": "Command events in Command.invoke. If the command is deprecated, then right where the existing red DeprecationWarning line is echoed, call `ctx.record('deprecated-command', self.name, reason)` (reason is the deprecation string or None for True). Then, whenever Command.invoke runs (even if self.callback is None), call `ctx.record('command', self.name, None)` BEFORE the callback is called. So a callback that raises still leaves its 'command' entry. Group.invoke reaches this through its existing `super().invoke(ctx)` calls (both the invoke_without_command path and the subcommand paths), so a group yields its own 'command' entry once per invocation, before any sub context is created. A group that fails with ctx.fail('Missing command.') (existing behaviour) records no 'command' entry. A user subclass whose invoke() does not call super().invoke() records no 'command' entry, since recording lives in Command.invoke itself.",
+   "inputs": "Command.invoke(ctx)",
+   "output": "'deprecated-command' (optional) then 'command'",
+   "errors": "none",
+   "precedence": "'deprecated-command' always immediately precedes the same command's 'command' entry. The existing stderr echo text and its position relative to the callback are unchanged.",
+   "bounds": "name is Command.name, which may be None.",
+   "state": "Ledger is the one inherited by ctx (R2)."
+  },
+  {
+   "id": "R7",
+   "text": "Invocation events in Context. `ctx.invoke(other_cmd, ...)` with a Command first performs the existing TypeError check (callback is None: 'The given command does not have a callback that can be invoked.'). Only after that passes, it calls `self.record('invoke', other_cmd.name, None)` on the CALLING context (self), then runs exactly the existing logic. The target's parameters are filled from defaults without handle_parse_result, so NO 'param', 'command' or 'deprecated-*' entries are produced for the target. Its callback is called directly. `ctx.invoke(plain_callable)` records nothing. `ctx.forward(cmd, ...)` performs the existing 'Callback is not a command.' TypeError check first. After that it calls `self.record('forward', cmd.name, None)` and then delegates to self.invoke, which itself records 'invoke' (unless that raises its own TypeError). So a successful forward yields the two entries 'forward' then 'invoke', both on the calling context. In Group.invoke's `_process_result`, when `self._result_callback is not None`, call `ctx.record('result', ctx.command.name, None)` before `ctx.invoke(self._result_callback, ...)`. That plain-callable invoke records nothing. With chain=True it is recorded once with the whole list of results. A group without a result callback records no 'result' entry. 'result' is recorded after every subcommand has finished.",
+   "inputs": "ctx.invoke(cmd), ctx.invoke(func), ctx.forward(cmd), result_callback groups",
+   "output": "entries as described",
+   "errors": "Existing TypeError messages unchanged and still raised first: 'The given command does not have a callback that can be invoked.' and 'Callback is not a command.'. When they are raised, 'invoke'/'forward' is not recorded (for forward-to-callback-less-command, 'forward' IS recorded because the failure comes later in invoke).",
+   "precedence": "Validation errors take precedence over recording for invoke(cmd) and for forward's type check. forward records before delegating, so 'forward' always precedes 'invoke'. The 'invoke' entry is recorded before the target callback runs.",
+   "bounds": "The 'invoke'/'forward' entry path is the caller's ledger_path, not the target's.",
+   "state": "The sub context created for ctx.invoke(cmd) shares the caller's ledger by inheritance, so anything the target callback does with get_current_context().ledger lands in the same ledger."
+  },
+  {
+   "id": "R8",
+   "text": "ROUTE MATRIX (what each route does with the ledger; 'same' = identical recording semantics as the base R5-R7 rules). main(): same recording. Difference: main returns no ledger, so it is only observable through a Ledger instance passed as `ledger=` or through ctx.ledger inside callbacks; `main(ledger=True)` with no instance records into a ledger nobody can retrieve afterwards. CliRunner.invoke: same recording plus DIFFERENT: it resolves/creates the ledger itself and exposes Result.ledger, a per-call snapshot (R10). ctx.invoke(Command): DIFFERENT: only one 'invoke' entry on the caller. No 'param' entries (defaults are filled without handle_parse_result), no 'command' entry, no 'deprecated-command' entry (the existing behaviour of not warning on ctx.invoke is unchanged); the sub context shares the ledger. ctx.invoke(plain callable): N/A: no entry and no sub context, so nothing is recorded. ctx.forward(Command): DIFFERENT: two entries, 'forward' then 'invoke'; forward(non-Command) raises TypeError and records nothing. Nested groups (non-chain): same: one shared Ledger, entries ordered group-params, group 'command', sub-params, sub 'command', then 'result' of each enclosing group as it unwinds (innermost first), with a ledger_path growing by one segment per level. chain=True groups: DIFFERENT ORDER: after the group's own 'param' and 'command' entries, ALL subcommand contexts are created first (each subcommand's 'param' entries, in the order the subcommands appear on the command line), and only then does each subcommand's 'command' entry appear, in command-line order; a single 'result' entry (whose result is the list of results) is last. Nested groups inside chain groups remain unsupported (existing RuntimeError). A group with invoke_without_command and no subcommand: group 'param' entries, group 'command', then 'result' if a result callback exists.",
+   "inputs": "the six routes above",
+   "output": "entry sequences as described",
+   "errors": "none new",
+   "precedence": "The chain ordering rule overrides the 'param entries immediately precede their own command entry' intuition from non-chain groups.",
+   "bounds": "Chain group with zero subcommands on the line: the group's entries plus 'result' (if any), no sub entries.",
+   "state": "In every route the ledger is a single object shared along the context tree (R2), so ordering is the real execution order."
+  },
+  {
+   "id": "R9",
+   "text": "Worked ordering example (normative). With `@click.group(chain=True) cli` having option --verbose (given on the CLI), result callback `done`, and subcommands `a` (option --x with default) and `b` (no params), running `cli --verbose a b` under CliRunner with ledger enabled yields exactly these entries, as (kind, name, path, detail): ('param','verbose','cli','commandline'), ('command','cli','cli',None), ('param','x','cli a','default'), ('command','a','cli a',None), ('command','b','cli b',None), ('result','cli','cli',None). The automatic help option contributes nothing (expose_value=False). For the same commands without chain=True, `cli --verbose a` yields: ('param','verbose','cli','commandline'), ('command','cli','cli',None), ('param','x','cli a','default'), ('command','a','cli a',None), ('result','cli','cli',None).",
+   "inputs": "the CLIs above",
+   "output": "exact entry lists above",
+   "errors": "none",
+   "precedence": "Group 'command' precedes any subcommand context creation in both modes (existing Group.invoke order).",
+   "bounds": "Subcommand with a required argument missing: its MissingParameter propagates, and nothing is recorded for the failing parameter (see R5).",
+   "state": "Entries for a failed run remain in the ledger up to the point of failure."
+  },
+  {
+   "id": "R10",
+   "text": "Testing integration. `CliRunner.__init__` gains the last keyword parameter `ledger: bool = False` (stored as `self.ledger`). `Result.__init__` gains the last keyword parameter `ledger: Ledger | None = None` (stored as `result.ledger`). In `CliRunner.invoke`, before calling main, resolve a choice: `choice = extra.pop('ledger', None)`. If choice is None use `cli.context_settings.get('ledger')`. If still None, use True when self.ledger is True, otherwise None. If choice is True create a fresh `Ledger()`. If it is a Ledger instance use that instance itself. If it is False or None, no ledger is used (False is passed to main as `ledger=False`; None is simply not passed). Any other value is passed through to main unchanged, so Context raises its TypeError, which is captured as result.exception per catch_exceptions, and Result.ledger is None. A ledger that is used is passed to main as `ledger=<instance>`. Result.ledger is a NEW Ledger containing only the entries recorded during this invoke call: `ledger.entries[start_len:]` where start_len = len(ledger) taken just before main runs. It is a different object from any supplied instance. It is also filled when the run raised or exited non-zero. Result.ledger is None when no ledger was used.",
+   "inputs": "CliRunner(ledger=True).invoke(cli, args, ledger=...)",
+   "output": "Result.ledger snapshot or None",
+   "errors": "invalid type: TypeError(\"'ledger' must be a bool, a Ledger or None, not <typename>\") surfaces as result.exception with exit_code 1 under catch_exceptions=True.",
+   "precedence": "invoke(ledger=...) kwarg > cli.context_settings['ledger'] > CliRunner(ledger=True) > nothing. An explicit False at either of the first two levels beats the runner default True, so the result has ledger None. The runner default never overrides context_settings.",
+   "bounds": "A supplied instance that already holds N entries: Result.ledger holds only the new ones, while the instance itself keeps accumulating across calls.",
+   "state": "Default (no instance supplied): every invoke() gets a brand new Ledger, so two consecutive invoke() calls never share or leak entries, and an earlier Result.ledger is never mutated by a later call."
+  },
+  {
+   "id": "R11",
+   "text": "Public exports and decorator. click/__init__.py exports `Ledger`, `LedgerEntry` and `pass_ledger` (imported from .ledger and .decorators). `click.pass_ledger(f)` (in decorators.py, built on the same mechanism as pass_obj, i.e. via get_current_context()) calls f with `get_current_context().ledger` as the first positional argument followed by the original args/kwargs, and preserves f's metadata with update_wrapper. It passes None when the context has no ledger. It records nothing itself. Context.to_info_dict() output and every `to_info_dict` of Command/Parameter keep exactly their existing keys (no 'ledger' key).",
+   "inputs": "@click.pass_ledger def cmd(ledger, ...)",
+   "output": "the context's Ledger or None as first argument",
+   "errors": "none (outside a context, get_current_context raises its existing RuntimeError('There is no active click context.'))",
+   "precedence": "pass_ledger reads ctx.ledger after R2 resolution, so a child with ledger=False sees None even when its parent has a ledger.",
+   "bounds": "Stacking with pass_context/pass_obj works in the usual decorator-order manner.",
+   "state": "The object passed is the live shared Ledger, so entries recorded after the call are visible through it."
+  },
+  {
+   "id": "R12",
+   "text": "Backward compatibility (pinned by existing tests). With no ledger enabled anywhere (ledger=None everywhere, CliRunner(ledger=False), no context_settings key), behaviour is byte-identical to before: identical stdout/stderr/output for help, usage, errors, prompts and deprecation messages; identical exit codes and exceptions; ctx.params, ctx.meta and parameter sources unchanged and never containing ledger data; no new warnings of any category (filterwarnings=error); `repr(Result)` unchanged (still '<Result okay>' or '<Result Exception(...)>'); `Result.ledger is None`; existing positional signatures of Context.__init__, Result.__init__ and CliRunner.__init__ are unchanged (the new parameters are last and keyword-compatible). Enabling a ledger changes nothing but the ledger content: output, exit codes and callback behaviour stay the same. The existing ctx.invoke default-filling, forward param passing, duplicate-option UserWarning logic, feature-switch arbitration and Context.close()/exit-stack semantics are untouched.",
+   "inputs": "the existing test suite with ledger disabled, plus the same scenarios with ledger enabled",
+   "output": "unchanged results",
+   "errors": "none",
+   "precedence": "Backward compatibility overrides any convenience: no recording path may alter ctx.params values (e.g. the UNSET -> None conversion in parse_args) or the order in which callbacks run.",
+   "bounds": "A ledger of any size does not affect Context.to_info_dict.",
+   "state": "Closing a context or exiting it does not clear the ledger. Only Ledger.clear() does."
+  }
+ ],
+ "traps": [
+  "Using ctx.command_path for entry paths includes usage pieces such as '[OPTIONS]'. The path must be built from info_names only (R4).",
+  "Truthiness trap: `if ctx.ledger:` is False for an enabled but still-empty Ledger (it defines __len__), so the first event would never be recorded. Use `is None` (R1/R3).",
+  "The 'param' detail must be the source AFTER feature-switch arbitration (the winner's source), not the source the losing option consumed (R5).",
+  "Entries follow processing order (eager first, then invocation order), not declaration order, and expose_value=False parameters (the help option) must not appear (R5).",
+  "'deprecated-param' is recorded before processing, so it survives a MissingParameter failure, while 'param' is recorded after arbitration and does not (R5).",
+  "ctx.invoke(cmd) produces only an 'invoke' entry and never a 'command' or 'param' entry (the callback is called directly and defaults are filled without handle_parse_result). The existing TypeErrors must fire before anything is recorded (R7/R8).",
+  "ctx.forward produces TWO entries ('forward' then 'invoke'), because it delegates to invoke (R7).",
+  "chain=True creates all sub contexts before invoking any, so all sub 'param' entries precede all sub 'command' entries, unlike non-chain groups (R8/R9).",
+  "ledger=True on a child creates an independent ledger, and ledger=False cuts recording for the whole subtree, so a parent's ledger must not receive child entries in these cases (R2).",
+  "Result.ledger must be a snapshot copy of only the entries from this call. Returning the live runner-owned instance, or a ledger containing earlier entries of a reused instance, leaks state between CliRunner.invoke calls (R10).",
+  "Runner precedence: CliRunner(ledger=True) must not override cli.context_settings['ledger']=False or an explicit invoke(ledger=False) (R10).",
+  "Recording must go through ctx.record() so that a custom context_class override sees events even when ctx.ledger is None, and resilient_parsing must suppress every record() call (R3).",
+  "Using the deprecated ctx.protected_args anywhere in the implementation would raise under filterwarnings=error (R5/R12)."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ]
+}

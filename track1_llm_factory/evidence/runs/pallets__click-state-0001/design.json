@@ -1,0 +1,166 @@
+{
+ "feature": "Invocation ledger: an opt-in, invocation-scoped event log shared by every Context in a run",
+ "summary": "A Context tree can carry one shared, ordered ledger of (event, name) tuples. The built-in code paths record 'parse', 'invoke', 'call', 'forward', 'result' and 'deprecated' events through a public Context.record() hook. Events propagate through ctx.invoke, ctx.forward, nested and chained groups and result callbacks. They are visible to custom context_class subclasses. CliRunner.invoke exposes the ledger as Result.ledger and starts every call with a fresh one. A new eager @click.ledger_option can turn recording on mid-run and print the ledger to stderr when the root context closes. The ledger is disabled by default, and when disabled nothing about existing behavior changes.",
+ "public_api": [
+  "click.Context(..., ledger: bool | list | None = None)",
+  "click.Context.ledger  (read-only property -> tuple[tuple[str, str | None], ...])",
+  "click.Context.ledger_enabled  (read-only property -> bool)",
+  "click.Context.record(event: str, name: str | None = None) -> None",
+  "click.ledger_option(*param_decls, **kwargs)  (new decorator, exported from click/__init__.py, implemented in decorators.py)",
+  "click.testing.CliRunner(..., ledger: bool = False)",
+  "click.testing.CliRunner.invoke(..., ledger: bool | None = None)",
+  "click.testing.Result.ledger  (tuple of (event, name) tuples)"
+ ],
+ "keywords": [
+  "ledger",
+  "ledger_enabled",
+  "record",
+  "_ledger_state",
+  "ledger_option",
+  "Result.ledger",
+  "_process_result",
+  "parse_args",
+  "forward",
+  "call_on_close",
+  "context_class"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "Context.__init__ accepts a new keyword `ledger` (default None) and the tree shares ONE state: an entries list plus an enabled flag, passed from parent to child by reference, like `meta`. Validation comes first: anything other than a bool, a list or None (so `1`, `'x'` and `()` are invalid) raises the error below. Root context (parent is None): a list is adopted BY IDENTITY (not copied) and enables recording; `True` creates a new empty list and enables recording; `False`/`None` creates a new empty list and leaves recording disabled. Non-root context: `True` or any list (the list is NOT adopted, entries keep going to the tree's existing list) enables the tree's shared state; `False`/`None` changes nothing, so a child can never disable recording. Enabling on any context enables it for every context of the tree, ancestors and siblings included. Contexts created by ctx.invoke(Command), `_make_sub_context`, `make_context(parent=...)` and chained or nested groups all share the state. Passing `ledger` through `Command.context_settings` works with the existing rule that explicit `make_context` extras win over context_settings.",
+   "inputs": "ledger argument of Context(...), possibly via context_settings or main()/make_context extras",
+   "output": "Shared state on the tree; nothing recorded yet",
+   "errors": "TypeError: \"'ledger' must be a bool, a list or None.\"",
+   "precedence": "At a root context, explicit make_context/main extras beat Command.context_settings (existing click rule) and context_settings beat the default (disabled). At a non-root context a truthy value can only turn recording on, never off.",
+   "bounds": "bool is accepted, int 0/1 is not. An empty list at the root is adopted and enables recording.",
+   "state": "State lives on the tree (root-created, shared by reference). No module-level or class-level state may exist."
+  },
+  {
+   "id": "R2",
+   "text": "`Context.ledger_enabled` returns the tree's enabled flag. `Context.ledger` returns a tuple snapshot of the shared entries (a new tuple on every access; empty tuple when nothing was recorded). `Context.record(event, name=None)` is the only way internal code appends. It first validates its arguments, in this order, always, even when recording is disabled. It then returns None without appending if recording is disabled or `self.resilient_parsing` is True. Otherwise it appends the tuple `(event, name)` to the shared entries. Every built-in event listed in R3-R8 MUST be recorded by calling `ctx.record(...)` on the context named in that rule, never by touching the list directly, so a user context_class that overrides `record` (and may call super) observes every built-in event recorded on its own context, in order.",
+   "inputs": "event: str, name: str | None",
+   "output": "None; side effect appends (event, name) to the shared entries",
+   "errors": "TypeError: \"Ledger event must be a non-empty string, got {event!r}.\" when event is not a str or is ''. Else TypeError: \"Ledger name must be a string or None, got {name!r}.\" when name is neither str nor None.",
+   "precedence": "Validation error beats the disabled/resilient no-op. The resilient check applies to the context `record` is called on, not to the tree: resilient_parsing is not inherited by child contexts.",
+   "bounds": "Event names outside the built-in set are allowed (user events). Empty-string name is a valid name.",
+   "state": "Appends are visible immediately through `ledger` on every context of the tree."
+  },
+  {
+   "id": "R3",
+   "text": "'parse' event: `Command.parse_args` calls `ctx.record('parse', ctx.info_name)` as its very last step, after the 'unexpected extra arguments' check, once per call. `Group.parse_args` is NOT changed to record (it already delegates to `super().parse_args`), so a Group records exactly one 'parse' per parse_args call. A parse that raises (usage error, NoArgsIsHelpError, missing parameter, unexpected extra args) records no 'parse' for that context. A user subclass that overrides parse_args and calls super() gets the event from super. Parameters processed earlier in the same parse_args (eager callbacks, deprecation notices) therefore appear BEFORE the context's 'parse' entry.",
+   "inputs": "any Command/Group parse (make_context)",
+   "output": "ledger gains ('parse', info_name) on success; info_name may be None",
+   "errors": "none",
+   "precedence": "Interacts with R2: skipped in resilient parsing. Interacts with R9: an eager --ledger option turns recording on during this very parse, so this context's own 'parse' IS recorded.",
+   "bounds": "Exactly one entry per successful parse_args call; a group whose resolve_command re-runs parse_args for an option-like unknown token ends in a NoSuchCommand/usage error and records nothing extra on the failing path.",
+   "state": "Each context records for itself on the shared list; children parsed later append after the parent."
+  },
+  {
+   "id": "R4",
+   "text": "'invoke' event: `Command.invoke(ctx)` calls `ctx.record('invoke', ctx.info_name)` as its first statement, before the deprecated-command notice and before the callback. It is recorded once per Command.invoke call. Because Group.invoke calls `super().invoke(ctx)` for the group's own callback, a group records 'invoke' only on the paths where that call happens (subcommand given, or invoke_without_command with no subcommand); with no subcommand and invoke_without_command=False ('Missing command.') nothing is recorded. Resulting orders. Non-chain `g sub`: parse g, invoke g, parse sub, invoke sub. Chain `g a b`: parse g, invoke g, parse a, parse b, invoke a, invoke b (all chained subcommands are parsed before any of them is invoked). Nested groups (non-chain) nest the same way: parse root, invoke root, parse inner, invoke inner, parse leaf, invoke leaf.",
+   "inputs": "any command run through main()/Command.invoke",
+   "output": "('invoke', info_name) entries in the orders above",
+   "errors": "none",
+   "precedence": "Interacts with R3 (parse-before-invoke ordering differs between chain and non-chain) and with R5 (ctx.invoke(callback) never goes through Command.invoke, so it adds no 'invoke').",
+   "bounds": "Callback-less commands still record 'invoke'.",
+   "state": "Order is the global append order across the shared list, not per-context."
+  },
+  {
+   "id": "R5",
+   "text": "'call' event: `Context.invoke(callback, ...)` records ONLY when `callback` is a Command. After the existing 'The given command does not have a callback that can be invoked.' TypeError check and just before the callback runs, it calls `self.record('call', other_cmd.name)` (self is the calling context; name may be None). Calling a plain function through ctx.invoke records nothing. In particular the internal `ctx.invoke(self.callback, **ctx.params)` made by Command.invoke and the `ctx.invoke(self._result_callback, ...)` made by Group.invoke are plain-function calls and record no 'call'. A Command invoked this way bypasses its own parse_args and Command.invoke, so it adds no 'parse', no 'invoke' and no deprecated-command event (R8); only 'call'. Its sub-context shares the tree's ledger, so events recorded inside the callback land after the 'call' entry.",
+   "inputs": "ctx.invoke(some_command, **kwargs)",
+   "output": "('call', some_command.name) appended once per such call, before the callback's own events",
+   "errors": "The existing TypeError for a callback-less command is unchanged and nothing is recorded for it.",
+   "precedence": "Interacts with R6: forward() produces a 'forward' entry immediately followed by this 'call' entry.",
+   "bounds": "Recursion/repeated calls record one 'call' per call.",
+   "state": "Works at any nesting depth because the sub-context shares the state (R1)."
+  },
+  {
+   "id": "R6",
+   "text": "'forward' event: `Context.forward(cmd, ...)` calls `self.record('forward', cmd.name)` after its existing 'Callback is not a command.' TypeError check and before delegating to `self.invoke`. Since invoke then records 'call' (R5), forwarding to a Command yields exactly ('forward', name) then ('call', name), adjacent unless the argument-defaulting work records something (it does not).",
+   "inputs": "ctx.forward(some_command, **kwargs)",
+   "output": "('forward', cmd.name), ('call', cmd.name)",
+   "errors": "TypeError('Callback is not a command.') unchanged, nothing recorded when raised.",
+   "precedence": "R6 is recorded before R5's entry; a missing-callback TypeError raised inside invoke leaves the 'forward' entry in place with no 'call'.",
+   "bounds": "Forward from within a forwarded callback records a second forward/call pair after the first call entry.",
+   "state": "Recorded on `self`, so a custom context_class `record` override on the forwarding context sees 'forward' and 'call'."
+  },
+  {
+   "id": "R7",
+   "text": "'result' event: in Group.invoke, the inner `_process_result` calls `ctx.record('result', ctx.info_name)` immediately before invoking the result callback, only when `self._result_callback is not None`. It happens on every path that calls `_process_result` (subcommand, chain, invoke_without_command). With chain=True it is recorded once, after all chained 'invoke' entries. Chained result callbacks registered through repeated `@group.result_callback()` produce a single 'result' entry (one _process_result call). In nested groups the inner group's 'result' precedes the outer group's. A group without result callback records nothing.",
+   "inputs": "Group with result_callback",
+   "output": "('result', group_info_name) entries",
+   "errors": "none",
+   "precedence": "Interacts with R4: the 'result' entry always follows the 'invoke' entries of everything the group dispatched to.",
+   "bounds": "Not recorded when the group fails before reaching _process_result.",
+   "state": "Recorded on the group's own context, so context_class overrides on that group see it."
+  },
+  {
+   "id": "R8",
+   "text": "'deprecated' event: whenever click prints a deprecation notice it records the event on the relevant context immediately before echoing. For a deprecated command (Command.invoke) the entry is ('deprecated', self.name), recorded after that command's 'invoke' entry and before the callback. For a deprecated parameter (Parameter.handle_parse_result, only when the notice is actually printed, i.e. value given and source < DEFAULT_MAP) the entry is ('deprecated', self.human_readable_name), recorded on `ctx` before the echo. The name is the same string the printed message shows. The notice text printed to stderr is byte-identical to before. Recording is subject to R2, so while the context is resilient_parsing the notice is still printed but nothing is recorded.",
+   "inputs": "Deprecated command invoked or deprecated option/argument supplied on CLI or env",
+   "output": "('deprecated', name) entries",
+   "errors": "none",
+   "precedence": "R2 (resilient/disabled no-op) beats this rule. Parameter notices occur during parse_args so they precede that context's 'parse' entry (R3).",
+   "bounds": "A deprecated parameter used 2 times (multiple=True) is processed once, so one entry. A parameter whose value comes from default or default_map records nothing.",
+   "state": "Entries accumulate per run; tracking per-run deprecations is simply filtering `ledger` for 'deprecated'."
+  },
+  {
+   "id": "R9",
+   "text": "New decorator `click.ledger_option(*param_decls, **kwargs)` (in decorators.py, exported from click/__init__.py as `ledger_option`), modeled on version_option. Default declaration is '--ledger'. It builds an option with kwargs.setdefault for is_flag=True, expose_value=False, is_eager=True and help='Print the invocation ledger to stderr when the run ends.'; any `callback` in kwargs is replaced by the built-in callback. The built-in callback does nothing when the value is falsy or `ctx.resilient_parsing` is True. Otherwise it enables recording on ctx's tree (as R1 non-root `True`) and registers, via `ctx.find_root().call_on_close(...)`, a function that on root close writes one line per entry currently in the shared ledger, in order, to stderr using click.echo(err=True). The line is `f\"{event}: {name}\"`, or just `event` when name is None. No local variable named `ledger` is exposed to the command callback. Each activation registers its own printer (using the option on both a group and its subcommand prints the ledger twice). Only events recorded after the option's callback runs exist: if --ledger is on a subcommand and recording was not already enabled, the root's 'parse'/'invoke' and the group's events are NOT in the ledger, but the subcommand's own 'parse', and everything after, are.",
+   "inputs": "`--ledger` flag on any command/group decorated with @click.ledger_option()",
+   "output": "stderr lines like `parse: cli`, `invoke: cli`, `parse: sub`, `invoke: sub` at the end of the run",
+   "errors": "none",
+   "precedence": "Beats nothing and loses to nothing: it only turns recording on; if recording is already enabled by R1 or R10 events are not duplicated. R2's resilient rule makes the callback a no-op during completion.",
+   "bounds": "Eager, so it runs before non-eager options of the same command, so those options' deprecated notices are recorded. Works with chain groups and nested groups.",
+   "state": "The printer reads the ledger at close time, so events recorded between option processing and root close are included. ctx.exit() closes the root before raising Exit and therefore also prints."
+  },
+  {
+   "id": "R10",
+   "text": "testing.py: `CliRunner.__init__` gains `ledger: bool = False` (stored as `self.ledger`). `CliRunner.invoke` gains the named parameter `ledger: bool | None = None` (placed before **extra; so `ledger` is no longer forwarded in **extra); None means use `self.ledger`, otherwise the explicit bool wins. When the effective value is truthy, invoke creates a NEW empty list for that call and calls `cli.main(args=..., prog_name=..., ledger=<that list>, **extra)` so the root Context adopts it by identity (R1) and wins over `context_settings`. When falsy, no `ledger` is passed to main. `Result` gains the keyword argument `ledger` (default `()`, appended after `exc_info` so positional construction is unchanged) and the attribute `Result.ledger`: the tuple of entries from that call's list, captured in the `finally` block, so entries recorded before an exception, a SystemExit or a usage error are still present. When the effective ledger is falsy `Result.ledger == ()`.",
+   "inputs": "CliRunner(ledger=True).invoke(cli, args) or runner.invoke(cli, args, ledger=True/False)",
+   "output": "Result.ledger tuple, e.g. (('parse','cli'),('invoke','cli'),('parse','sub'),('invoke','sub'))",
+   "errors": "none (truthiness is used; no type validation on the runner side)",
+   "precedence": "Per-call `ledger=` beats the runner default. The runner-provided list beats cli.context_settings['ledger'] (R1 rule on extras). A command using @ledger_option under runner ledger=False still gets entries printed to stderr, but Result.ledger stays ().",
+   "bounds": "catch_exceptions=False re-raises but the list was already filled.",
+   "state": "A fresh list per invoke call, never reused across calls and never stored on the runner."
+  },
+  {
+   "id": "R11",
+   "text": "Reset/isolation: ledger state exists only on Context trees. Two successive `CliRunner.invoke` calls on the same runner and same command object yield independent ledgers (the second Result.ledger never contains entries from the first). Two successive `cli.make_context(...)` calls produce independent roots. A child context built with `parent=ctx` always shares ctx's state, even if a custom context_class subclass overrides `__init__` and forwards `parent`/`ledger` through. Reusing ONE Context object for two separate invocations is not reset (entries accumulate). `Context.close()` does not clear entries.",
+   "inputs": "repeated runs",
+   "output": "independent ledgers per root context",
+   "errors": "none",
+   "precedence": "Interacts with R10: reset is achieved by the fresh list per call, and with R1: adoption by identity makes Result.ledger see later appends.",
+   "bounds": "Result.ledger is an immutable snapshot taken at the end of invoke; later events on the same Context do not alter it.",
+   "state": "No module-level or class-level list/flag; threads are out of scope."
+  },
+  {
+   "id": "R12",
+   "text": "Backward compatibility: with recording disabled (the default) every existing behavior is byte-identical: stdout/stderr text (help output, errors, deprecation notices), exit codes, return values, `ctx.params`, parameter sources, callback ordering, the `to_info_dict` structures (no 'ledger' key is added to Context.to_info_dict or Command.to_info_dict), warnings emitted (no new warnings, since pytest runs with filterwarnings=error), `Result` positional constructor arguments and `repr`, and the set of module-level imports of every click module (no new top-level imports; use function-local imports where needed). Events recorded before a failure stay in the ledger (no rollback): e.g. a subcommand parse error after the group ran leaves ('parse', g), ('invoke', g) and no 'parse' for the failing subcommand.",
+   "inputs": "any existing click program",
+   "output": "unchanged behavior",
+   "errors": "none",
+   "precedence": "R12 beats any implementation choice that would alter output when the ledger is disabled; enabling recording must also not change any user-visible output other than via R9's explicit stderr printing.",
+   "bounds": "ledger_enabled False means `record` still validates arguments (R2) but appends nothing.",
+   "state": "Recording never mutates ctx.params, ctx.args, ctx.meta or ctx.obj."
+  }
+ ],
+ "traps": [
+  "Recording 'parse' in Group.parse_args as well as Command.parse_args duplicates the event for groups; and recording before the extra-args check wrongly logs failed parses.",
+  "Chain mode ordering: all chained subcommands are parsed (make_context) before any is invoked, so the ledger is parse g, invoke g, parse a, parse b, invoke a, invoke b, result g. Assuming parse/invoke pairs per command is wrong.",
+  "Command.invoke and Group.invoke use ctx.invoke with plain callbacks; naively recording every ctx.invoke call adds spurious 'call' entries. Only Command arguments record, and forward must yield exactly forward then call.",
+  "Copying a list passed as `ledger` (or keeping a per-class list) breaks Result.ledger or leaks entries between CliRunner.invoke calls: the runner's fresh list must be adopted by identity at the root and children must share the same state by reference.",
+  "A non-root context given ledger=False must NOT disable recording, and a non-root list argument must NOT replace the shared list.",
+  "Appending directly to the list instead of calling ctx.record bypasses user context_class overrides; also record() must validate even when disabled and must be a no-op for resilient_parsing contexts while deprecation notices are still printed.",
+  "Enabling mid-run via the eager --ledger option on a subcommand only records later events, and the printed output must include entries recorded after the option ran, so the list must be read at close time, not copied at option time.",
+  "The 'deprecated' name for parameters is human_readable_name (the message's name), and param notices precede the owning context's 'parse' entry because they happen inside parse_args."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ]
+}

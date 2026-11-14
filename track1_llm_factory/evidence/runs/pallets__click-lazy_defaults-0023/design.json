@@ -1,0 +1,183 @@
+{
+ "feature": "lazy_defaults: dependent option defaults (default_from / depends_on) with ParameterSource.DEPENDENT",
+ "summary": "Opt-in keywords on click.Option: default_from=<callable> and depends_on=[names]. When a dependent option gets no value of its own from the command line, an environment variable or default_map, its value is computed from the FINAL values of the other parameters it names. Computation happens after every ordinary parameter (including prompted ones) is resolved, in dependency order, at most one successful evaluation per Context. It is reported as the new ParameterSource.DEPENDENT. It is never evaluated in resilient parsing, shell completion, help/usage rendering or to_info_dict. Structural errors (duplicate storage name, unknown dependency, cycle) raise the new click.ParameterDependencyError. Commands without a dependent option behave byte-identically to 8.5.1. Expected footprint: src/click/core.py (Option, Command parsing, Context.invoke, ParameterSource, help extra, info dict), src/click/exceptions.py (new exception), src/click/__init__.py (export), plus CHANGES/docs. No new module-level imports are needed (tests/test_imports.py allowlist) and no new warnings may be emitted (pytest filterwarnings=error).",
+ "public_api": [
+  "click.Option(..., default_from: Callable[..., Any] | None = None, depends_on: list[str] | tuple[str, ...] | None = None)",
+  "click.option(..., default_from=..., depends_on=...)",
+  "click.Option.default_from  (the callable or None)",
+  "click.Option.depends_on  (tuple[str, ...], () when not given)",
+  "click.ParameterSource.DEPENDENT  (int value 6)",
+  "click.ParameterDependencyError  (same object as click.exceptions.ParameterDependencyError; subclass of RuntimeError, not of ClickException)",
+  "click.Option.to_info_dict()['depends_on']  (present only for dependent options)",
+  "help extra text '(computed from a, b)' / '(computed)' via Option.get_help_extra / get_help_record"
+ ],
+ "keywords": [
+  "default_from",
+  "depends_on",
+  "DEPENDENT",
+  "ParameterDependencyError",
+  "computed from",
+  "ParameterSource",
+  "iter_params_for_processing",
+  "handle_parse_result",
+  "consume_value",
+  "resilient_parsing",
+  "get_help_extra",
+  "to_info_dict",
+  "Context.invoke",
+  "Context.forward",
+  "default_map",
+  "UNSET"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "Declaration. click.Option and click.option accept default_from (a callable or None, default None) and depends_on (a list or tuple of str, or None, default None). An option with a non-None default_from is a 'dependent option'. Every Option instance exposes .default_from (the callable or None) and .depends_on (a tuple of the names in the given order; () when depends_on was None or empty). depends_on names are storage names (Parameter.name, e.g. 'base_url' for '--base-url') of other parameters of the SAME command; they may name Options or Arguments. default_from with no depends_on is allowed (called with no arguments, still subject to all later rules). click.Argument does not accept either keyword. Custom Option subclasses used through cls= inherit the feature unchanged. Constructor validation runs in the order listed under errors; the first failing check raises.",
+   "inputs": "Option(['--url'], default_from=f, depends_on=['host', 'port']); option('--x', default_from=f); Option(['--x'], depends_on='ab', default_from=f); Option(['--x'], depends_on=['a', 'b', 'b', 'a'], default_from=f)",
+   "output": "opt.default_from is f; opt.depends_on == ('host', 'port'); a plain Option has default_from is None and depends_on == ().",
+   "errors": "(1) TypeError(\"'default_from' must be callable.\") when default_from is neither None nor callable. (2) TypeError(\"'depends_on' requires 'default_from'.\") when depends_on is not None (even empty) and default_from is None. (3) TypeError(\"'depends_on' must be a list or tuple of parameter names.\") when depends_on is not an instance of list or tuple (a bare str, set, frozenset, dict, generator are all rejected) or any item is not a str. (4) ValueError(\"'depends_on' contains duplicate name 'NAME'.\") where NAME is the first item, scanning left to right, that equals an earlier item (['a','b','b','a'] reports 'b'). Argument(..., default_from=...) raises TypeError from the constructor; its message is not part of the contract.",
+   "precedence": "R1 checks run before the keyword-conflict checks of R2.",
+   "bounds": "A bare string is never split into characters or treated as one name. An empty list or tuple is valid when default_from is given. Whether names actually exist is NOT checked here (see R8).",
+   "state": "Attributes are set once at construction; nothing is evaluated."
+  },
+  {
+   "id": "R2",
+   "text": "Keyword conflicts. After R1's checks pass, a dependent option is rejected if combined with, checked in this order: 'default' (the default keyword was passed at all, with any value including None); 'prompt' (prompt is anything other than False); 'count' (count=True); 'is_flag' (the constructed option's is_flag is True, whether explicit or inferred from flag_value or a '--x/--no-x' declaration); 'expose_value=False'. All other keywords remain valid: required, multiple, nargs, type, callback, envvar, is_eager, hidden, deprecated, show_default, show_envvar, is_flag=False. The option's type is never inferred from default_from: without type= it is STRING exactly as for an 8.5.1 option with no default.",
+   "inputs": "Option(['--x'], default_from=f, default=None); Option(['--x'], default_from=f, prompt=True); Option(['--x'], default_from=f, count=True); Option(['--x/--no-x'], default_from=f); Option(['--x'], default_from=f, expose_value=False)",
+   "output": "The constructor raises; no Option is created.",
+   "errors": "TypeError(\"'default_from' is not valid with 'default'.\"), TypeError(\"'default_from' is not valid with 'prompt'.\"), TypeError(\"'default_from' is not valid with 'count'.\"), TypeError(\"'default_from' is not valid with 'is_flag'.\"), TypeError(\"'default_from' is not valid with 'expose_value=False'.\")",
+   "precedence": "R2 is why a dependent option's source can never be PROMPT on any route and never DEFAULT on a non-resilient parse (see R4, R9).",
+   "bounds": "If a declaration would already raise in 8.5.1 without the two new keywords (e.g. count with multiple), which error is raised is not part of the contract.",
+   "state": "none"
+  },
+  {
+   "id": "R3",
+   "text": "ParameterSource gains the member DEPENDENT with int value 6, placed after DEFAULT. The five existing members keep their values (PROMPT=1, COMMANDLINE=2, ENVIRONMENT=3, DEFAULT_MAP=4, DEFAULT=5) and their iteration order; list(ParameterSource)[-1] is DEPENDENT and len(ParameterSource) == 6. ctx.get_parameter_source(name) returns ParameterSource.DEPENDENT exactly when the stored value of a dependent option was produced by default_from on that Context, including when default_from returned None (R7).",
+   "inputs": "ParameterSource.DEPENDENT.value; ParameterSource.DEPENDENT > ParameterSource.DEFAULT; ctx.get_parameter_source('url') after a computed parse",
+   "output": "6; True; ParameterSource.DEPENDENT. Therefore the documented 'source < ParameterSource.DEFAULT_MAP' explicitness test is False for computed values.",
+   "errors": "none",
+   "precedence": "A dependent option whose own value came from the command line, environment or default_map reports that 8.5.1 source instead (R4 beats R3).",
+   "bounds": "Existing members must not be renumbered; ParameterSource(5) is still DEFAULT.",
+   "state": "Recorded per Context, like every other source."
+  },
+  {
+   "id": "R4",
+   "text": "Own-value precedence on parse routes (make_context / parse_args / main), highest first: COMMANDLINE > ENVIRONMENT > DEFAULT_MAP > DEPENDENT. Pairwise: CLI+env -> CLI; CLI+default_map -> CLI; env+default_map -> env; any of the three present -> default_from is NOT called and the option behaves exactly like an ordinary 8.5.1 option (same processing position, same callback call, same source); none present -> the option is 'pending' and is computed (R5-R7). 'Present' is decided exactly as 8.5.1 decides the source, never by truthiness: a CLI value of '' or 0 is present; an environment variable (the option's envvar, or the auto_envvar_prefix variable) is present only when set to a non-empty string, as in 8.5.1; a default_map entry is present when the option's name is a key of ctx.default_map with ANY value, including None, 0, '' or False (value None gives final value None with source DEFAULT_MAP and no computation).",
+   "inputs": "cmd.main(['--port', '0']); env PORT='' vs PORT='0'; default_map={'port': None}; default_map={'port': 0}",
+   "output": "'--port 0' -> 0, COMMANDLINE, default_from not called. PORT='' -> computed, DEPENDENT. PORT='0' -> 0, ENVIRONMENT. default_map {'port': None} -> None, DEFAULT_MAP, not called. default_map {'port': 0} -> 0, DEFAULT_MAP, not called.",
+   "errors": "none",
+   "precedence": "R4 beats R5-R7: an explicit own value always suppresses default_from. PROMPT cannot be a dependent option's own source (R2) but may be the source of a dependency, which is then final before any dependent is computed (R5).",
+   "bounds": "On a non-resilient parse a dependent option's source is one of COMMANDLINE, ENVIRONMENT, DEFAULT_MAP, DEPENDENT; never PROMPT or DEFAULT.",
+   "state": "Decided independently on every parse."
+  },
+  {
+   "id": "R5",
+   "text": "Evaluation timing and order (non-resilient parse). All parameters that are not pending dependents are processed first, exactly as in 8.5.1: same relative order (eager first, then invocation order, then declaration order), same prompts, and the same number and order of callback calls, including the cases where 8.5.1 calls a prompted parameter's callback more than once. Only after ALL of them are final are pending dependents evaluated, one at a time: repeatedly take the first pending dependent, in Command.params order (top-to-bottom for stacked decorators), none of whose depends_on names is a still-unevaluated pending dependent. is_eager has no effect on a pending dependent. Evaluation happens inside Command.parse_args: when Command.parse_args returns (including when called via super() from a subclass override, from Group.parse_args, or directly via cmd.make_context without main()), every pending dependent has its final value in ctx.params. It happens before the 8.5.1 'Got unexpected extra argument' check, as for ordinary parameter callbacks.",
+   "inputs": "params declared [c(depends_on b), b(depends_on a), a(prompt=True, callback=cb)]; params declared [d2(depends_on x), d1(depends_on x), x]",
+   "output": "First case: a is prompted and its callbacks run as in 8.5.1, then b is computed, then c. Second case: x, then d2, then d1 (declaration order breaks ties).",
+   "errors": "An exception raised while evaluating one dependent propagates immediately; later pending dependents are not evaluated (R11).",
+   "precedence": "R8 validation runs before anything in R5. R9 replaces R5 entirely when ctx.resilient_parsing is True.",
+   "bounds": "No default_from is called before the last prompt of the command has been answered. A custom context_class or Command/Group subclass (command_class, group_class) changes nothing.",
+   "state": "On a Context where a pending dependent has never held a value, its name is not a key of ctx.params and ctx.get_parameter_source(name) is None until it is evaluated; this is visible to callbacks of earlier parameters."
+  },
+  {
+   "id": "R6",
+   "text": "Call convention. default_from is called with keyword arguments only (no ctx, no param, no positionals): exactly one keyword per depends_on name, in depends_on order. Each value is the dependency's final value as stored in ctx.params at that moment (after its type conversion and callback): the identical object, with no copy and no deep copy. A dependency that received no value is passed as None (or () for multiple / nargs=-1 parameters, as 8.5.1 would finally store it), never as an internal sentinel. Each call receives a fresh mapping: a default_from declared as f(**kw) may mutate kw without affecting ctx.params or what any other dependent receives. A dependency may itself be a dependent option (its computed, post-callback value is passed) or a name shared by several NON-dependent parameters (the single final value 8.5.1 stores under that name is passed).",
+   "inputs": "default_from=lambda **kw: seen.append(kw) or 'v' with depends_on=('tags', 'name'); '--tags' multiple given twice, '--name' not given and without default",
+   "output": "list(kw) == ['tags', 'name']; kw['tags'] is ctx.params['tags']; kw['name'] is None; two dependents with the same depends_on receive two distinct dict objects.",
+   "errors": "A TypeError raised by Python because default_from's signature does not accept the keywords propagates unchanged.",
+   "precedence": "Values passed are those AFTER R4/R5 resolution of the dependencies; falsey dependency values (0, '', False, ()) are passed as-is.",
+   "bounds": "Parameters not named in depends_on are never passed, even if default_from accepts **kw.",
+   "state": "none"
+  },
+  {
+   "id": "R7",
+   "text": "Result handling for a pending dependent, in this order, each step exactly once per successful evaluation: (1) default_from is called (R6); (2) the result goes through the option's normal type conversion, as 8.5.1 does for a default value (multiple and nargs rules included); (3) the required check; (4) the option's callback, if any, is called once as callback(ctx, option, converted_value) and its return value is the final value; (5) the final value is stored in ctx.params[name] and the source is DEPENDENT. Falsey results are real values: 0, 0.0, False, '' and (for multiple) non-missing sequences are stored and satisfy required=True. Only None means 'no value': the final value is None (or () when multiple=True), the callback receives None (or ()), the source is still DEPENDENT, and with required=True the 8.5.1 MissingParameter for that option is raised. No deprecation notice is printed for a computed value of a deprecated option.",
+   "inputs": "type=int, default_from returns 0; no type, returns 0; type=int, returns '42'; required=True, returns None; multiple=True, returns None",
+   "output": "0 (int, DEPENDENT); '0' (STRING conversion, since type is never inferred); 42; MissingParameter; ().",
+   "errors": "click.MissingParameter (8.5.1 message) for required + None, or required + multiple + (). A UsageError raised by default_from, conversion or the callback gets .ctx set to the Context if it was None, and a BadParameter additionally gets .param set to the dependent option if it was None. Any other exception propagates unchanged, not wrapped.",
+   "precedence": "R4 beats R7: with an explicit own value none of the steps above run via default_from. On the ctx.invoke / ctx.forward routes R12 overrides steps 3-5.",
+   "bounds": "Use type=click.UNPROCESSED to keep the returned object unchanged. Exactly-once is promised only for computed dependents; ordinary and prompted parameters keep 8.5.1 multiplicity (R5).",
+   "state": "See R11 for remembering and retry."
+  },
+  {
+   "id": "R8",
+   "text": "Structural validation. On every non-resilient parse of a command that has at least one dependent option, the dependency structure is validated BEFORE command-line tokens are examined and before any parameter callback, prompt or default_from runs (so ['--no-such-option'] or ['--help'] on an invalid command raises the error below, not a usage error or help output). The only earlier check is 8.5.1's no_args_is_help: with no arguments such a command still shows help. Checks, in order: (a) duplicate storage name: two parameters of the command share a name and at least one of them is a dependent option; reports the first such name in Command.params order. (b) unknown dependency: for the first dependent option in Command.params order, the first name in its depends_on that is not the name of a parameter of the same command with expose_value=True (a parent group's parameter is unknown). (c) cycle, considering only edges from a dependent option to those of its depends_on names that are dependent options: walk the dependent options in Command.params order; from each not yet visited, follow depends_on depth-first in listed order; the first time the walk reaches an option already on the current path, the message lists the names from that option's first occurrence on the path to the repeat, joined by ' -> ' ('a -> b' means a depends on b). Validation is structural: the errors are raised even if every option involved receives an explicit value on the command line.",
+   "inputs": "two options both named 'x', one dependent; x depends_on ['y'] with no parameter y; a depends_on ['b'] and b depends_on ['a'] declared a then b; c depends_on ['a'] declared first, then a <-> b; a depends_on ['a']",
+   "output": "Messages respectively as listed under errors; cycle texts: 'a -> b -> a' (declared b first: 'b -> a -> b'), 'a -> b -> a' for the c case, 'a -> a' for self-dependency.",
+   "errors": "click.ParameterDependencyError(\"Parameter name 'x' is used by a dependent option and by another parameter.\"); click.ParameterDependencyError(\"Option 'x' depends on unknown parameter 'y'.\"); click.ParameterDependencyError('Dependency cycle detected: a -> b -> a'). ParameterDependencyError subclasses RuntimeError and is not a ClickException, so main() never renders it as an 'Error:' message; it propagates in both standalone modes.",
+   "precedence": "R8 beats R10 for a literal --help invocation (the error is raised instead of help). R9 beats R8: in resilient parsing nothing is validated and nothing is raised.",
+   "bounds": "Several NON-dependent options sharing a name stay legal and may be named as a dependency (R6). If the other parameter sharing a dependent's name is an Argument, 8.5.1's existing UserWarning for that name is still emitted; which surfaces first is not part of the contract. A subcommand's structure is validated only when that subcommand is parsed.",
+   "state": "Validated on every non-resilient parse; nothing is cached between Contexts."
+  },
+  {
+   "id": "R9",
+   "text": "Resilient parsing and shell completion. When ctx.resilient_parsing is True (this includes every Context built during shell completion), no default_from is ever called, no ParameterDependencyError is raised even for a duplicate name, unknown dependency or cycle, and dependency edges are ignored: every parameter, dependent or not, is processed in the plain 8.5.1 order. A dependent option with an explicit own value (R4) is processed and stored untouched, exactly as an ordinary option. A dependent option without one is treated exactly as 8.5.1 treats an option that has no default and received no value: its callback, if any, is called once with None (() for multiple=True), ctx.params[name] holds None (or (), or whatever the callback returned), and ctx.get_parameter_source(name) is ParameterSource.DEFAULT, not DEPENDENT.",
+   "inputs": "cmd.make_context('cli', [], resilient_parsing=True) on a command with a cycle a <-> b, callbacks on both; completion run via the _<PROG>_COMPLETE instruction",
+   "output": "No exception; default_from call count 0; callbacks called in declaration order with None; completion output identical to what 8.5.1 produces for the same command with default_from/depends_on removed.",
+   "errors": "none (exceptions raised by callbacks are swallowed as in 8.5.1)",
+   "precedence": "R9 beats R5, R7, R8 and R11: none of them apply while resilient_parsing is True.",
+   "bounds": "Custom shell_complete callbacks reading ctx.params therefore see None for an uncomputed dependent.",
+   "state": "A resilient parse remembers nothing for R11."
+  },
+  {
+   "id": "R10",
+   "text": "Help and introspection never evaluate. default_from is not called by: a --help invocation (any help option name), ctx.get_help(), Command.get_help/get_usage/format_* (including user overrides calling super()), Option.get_help_record/get_help_extra, Option.get_default(ctx) (returns exactly what 8.5.1 returns for an option declared without a default), Option.to_info_dict() or Context.to_info_dict(). On a valid command a --help invocation also never calls a pending dependent's callback. Display: when default display is enabled for a dependent option (its show_default is True, or its show_default is None and ctx.show_default is True) and ctx.default_map has no key for it, get_help_extra(ctx)['default'] is '(computed from a, b)' with the depends_on names in order joined by ', ', or '(computed)' when depends_on is empty; the help row therefore shows '[default: (computed from a, b)]'. A string show_default is shown as in 8.5.1 ('(text)'); show_default=False shows nothing; if ctx.default_map has a key for the option, the 8.5.1 output for that default_map value is unchanged. Option.to_info_dict() of a dependent option contains the extra key 'depends_on' (a list of the names in order) and 'default': None; for every non-dependent option the dict has exactly the 8.5.1 keys and values.",
+   "inputs": "cmd.main(['--help']); click.Context(cmd).get_help(); option('--url', default_from=f, depends_on=['host', 'port'], show_default=True); opt.to_info_dict()",
+   "output": "Help text containing '[default: (computed from host, port)]' (combined as '[default: (computed from host, port); required]' when also required); info dict with 'depends_on': ['host', 'port']; default_from call count stays 0.",
+   "errors": "none from rendering itself",
+   "precedence": "R8 beats R10 for an actual --help parse of a structurally invalid command; rendering on a bare click.Context(cmd) performs no validation and never raises ParameterDependencyError.",
+   "bounds": "Help, usage and info-dict output of commands without dependent options is byte-identical to 8.5.1.",
+   "state": "Rendering never changes ctx.params, sources or remembered values."
+  },
+  {
+   "id": "R11",
+   "text": "Once per Context, retry, and no cross-Context reuse. The first successful evaluation (R7 steps 1-5 without exception) of a dependent on a given Context object is remembered for that Context only. Whenever a later non-resilient parse on the SAME Context finds that option pending again, the remembered final value is stored again with source DEPENDENT and neither default_from nor the option's callback is called; remembered values are not invalidated when dependencies got different values in the later parse. If in a later parse the option has an explicit own value (R4), that value wins for that parse (processed as an ordinary option, callback called, explicit source) without erasing the remembered computation. If an evaluation raises at any step (default_from, conversion, required check, callback), nothing is remembered for that option: on a Context where it never held a value its name stays absent from ctx.params with source None, and the next parse on the same Context evaluates it again from scratch (default_from is called again; on success the callback is then called once). Dependents successfully evaluated earlier in the failing parse stay remembered and are not re-evaluated on retry.",
+   "inputs": "ctx = click.Context(cmd); cmd.parse_args(ctx, []) twice; default_from that raises ValueError on its first call and returns 'ok' on its second",
+   "output": "Two successful parses: default_from called once, callback called once, value identical. Raising case: first parse raises ValueError, second parse calls default_from a second time and stores 'ok' with DEPENDENT.",
+   "errors": "The original exception of the failed attempt propagates unchanged (subject to R7 augmentation).",
+   "precedence": "R4 beats R11 within a single parse. R9: resilient parses neither use nor create remembered values.",
+   "bounds": "At most one successful evaluation per Context; each failed attempt calls default_from exactly once.",
+   "state": "Scope is the Context object. Nothing is remembered on the Option, the Command, a parent or child Context, or between separate main()/CliRunner.invoke calls: a new Context always evaluates afresh, including two Contexts of the same command in one chained invocation."
+  },
+  {
+   "id": "R12",
+   "text": "ROUTE MATRIX (baseline = R3-R11 as written for a parse). main(): SAME (baseline) in both standalone modes; ParameterDependencyError and non-click exceptions from default_from propagate out of main(), click exceptions are handled as in 8.5.1. CliRunner.invoke: SAME as main(); the propagated exception is result.exception; every CliRunner.invoke call evaluates afresh (N identical invokes -> N default_from calls). ctx.invoke(command, **kwargs): DIFFERENT: no parse happens, so (i) a dependent whose name is a key of kwargs (any value, even None) is passed through untouched and default_from is not called; (ii) otherwise, if the new sub-context's default_map has a key for it, the 8.5.1 fill-in value is used and default_from is not called; environment variables are not consulted (as in 8.5.1); (iii) otherwise it is computed after all other keyword values are final (passed kwargs as-is, 8.5.1 fill-ins for the rest), in R5 order, called per R6, and the result is type-converted (None -> None, or () for multiple); (iv) the dependent's parameter callback is NOT called, required is NOT enforced, and no source is recorded (get_parameter_source on the sub-context returns None), all matching 8.5.1 for invoke-filled defaults; (v) R8 validation applies and raises before the command callback runs; (vi) the value is visible as the callback keyword and in the sub-context's params; one evaluation per ctx.invoke call; exceptions propagate to the caller with no augmentation added. ctx.invoke(plain_function, ...): N/A, no parameters are involved and nothing is evaluated. ctx.forward(command): DIFFERENT from main, identical to ctx.invoke after the caller's ctx.params are merged into kwargs: a dependent whose name is a key of the caller's ctx.params is forwarded as-is (never recomputed, even if the caller's value was itself computed); a dependent absent from the caller's params is computed from the forwarded dependency values. Nested groups: SAME, per Context: a group's dependents are computed during the group's own parse, before the subcommand is resolved, and are visible in the group callback and as ctx.parent.params[name] with source DEPENDENT; a subcommand cannot depend on a group parameter (R8 unknown); a subcommand's invalid structure raises only when that subcommand is parsed, so 'cli --help' still works. chain=True groups: SAME, per subcommand Context, with the 8.5.1 timing: all chained subcommands are parsed, hence all their default_from calls happen in command-line order, before the first subcommand callback runs; the same subcommand named twice is evaluated twice (once per occurrence); the group's result_callback receives the group's computed dependents as keyword arguments.",
+   "inputs": "cli.main(['a', 'a']) on a chain group; ctx.invoke(other, port=None); ctx.invoke(other); ctx.forward(other) with and without the dependent name in the caller's params; CliRunner().invoke(cli) twice",
+   "output": "chain 'a a' -> default_from of a called 2 times, both before a's first callback. invoke with port=None -> callback gets None, 0 calls. invoke without -> computed value, callback of the option not called, source None. forward -> forwarded value or computed from forwarded dependencies. Two CliRunner invokes -> 2 calls.",
+   "errors": "click.ParameterDependencyError (R8 messages) on every route that evaluates. MissingParameter only on parse routes.",
+   "precedence": "On ctx.invoke / ctx.forward: passed kwarg > default_map entry of the new context > computed. R12 overrides R7 steps 3-5 and R3 source recording on those two routes only.",
+   "bounds": "Every route is covered above; there is no route on which default_from is called for a dependent with an explicit own value.",
+   "state": "Each route's evaluation is scoped to the Context it creates (R11); ctx.invoke and ctx.forward create a new sub-context on every call."
+  }
+ ],
+ "traps": [
+  "Unset dependencies still hold click's internal UNSET sentinel while parameters are being processed (8.5.1 converts it to None only at the end of parse_args); default_from must receive None (R6), and exactly the depends_on keys, not all of ctx.params.",
+  "Adding DEPENDENT between DEFAULT_MAP and DEFAULT (or anywhere but last) with enum.auto() renumbers DEFAULT; DEPENDENT must be 6 and existing values 1-5 must not move (R3).",
+  "Truthiness tests are wrong in both directions: '--port 0', default_map {'port': None} and default_map {'port': ''} suppress default_from (R4), an empty environment variable does not (R4), and a computed 0/''/False is a real value while only None means missing (R7).",
+  "Computing the value inside the option's own processing slot or inside get_default breaks ordering (later-declared or prompted dependencies are not final) and makes --help / show_default / to_info_dict / ctx.invoke call default_from through get_default (R5, R10, R12).",
+  "Remembering the result on the Option or Command object passes single-run tests but fails for two CliRunner.invoke calls and for 'cli a a' in a chain group; forgetting to remember fails the same-Context re-parse; remembering a failed attempt breaks retry (R11).",
+  "Cycle detection done lazily during evaluation misses cycles when the options get explicit CLI values and wrongly raises in resilient mode; it must be structural, up-front, and silent under resilient_parsing (R8, R9).",
+  "Without type= a dependent option is STRING, so a computed 0 becomes '0'; the type is not inferred from default_from's return value (R2, R7).",
+  "ctx.invoke decides by key presence in kwargs (None counts), calls no parameter callback and records no source; ctx.forward passes the caller's already computed value instead of recomputing (R12).",
+  "A bare string depends_on='ab' must raise, not become ('a', 'b') or ('ab',); duplicates raise ValueError, not TypeError (R1).",
+  "Adding 'depends_on' to every option's to_info_dict breaks existing whole-dict comparisons; the key exists only for dependent options (R10). No new module-level imports (e.g. graphlib) and no new warnings: tests/test_imports.py and filterwarnings=error.",
+  "Prompted dependencies keep 8.5.1 callback multiplicity (the callback may run more than once per prompt); the feature must not deduplicate or add calls, and no default_from may run before the last prompt (R5)."
+ ],
+ "levers": [
+  "L2: Command.parse_args ordering, Context.invoke default fill-in, Option help extra, Option.to_info_dict and ParameterSource are modified; byte-identical behavior for commands without dependents is pinned (R3, R5, R10)",
+  "L3: must hold through context_class, Command/Group subclasses overriding parse_args or format_* with super(), Option subclasses via cls=, direct make_context/parse_args, nested groups and chain=True (R5, R10, R12)",
+  "L4: full pairwise precedence CLI > env > default_map > DEPENDENT, key-presence semantics, prompt as dependency source, and a separate precedence for ctx.invoke/forward (R4, R12)",
+  "L5: per-Context remembered values, retry after failure, same-Context re-parse, repeated chained subcommands, ctx.invoke/ctx.forward sub-contexts, result_callback, reset between CliRunner.invoke calls (R11, R12)",
+  "L1 (partial): observable behavior in core.py, exceptions.py (new exception type and hierarchy) and __init__.py exports; shell completion output is pinned unchanged (R9)"
+ ],
+ "shortcuts": [
+  "Fill in the value just before the command callback (in Command.invoke or main()): wrong because cmd.make_context()/parse_args() alone must already hold the computed value and DEPENDENT source, a subclass's parse_args override must see it after super(), chain groups must evaluate all subcommands before the first callback, and ctx.invoke/forward have their own rules (R5, R12).",
+  "Call default_from from the option's own value resolution (get_default / consume_value) at its normal position: wrong because dependencies declared later or prompted later are not final, --help with show_default, to_info_dict and ctx.invoke would evaluate it, and resilient parsing/completion would evaluate it (R5, R9, R10).",
+  "Cache the computed value on the Option/Command (or with functools caching): wrong across two CliRunner.invoke calls and for the same subcommand twice in a chain; conversely no cache at all fails the same-Context re-parse and a cached failure breaks retry (R11).",
+  "Treat 'value is None or falsey' as 'not provided': wrong for '--n 0', default_map {'x': None}, ctx.invoke(cmd, x=None), and for computed falsey results with required=True (R4, R7, R12).",
+  "Pass ctx.params (or a filtered view of it) straight to default_from: leaks the UNSET sentinel for unset dependencies, passes undeclared parameters, and shares a mutable mapping between dependents (R6).",
+  "Insert DEPENDENT between DEFAULT_MAP and DEFAULT because it 'feels' more explicit than DEFAULT: renumbers DEFAULT and changes existing comparisons (R3).",
+  "Detect cycles only when recursion revisits a node during evaluation: misses cycles hidden by explicit CLI values, raises RecursionError-like failures instead of the stated message, and raises during completion (R8, R9)."
+ ]
+}

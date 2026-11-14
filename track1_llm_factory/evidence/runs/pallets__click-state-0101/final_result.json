@@ -1,0 +1,9 @@
+{
+ "ok": false,
+ "stage": "fairness/judge",
+ "report": "tests depend on unstated behavior:\n- LEAKAGE: R6 says \"`Choice` must be imported inside the function, not at module level\". This is an implementation instruction. Hidden test test_r6_choice_not_imported_at_module_level checks it via `hasattr(click.decorators, 'Choice')`.\n- LEAKAGE: R12 says \"The set of module-level imports of every click module is unchanged: new imports must be function-local\". This is a coding trap or constraint, not behaviour.\n- LEAKAGE: R9 says \"No module-level or class-level mutable state is added anywhere\". R2 says a non-root context takes its state \"from its parent object, never through constructor keywords\" and that \"Legacy Context subclasses whose __init__ only forwards some keywords must still work\". These prescribe the implementation design and warn of pitfalls.\n- LEAKAGE: R5 explains how existing click works and where to hook in: \"under the same condition and at the same point before the callback\", \"inside the same usage-error augmentation scope as before\", \"the parameter's source was already recorded\". R10 says \"Every chained subcommand is parsed before any is invoked\". These describe existing internals and edit points rather than the new behaviour.",
+ "lineage": {
+  "replaces": "pallets__click-state-0001",
+  "replaced_resolve_at_3": "3/3"
+ }
+}

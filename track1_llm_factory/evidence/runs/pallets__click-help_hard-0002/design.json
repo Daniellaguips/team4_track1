@@ -1,0 +1,168 @@
+{
+ "feature": "help_sections",
+ "summary": "Opt-in titled help sections. Commands in a Group listing and Options in a Command's help can declare a `section` title, and `section_order` fixes the order of the sections. A shared pure helper `click.order_sections` decides the order. The same order drives shell-completion candidate order for subcommands, and `CompletionItem.section` exposes the resolved title. Everything is overridable through `get_command_section`, `get_option_section` and `get_section_order`.",
+ "public_api": [
+  "click.Command(..., section=None, section_order=None) and click.Group(..., section=None, section_order=None), both new keyword-only-at-end parameters, so @click.command(section=..., section_order=...) and @click.group(...) work through existing **attrs forwarding",
+  "click.Option(..., section=None) / @click.option(..., section='Network'); click.Argument does not accept section",
+  "click.Group.add_command(cmd, name=None, section=None)",
+  "click.Command.get_section_order(ctx) -> list[str]",
+  "click.Command.get_option_section(ctx, param) -> str | None",
+  "click.Group.get_command_section(ctx, cmd_name, cmd) -> str | None",
+  "click.order_sections(titles, order, default) -> list[str], defined in click.formatting and re-exported from click",
+  "click.shell_completion.CompletionItem(value, type='plain', help=None, section=None, **kwargs) with item.section",
+  "attributes Command.section, Command.section_order, Option.section"
+ ],
+ "keywords": [
+  "section",
+  "section_order",
+  "order_sections",
+  "get_command_section",
+  "get_option_section",
+  "get_section_order",
+  "_complete_visible_commands",
+  "format_commands",
+  "format_options",
+  "CompletionItem",
+  "add_command",
+  "to_info_dict",
+  "_command_sections"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "A shared validation helper applies to every section title: the `section` argument of Command, Group and Option, the `section` argument of Group.add_command, and the value returned by get_command_section / get_option_section when it is not None. `None` means 'no section'. A str is stripped of surrounding whitespace and the stripped text is the title; titles are case-sensitive, so 'Admin' and 'admin' are different sections. Any other type raises TypeError. A str that is empty after stripping raises ValueError. Validation happens at construction / add_command time for the arguments, and at help-render / completion time for hook return values. Assigning `cmd.section = ...` afterwards is not validated at assignment; the value is validated when a hook reads it. The validation of the attribute value is the same as for the hook return value, since the default hooks return the attribute.",
+   "inputs": "section=' Admin ' ; section='' ; section='   ' ; section=3 ; section=None",
+   "output": "' Admin ' is stored and displayed as 'Admin'. None is stored as None.",
+   "errors": "TypeError('section must be a string, not int.') where 'int' is type(value).__name__; ValueError('section must be a non-empty string.')",
+   "precedence": "The type check runs before the emptiness check. Option(section=...) validates after Parameter.__init__, so an existing TypeError/ValueError from Parameter or Option for other arguments wins when several arguments are wrong.",
+   "bounds": "A one-character title is valid. Internal whitespace is preserved verbatim.",
+   "state": "none"
+  },
+  {
+   "id": "R2",
+   "text": "`section_order` (Command/Group keyword) is None or a sequence of titles. A bare str raises TypeError. Each entry must be a str (else TypeError) and is stripped; an entry empty after stripping raises ValueError. The stored attribute `Command.section_order` is `tuple(dict.fromkeys(stripped_entries))`, so duplicates are dropped keeping the first occurrence, or None if the argument was None. An empty sequence is stored as `()`, which differs from None for to_info_dict (R10). `Command.get_section_order(ctx)` returns `list(self.section_order or ())`.",
+   "inputs": "section_order=['B', ' A', 'B'] ; section_order='AB' ; section_order=['A', 1] ; section_order=['A', ' ']",
+   "output": "('B', 'A') ; get_section_order(ctx) == ['B', 'A']",
+   "errors": "TypeError('section_order must be a sequence of strings, not a single string.'); TypeError('section_order entries must be strings.'); ValueError('section_order entries must be non-empty strings.')",
+   "precedence": "The bare-str check runs first, then the per-entry type check in sequence order, then the emptiness check. The first failing entry in sequence order determines the error.",
+   "bounds": "An entry naming a section that has no visible members is accepted at construction and silently skipped at render time (R3).",
+   "state": "none"
+  },
+  {
+   "id": "R3",
+   "text": "`click.order_sections(titles, order, default)` is a pure function returning a new list of distinct titles. `titles` is an iterable of the titles present, in first-appearance order, possibly with repeats. `order` is an iterable of titles. `default` is the default title ('Options' or 'Commands'). The result is built in three stages. (1) The entries of `order`, in order, deduplicated, keeping only those present in `titles`. (2) `default` if it is present in `titles` and was not placed in stage 1. (3) All remaining titles in first-appearance order. Comparison is exact string equality; no stripping or case folding happens inside the function. Titles listed in `order` but absent from `titles` never appear in the output. It does not mutate its inputs and never raises for string inputs.",
+   "inputs": "order_sections(['Z','Commands','A','Z'], ['A','Q'], 'Commands') ; order_sections(['Z','A'], [], 'Commands') ; order_sections([], ['A'], 'Commands')",
+   "output": "['A','Commands','Z'] ; ['Z','A'] ; []",
+   "errors": "none",
+   "precedence": "An explicit position of the default title in `order` (stage 1) beats the default-first placement (stage 2). The default-first placement beats first-appearance order (stage 3).",
+   "bounds": "An empty `titles` gives an empty result. Titles absent from `order` keep their relative first-appearance order.",
+   "state": "none"
+  },
+  {
+   "id": "R4",
+   "text": "Effective section of a command listed in Group `G` under the listed name `N`. The default `G.get_command_section(ctx, N, cmd)` returns, in order of precedence, (a) the section registered for `N` via `add_command(..., section=...)` on `G` itself (R5), else (b) `cmd.section`, else (c) None. A None result means the command goes in the default 'Commands' section. A user override of get_command_section replaces this entirely: its return value is used as-is after R1 validation, and a None return does NOT fall back to cmd.section or to the registered override unless the override calls super(). The hook is called as (ctx, name, cmd) where ctx is G's context, `name` is the name returned by list_commands, and `cmd` is the object returned by get_command. It is called exactly once per visible command per render or completion pass. It is not called for hidden commands or for names whose get_command returned None. The title 'Commands' used explicitly is the same section as the default one, so explicitly sectioned and unsectioned commands merge into one block (ordered by list_commands order). For a CommandCollection only the collection's own add_command overrides are consulted, never a source group's registered overrides; a source's commands still carry their own `cmd.section`.",
+   "inputs": "G.add_command(c, 'x', section='A'); c.section='B'; and a subclass override returning None",
+   "output": "default hook returns 'A'. With add_command(c,'x') and c.section='B' it returns 'B'. With an override returning None the section is the default 'Commands' regardless of c.section.",
+   "errors": "hook return value invalid -> R1 errors (raised from get_help / shell_complete)",
+   "precedence": "user hook override > add_command registration > cmd.section > default 'Commands'",
+   "bounds": "A name registered under two different names gets each name's own override independently.",
+   "state": "The per-group override table is the private dict `Group._command_sections` (name -> title), initialised empty in Group.__init__."
+  },
+  {
+   "id": "R5",
+   "text": "`Group.add_command(cmd, name=None, section=None)` first performs all existing behavior (name resolution, TypeError('Command has no name.'), the chain-nesting RuntimeError) before any section state is touched. A failing add_command leaves `_command_sections` unchanged. If it succeeds, the section is validated by R1 and then recorded for the final name: a non-None section sets `_command_sections[name]`, and a None section REMOVES any existing entry for that name. Re-registering a name therefore resets its override, and an old registration's section never leaks into a replacement. add_command never mutates `cmd.section`, so the same command object added to two groups, or twice to one group under different names, can have different effective sections. The Group.command()/Group.group() decorators call add_command(cmd) with no section, so they never set an override; use the decorator's own `section=` keyword (which sets cmd.section) instead.",
+   "inputs": "g.add_command(c,'x',section='A'); g.add_command(c2,'x'); g.add_command(c,'y',section='B')",
+   "output": "after the second call _command_sections has no 'x'; c.section is unchanged (None); 'y' -> 'B'",
+   "errors": "R1 errors for an invalid section, raised before the registry is modified; the commands mapping is also not modified in that case",
+   "precedence": "The validation of `section` happens before `self.commands[name] = cmd` is executed, so a ValueError leaves the previous registration of that name fully intact. If _check_nested_chain raises RuntimeError, neither the commands mapping nor _command_sections changes.",
+   "bounds": "A section of ' A ' is stored as 'A'.",
+   "state": "_command_sections persists on the Group instance across CliRunner.invoke calls and is never mutated by rendering, completion or invocation."
+  },
+  {
+   "id": "R6",
+   "text": "Group.format_commands renders command sections. Visible commands are collected exactly as today (list_commands order; get_command returning None skipped; hidden skipped), then grouped by effective section (R4). The section sequence is `order_sections(titles_in_first_appearance_order, self.get_section_order(ctx), _('Commands'))`. Each section is written by its own `formatter.section(title)` + `formatter.write_dl(rows)` call, so column widths are measured per section. Within a section rows keep list_commands order. The short-help `limit` is still computed once over ALL visible commands (`formatter.width - 6 - max(len(name))`), not per section. Rows come from `cmd.get_short_help_str(limit)`, so a deprecated command keeps its '(DEPRECATED)' suffix and stays in its normal section and position; deprecation never changes section or order. A section whose members are all hidden produces no heading at all, even if it is named in section_order. If no visible command exists, nothing is written, as today. Group.format_options still writes the option blocks first (R7), then calls format_commands.",
+   "inputs": "group with commands a(section='Admin'), b(no section), c(hidden, section='Zed'), d(deprecated, section='Admin'), section_order=['Zed','Admin']",
+   "output": "'Commands:' block first (b only), then 'Admin:' (a, d with '(DEPRECATED)'); no 'Zed:' heading",
+   "errors": "R1 errors if a hook returns an invalid value",
+   "precedence": "section_order (R3 stage 1) beats default-first, which beats first appearance. A subclass overriding `format_commands` completely bypasses this rule: its output is whatever it writes, while completion (R9) still follows the hooks and is not influenced by the override.",
+   "bounds": "A single section, which is the default one, produces output byte-identical to the previous single 'Commands:' block.",
+   "state": "no caching: rendering reads current attribute values each time, so mutation between two get_help calls is visible."
+  },
+  {
+   "id": "R7",
+   "text": "Command.format_options renders option sections. Rows are collected as today: for each param of get_params(ctx) (declaration order, with the automatic help option last) whose `get_help_record(ctx)` is not None and which is not an Argument. Hidden options are therefore excluded. Each included param is assigned to `self.get_option_section(ctx, param)`, whose default returns `param.section` for Option instances and None otherwise; None means the default 'Options' section. The hook is called for every included option, including the automatic help option (default None), so a subclass can move `--help`. The section sequence is `order_sections(first_appearance_titles, self.get_section_order(ctx), _('Options'))`. Each section is its own `formatter.section(title)` + `write_dl` block, and rows inside a section keep get_params order, so `--help` is last in the 'Options' block when it stays there. The 'Positional arguments' block (format_arguments) is unchanged and still precedes the options. Explicit section='Options' merges with the default block. Passing section= to click.Argument raises TypeError (the native unexpected-keyword TypeError from Parameter; tests only check the type).",
+   "inputs": "options --a (section='Net'), --b (none), --c (hidden, section='Net'), automatic --help; section_order=['Net']",
+   "output": "'Net:' block with --a, then 'Options:' block with --b and --help",
+   "errors": "R1 errors for invalid hook return values",
+   "precedence": "section_order (stage 1) beats default 'Options'-first; a hidden option never creates or populates a section; a subclass overriding format_options without calling super bypasses sections entirely.",
+   "bounds": "When no option has a section the output is byte-identical to today's single 'Options:' block.",
+   "state": "none"
+  },
+  {
+   "id": "R8",
+   "text": "Scope of `section_order`: `Command.get_section_order(ctx)` of the command being rendered or completed governs both its option sections (R7) and, for a Group, its command sections (R6) and the completion order of its subcommands (R9). Option sections and command sections are ordered independently from the same list, each filtered to the titles present in its own kind; one title may name an option section and a command section. It is never inherited: a nested Group's help and completion use only its own section_order, not the parent's or the root's, and no value is stored on Context. A CommandCollection uses only its own section_order and ignores its sources'. A subclass overriding get_section_order(ctx) replaces the attribute for all three uses at once. Its return value must be a list/sequence of str; entries are stripped before use, empty ones are dropped, and no other validation is done.",
+   "inputs": "root(section_order=['B','A']) containing sub-group sub(no section_order) whose commands use sections A and B",
+   "output": "root lists B before A; sub lists A and B in first-appearance order (default-first applies only to 'Commands'/'Options')",
+   "errors": "none",
+   "precedence": "get_section_order override > section_order attribute (None -> []).",
+   "bounds": "An empty order gives pure default-first + first-appearance order (R3).",
+   "state": "no Context field, so the settings of nested contexts, ctx.invoke and ctx.forward do not carry over anywhere."
+  },
+  {
+   "id": "R9",
+   "text": "Completion order for subcommands. `click.core._complete_visible_commands(ctx, incomplete)` and therefore Group.shell_complete yield command candidates ordered like the help in R6. First the full visible set is computed (list_commands order, get_command not None, not hidden, regardless of `incomplete`), grouped through the group's get_command_section, and the sections ordered by `order_sections(..., ctx.command.get_section_order(ctx), 'Commands')`. The candidates are then filtered by `name.startswith(incomplete)`. Ordering must be derived from the full set, not from the filtered subset. Each item is `CompletionItem(name, help=cmd.get_short_help_str(), section=<resolved title>)`, with the default title being 'Commands'. `CompletionItem` gets an explicit `section` slot/parameter (default None); the other kinds of candidates (option names, type completions, custom completions) keep section None. Option candidates keep today's order (get_params order), after the group's command candidates. For chain groups the sibling candidates appended by Command.shell_complete (parents walked nearest first, skipping names in `ctx._protected_args`) are each ordered by that parent group's own section order and carry that parent's resolved titles. Output of the Bash/Zsh/Fish/PowerShell format_completion is unchanged (the section is not printed). Overriding format_commands has no effect on this order.",
+   "inputs": "commands ax(section='S2'), bx(section='S1'), bz(section='S2'); incomplete='b'; no section_order",
+   "output": "full-set section order is S2, S1 (first appearance of ax) -> items [bz(S2), bx(S1)], not [bx, bz]",
+   "errors": "R1 errors for invalid hook return values",
+   "precedence": "The ordering is governed by R3/R4/R8, identical to the help ordering, regardless of what format_commands renders. The prefix filter is applied last and never changes relative order.",
+   "bounds": "With no sections anywhere the order is the list_commands order (byte-identical to today).",
+   "state": "none; each completion pass recomputes."
+  },
+  {
+   "id": "R10",
+   "text": "to_info_dict additions are strictly conditional so existing exact-dict assertions remain true. Command.to_info_dict adds the key 'section' (the stored stripped title) only if `self.section is not None`, and the key 'section_order' (`list(self.section_order)`) only if `self.section_order is not None`; so an empty-sequence order gives 'section_order': []. Option.to_info_dict adds 'section' only if `self.section is not None`. Group.to_info_dict inherits this, and each subcommand's dict follows the same rule. Registered add_command overrides (R5) and hook results are not reflected in info dicts. Neither Argument.to_info_dict nor the automatic help option's dict ever has the key.",
+   "inputs": "Option('--a', section='Net'), Command with section_order=[], and plain objects",
+   "output": "Option dict contains 'section': 'Net'; Command dict contains 'section_order': []; plain ones are unchanged",
+   "errors": "none",
+   "precedence": "none",
+   "bounds": "The key order for pre-existing keys is untouched; new keys are appended at the end of the dict, so exact dict equality with older expectations still holds when unset.",
+   "state": "none"
+  },
+  {
+   "id": "R11",
+   "text": "Backward-compatibility invariants. When no Command/Group/Option has a section, no section_order is set, no add_command section is given and no hook is overridden, the following are byte-identical to the previous release: Command/Group get_help and get_usage output (including 'Options:' / 'Commands:' / 'Positional arguments:' block layout and the `limit` rules), the order and content of completion candidates and the output of each shell's format_completion, Context.to_info_dict output, parameter handling and every existing exception message. Existing positional signatures stay valid (`section` and `section_order` are appended after `deprecated`), a positional call Group(name, commands, ...) is unchanged, and `import click` still adds no module-level import outside the tests/test_imports.py allowlist (`order_sections` lives in click.formatting, which core already imports). Subclasses overriding list_commands/get_command, format_commands, format_options, make_formatter or shell_complete keep working; their custom get_command_section-less behavior equals the default. User-defined CompletionItem(..., section=...) previously stored in `_info` is now stored in the slot with the same read value.",
+   "inputs": "any existing test suite input",
+   "output": "unchanged",
+   "errors": "none",
+   "precedence": "R11 takes precedence over R6/R7/R9 whenever no section information exists anywhere.",
+   "bounds": "pytest runs with filterwarnings=error, so the new code must not emit any warnings, including DeprecationWarning, on any of these paths.",
+   "state": "none"
+  },
+  {
+   "id": "R12",
+   "text": "ROUTE MATRIX (all about when section rules are read). main(): help via `--help` and ctx.get_help()/Command.get_help follow R6/R7 and shell completion via the _<PROG>_COMPLETE variable follows R9: reference behavior. CliRunner.invoke: same as main() (same code path; for equal terminal width the help text is byte-identical, and no sections or overrides persist between two invoke calls because nothing is stored on Context or module state). ctx.invoke(cmd): N/A, no help or completion is rendered and section attributes are never read, so invoking a command with a section, or with an overridden hook, behaves exactly like today (hooks are not called). ctx.forward(cmd): N/A for the same reason. nested groups: different, since each group applies its own section_order, own get_command_section and own add_command overrides, and the nested group is itself listed in its parent under its own `section` (or the parent's override for its registered name); the parent's section_order never reorders the child's output. chain=True groups: help is same as non-chain (R6/R7). Completion is different only for sibling candidates: a command inside a chain group also completes the other commands of every chain parent, appended after its own option candidates, each parent block ordered by that parent's section order with that parent's titles in CompletionItem.section; non-chain parents contribute no sibling candidates (unchanged behavior). The add_command registry is read from the group object in every route that renders.",
+   "inputs": "the same CLI definition driven through each route",
+   "output": "as stated per route",
+   "errors": "none beyond R1",
+   "precedence": "R8 (no inheritance) applies to every nested/chain route.",
+   "bounds": "A chain group cannot contain groups (existing RuntimeError), so chain parents only contribute plain commands.",
+   "state": "no invocation-scoped state exists; the registry and attributes live on the objects, and CliRunner.invoke resets nothing because nothing is created."
+  }
+ ],
+ "traps": [
+  "Completion order must be computed over the full visible command set and only then filtered by the prefix; ordering after filtering gives a different result when first-appearance order of sections is affected (R9).",
+  "The default 'Commands' / 'Options' section goes first among unordered sections, not by first appearance, and an explicit section='Commands' merges with the unsectioned block; an entry in section_order beats default-first (R3, R6, R7).",
+  "add_command must not mutate cmd.section; re-registering a name without a section must clear the old override; and a failed add_command must not change the registry (R5).",
+  "A get_command_section override returning None must not fall back to cmd.section (R4); the hook is not called for hidden commands.",
+  "to_info_dict must gain keys only when values are set, otherwise existing exact-dict tests break (R10).",
+  "short-help `limit` stays computed over all visible commands, and a section with only hidden commands renders no heading (R6).",
+  "section_order must not be inherited by nested groups or by CommandCollection sources, and must not be stored on Context (R8).",
+  "Dedup/strip/case-sensitivity: ['B',' A','B'] -> ('B','A'), and 'admin' != 'Admin'; the bare-str check must come first or 'AB' would be accepted as ('A','B') (R1, R2)."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4"
+ ]
+}

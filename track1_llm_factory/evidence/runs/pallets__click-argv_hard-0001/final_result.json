@@ -1,0 +1,5 @@
+{
+ "ok": false,
+ "stage": "fairness/judge",
+ "report": "tests depend on unstated behavior:\n- test_r5_second_parse_args_keeps_literals passes `list(ctx.args)` back into `parse_args` and expects the escaped token to stay `'@x'`. This only works if `ctx.args` after the first parse still holds the literal-marked tokens, not plain `str`. R5 says literal-ness must survive 'a second parse_args call' and that values 'compare equal to plain str'. It never says outright that `ctx.args` must carry the marker objects, or that the marker must survive `list(...)` copying."
+}

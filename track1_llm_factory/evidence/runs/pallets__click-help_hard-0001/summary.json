@@ -1,0 +1,16 @@
+{
+ "instance_id": "pallets__click-help_hard-0001",
+ "model": "anthropic/claude-sonnet-5.5",
+ "wall_seconds": 373,
+ "model_calls": 5,
+ "attempts": 3,
+ "n_input_tokens": 331719,
+ "n_output_tokens": 66528,
+ "n_cache_tokens": 249620,
+ "cost_usd": 0.8544,
+ "ok": false,
+ "failed_stage": "fairness/judge",
+ "card": "help_hard",
+ "seed": 1,
+ "prompts_version": "v6.3-hard"
+}

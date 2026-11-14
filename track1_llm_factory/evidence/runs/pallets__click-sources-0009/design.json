@@ -1,0 +1,171 @@
+{
+ "feature": "config value source: Context.config mapping + Option(config_key=...) + ParameterSource.CONFIG + config_option()",
+ "summary": "Adds an opt-in per-context config mapping as a new option value source. It sits between environment variables and default_map: CLI > envvar > config > default_map > default. Prompts only fire when no higher source gave a value. The source is reported as ParameterSource.CONFIG and honoured for scalars, bool and non-bool flags, count options, multiple=True and nargs>1. It can be shown in --help via show_config. config_option() loads a JSON file into ctx.config. Nested sections are inherited by command name like default_map. Nothing changes unless a context actually has a config.",
+ "public_api": [
+  "click.Context(config=Mapping|None) / Context.config",
+  "Context.lookup_config(name: str) -> Any | None",
+  "click.Option(config_key: str | None = None, show_config: bool = False)",
+  "Parameter.value_from_config(ctx) -> Any | None (base returns None; Option overrides)",
+  "click.ParameterSource.CONFIG",
+  "ParamType.split_config_value(rv: str) -> Sequence[str]",
+  "click.config_option(*param_decls, **kwargs)",
+  "OptionHelpExtra['config'] (types.py TypedDict key)"
+ ],
+ "keywords": [
+  "ParameterSource",
+  "consume_value",
+  "value_from_envvar",
+  "lookup_default",
+  "default_map",
+  "get_help_extra",
+  "OptionHelpExtra",
+  "split_envvar_value",
+  "batch(",
+  "version_option",
+  "to_info_dict",
+  "handle_parse_result",
+  "_make_sub_context"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "Context gains a keyword-only-by-name `config: cabc.MutableMapping[str, Any] | None = None` constructor parameter, stored as the public attribute `ctx.config`. It is passed through unchanged, with no copy, so `ctx.config is the_mapping_you_passed`. If `config` is None and `parent` is not None and `parent.config` is not None and `info_name` is not None, then `config = parent.config.get(info_name)`, and that value is kept only if it is a `collections.abc.Mapping`; otherwise `ctx.config` is None. An explicitly passed non-None `config` (including one from `context_settings={'config': ...}`) wins over inheritance. `Context.lookup_config(name)` returns `self.config[name]` when `self.config` is not None, the key is present, and the value is neither None nor the internal UNSET sentinel. Otherwise it returns None. It NEVER calls callables: a callable stored in config is returned as-is.",
+   "inputs": "Context(cmd, config={'port': 1, 'sub': {'port': 2}}); child Context(sub_cmd, parent=ctx, info_name='sub'); ctx.lookup_config('port')",
+   "output": "child.config is the same dict object as parent.config['sub']; ctx.lookup_config('port') == 1; lookup of a missing key or a key whose value is None returns None",
+   "errors": "none",
+   "precedence": "explicit Context(config=...) / context_settings > inherited parent.config[info_name] > None",
+   "bounds": "a non-Mapping section (e.g. parent.config['sub'] == 5 or a list) yields child.config None; an empty mapping {} is a valid Mapping and is kept (not replaced by None)",
+   "state": "ctx.config is per-Context; click itself never mutates the mapping it was given (the only writer is config_option, R10, which rebinds the attribute and never mutates the passed mapping). Context.to_info_dict() output is unchanged (no 'config' key)."
+  },
+  {
+   "id": "R2",
+   "text": "Option gains `config_key: str | None = None` (stored as `option.config_key`, the raw user value). The effective lookup key is `config_key` if it is not None, else `option.name`. `Option.value_from_config(ctx)` returns `ctx.lookup_config(effective_key)` interpreted per R5/R6, and returns None meaning 'absent'. `Parameter.value_from_config(ctx)` (used by Argument) always returns None, so arguments never consult config. An Option with `expose_value=False` or an empty name returns None without consulting config at all; this also means the automatic help option, version options and config_option itself never read config. A config value of None is 'absent' and falls through to the next source (unlike default_map, where a present None is a real value).",
+   "inputs": "@click.option('--port', type=int, config_key='server.port') with config={'server.port': 8080}; same option without config_key and config={'port': 9}",
+   "output": "first resolves 8080; second resolves 9 (key 'port' from the name); a dotted key is a plain literal dict key, with no path splitting",
+   "errors": "none",
+   "precedence": "config_key beats name; when config_key is set, the key `name` is NOT also tried",
+   "bounds": "config_key='' (empty string) is a valid literal key, not treated as unset; a config {'port': None} behaves exactly as if the key were missing",
+   "state": "none"
+  },
+  {
+   "id": "R3",
+   "text": "ParameterSource gains member CONFIG. The members become exactly: PROMPT=1, COMMANDLINE=2, ENVIRONMENT=3, CONFIG=4, DEFAULT_MAP=5, DEFAULT=6 (the existing members keep their names, order and relative comparisons; only their integer values shift). `Parameter.consume_value` is modified: after the environment-variable step and before the default_map step, if the value is still unset it calls `self.value_from_config(ctx)`. If that returns non-None, value = it and source = ParameterSource.CONFIG. Because the hook is a public overridable method, a user subclass of Option that overrides `value_from_config`, or a custom `context_class` that overrides `lookup_config`, must be honoured through the normal parse path, including in subcommands of nested Groups and chain=True groups. The full precedence table, each pair tested: COMMANDLINE > ENVIRONMENT > CONFIG > DEFAULT_MAP > DEFAULT. PROMPT only occurs when no source above DEFAULT_MAP produced a value; see R4. When several options share one parameter name (feature switches), the existing arbitration in handle_parse_result is unchanged and now simply uses the new ordering: a CONFIG-sourced option beats a sibling that fell back to DEFAULT or DEFAULT_MAP, and ties between two CONFIG-sourced siblings are resolved by the existing same-source rule (later processed wins).",
+   "inputs": "option --port with envvar PORT=2, config {'port': 3}, default_map {'port': 4}, default 5, and a CLI flag --port 1",
+   "output": "values and sources: all set -> 1/COMMANDLINE; drop CLI -> 2/ENVIRONMENT; drop env -> 3/CONFIG; drop config -> 4/DEFAULT_MAP; drop default_map -> 5/DEFAULT. ctx.get_parameter_source('port') is ParameterSource.CONFIG in the third case.",
+   "errors": "none",
+   "precedence": "CLI > envvar > config > default_map > default (prompt: R4)",
+   "bounds": "an empty-string envvar is still ignored (existing behavior) so config then applies; config value 0 / False / '' / [] is a real value (only None means absent)",
+   "state": "the source recorded via ctx.set_parameter_source is CONFIG before processing, so an eager callback can read it"
+  },
+  {
+   "id": "R4",
+   "text": "Interactions of CONFIG with existing machinery, all driven by the new ordering without special-casing. (a) Prompting: Option.consume_value prompts only when `value is UNSET or source >= DEFAULT_MAP`, so a config-supplied value suppresses the prompt (like an envvar), while default_map/default values still prompt, as today. (b) A required option satisfied by config does not raise MissingParameter. (c) A deprecated option whose value came from CONFIG emits the same existing red 'DeprecationWarning: The option ... is deprecated.' message on stderr as an envvar-sourced one (the existing check `source < DEFAULT_MAP` stays textually unchanged). (d) `Option.get_default()`, `Parameter.get_default()`, the default shown by show_default in --help, and the kwargs that `ctx.invoke(other_command)` fills from defaults NEVER consult config. Config only enters through consume_value.",
+   "inputs": "@click.option('--name', prompt=True, config_key='n') with config={'n': 'bob'}; @click.option('--x', required=True) with config={'x': 1}; show_default=True option with default 5 and config value 9",
+   "output": "no prompt is shown and name == 'bob'; no MissingParameter; the help text still says [default: 5]",
+   "errors": "none",
+   "precedence": "config beats prompt-from-default; an explicit CLI value or envvar still beats config; prompt_required=False with a bare `--name` (FLAG_NEEDS_VALUE) still prompts even if config has a value, because the CLI source outranks config",
+   "bounds": "deprecated=True option: warning only when the source is stronger than DEFAULT_MAP, so config triggers it and default_map/default do not",
+   "state": "none"
+  },
+  {
+   "id": "R5",
+   "text": "Interpretation of the raw config value for single-valued options (nargs == 1, multiple False). (a) Plain options: the raw value (any type) is returned and then converted by the option type as usual. (b) Boolean flags (is_bool_flag, including --on/--off pairs): raw value returned and converted by BoolParamType, so True, False, 'yes', 'off' and '1' work. Config False is a real value: the option resolves to False with source CONFIG. (c) Non-boolean flags (is_flag True and type not bool) with multiple False: if the raw value is a `str` exactly equal to `flag_value`, return `flag_value`. Else if the raw value is a `bool` or a `str`, parse it with `BoolParamType.str_to_bool`: True -> return `flag_value`; False -> absent (None; the next source applies, a deliberate difference from envvars); unparsable -> absent. Any other type -> absent. (d) Non-boolean flags with multiple=True: always absent. (e) Count options (count=True): the raw value goes through the existing IntRange(min=0) type; config count is NOT added to command-line `-v` repetitions. Whenever any CLI occurrence exists, the CLI count wins entirely.",
+   "inputs": "flag_value='json' option with config {'fmt': 'json'}, {'fmt': True}, {'fmt': 'false'}, {'fmt': 'xml'}, {'fmt': 3}; count option -v with config {'verbose': 2} and CLI -v",
+   "output": "'json' -> 'json'; True -> 'json'; 'false' -> absent (falls to default_map/default); 'xml' -> absent; 3 -> absent; count: CLI '-v' gives 1 (not 3), no CLI gives 2",
+   "errors": "a negative count config such as -1 fails IntRange conversion (see R7 for the message)",
+   "precedence": "inside consume_value the order stays CLI > envvar > config; a config value that is 'absent' per R5 lets default_map and default apply",
+   "bounds": "exact str comparison happens before boolean parsing, so config 'yes' on a flag whose flag_value is 'yes' returns flag_value either way; 0 / 1 integers on non-bool flags are 'other type' -> absent",
+   "state": "none"
+  },
+  {
+   "id": "R6",
+   "text": "multiple=True and nargs != 1 handling for config values, with a new `ParamType.split_config_value(rv: str) -> Sequence[str]` method in types.py whose default implementation is `rv.split()` (whitespace split, leading/trailing whitespace ignored, regardless of `envvar_list_splitter`, so Path/File do NOT split on os.pathsep). In `Option.value_from_config`: if the raw value is a `str` and `self.nargs != 1`, it is first split with `self.type.split_config_value(value)`; and when additionally `self.multiple` is True the split items are grouped with the existing core `batch(items, self.nargs)`, which silently drops a trailing incomplete group. Lists/tuples are passed through unchanged and converted by type_cast_value (multiple -> sequence of values; nargs=2 -> exactly 2 items; multiple+nargs=2 -> sequence of 2-sequences). A str for a multiple option with nargs == 1 is NOT split and fails the existing iterable check. When any CLI occurrence of a multiple option exists, the config list is ignored entirely; there is no merging or appending.",
+   "inputs": "nargs=2 type=int with config {'pt': '3 4'} or [3, 4] or [3]; multiple nargs=2 with config {'p': '1 2 3'}; multiple str with config {'tag': 'a b'}; nargs=2 click.Path with config 'a:b'",
+   "output": "(3, 4); (3, 4); the [3] case fails; multiple nargs=2 with '1 2 3' -> ((1, 2),) (the lone 3 is dropped); 'a b' for multiple nargs=1 fails; 'a:b' on nargs=2 Path -> 1 item -> fails",
+   "errors": "BadParameter \"Takes 2 values but 1 was given.\" for the [3] case; BadParameter \"Value must be an iterable.\" for the str-with-multiple case; both with the R7 suffix appended",
+   "precedence": "unlike default_map (split_envvar_value, no batching) and envvars (split_envvar_value + batch), config uses split_config_value; a CLI-supplied multiple value always replaces the config list",
+   "bounds": "an empty list [] is a real value (source CONFIG); for a required multiple option it makes value_is_missing true -> MissingParameter with no suffix (R7); an empty string with nargs != 1 splits to [] and behaves the same",
+   "state": "none"
+  },
+  {
+   "id": "R7",
+   "text": "Origin-annotated errors. In `Parameter.handle_parse_result`, when the resolved source is ParameterSource.CONFIG and `process_value` raises an exception whose type is EXACTLY `BadParameter` (not a subclass such as MissingParameter), its `message` attribute is rewritten to `f\"{message} (from config key {key!r})\"`, where key is the effective lookup key, before the exception propagates. The exception is re-raised (same object), keeping the usual ctx/param augmentation. Under `resilient_parsing=True` nothing is raised (existing behavior unchanged) and the value becomes UNSET.",
+   "inputs": "@click.option('--port', type=int) with config {'port': 'abc'}, invoked with no args",
+   "output": "exit code 2; stderr contains exactly the line \"Error: Invalid value for '--port': 'abc' is not a valid integer. (from config key 'port')\"; the same wrong value from env/CLI/default_map has NO suffix",
+   "errors": "BadParameter with message \"'abc' is not a valid integer. (from config key 'port')\"",
+   "precedence": "applies only when CONFIG was the winning source; a valid CLI value overriding a bad config value never fails (the config value is not even converted)",
+   "bounds": "key is repr() quoted, so config_key='server.port' gives (from config key 'server.port'); MissingParameter keeps its normal message",
+   "state": "none"
+  },
+  {
+   "id": "R8",
+   "text": "Help integration. Option gains `show_config: bool = False`. `Option.get_help_extra` adds `extra['config'] = <effective key>` (a str; the types.OptionHelpExtra TypedDict gains `config: str`) when `show_config` is True and the option has a non-empty name and expose_value is True; it is independent of whether any ctx.config exists or contains the key. `Option.get_help_record` renders extras in this exact order, joined by '; ' inside the brackets: env var, config, default, range, required. The config item is formatted as `config: {key}`, e.g. `--port INTEGER  Port.  [env var: PORT; config: server.port; default: 5]`. Without show_config the help output is byte-identical to today. A hidden option still returns None from get_help_record.",
+   "inputs": "@click.option('--port', type=int, default=5, show_default=True, show_envvar=True, envvar='PORT', config_key='server.port', show_config=True, help='Port.')",
+   "output": "the help line above; with show_config but no help, no default and no envvar -> `[config: port]` alone",
+   "errors": "none",
+   "precedence": "the displayed default is still the option's own default / default_map (R4d), never the config value",
+   "bounds": "show_config=True on an expose_value=False option renders nothing extra",
+   "state": "none"
+  },
+  {
+   "id": "R9",
+   "text": "Introspection. `Option.to_info_dict()` adds the key `config_key` (the raw stored value, possibly the empty string) ONLY when `self.config_key is not None`, placed after the existing keys. For every option constructed without config_key the dict is exactly the pre-change dict (same keys, same order), and Argument, Command and Context info dicts are unchanged. show_config is not included in the dict.",
+   "inputs": "option with config_key='k'; option without",
+   "output": "first dict ends with ('config_key', 'k') after 'hidden'; second dict has no 'config_key' key",
+   "errors": "none",
+   "precedence": "none",
+   "bounds": "config_key='' is not None, so the key is present with value ''",
+   "state": "none"
+  },
+  {
+   "id": "R10",
+   "text": "New decorator `click.config_option(*param_decls, **kwargs)` (decorators.py, exported from click/__init__.py as `config_option`). Defaults: param_decls ('--config',); kwargs.setdefault for expose_value=False, is_eager=True, `type=click.Path(exists=True, dir_okay=False)`, help=\"Read option values from a JSON config file.\"; the callback is always forced (like version_option). When the value is None or ctx.resilient_parsing is True, the callback does nothing. Otherwise it opens the file as UTF-8, parses it with `json.load` and, if the top-level value is a JSON object (dict), sets `ctx.config = data`, REPLACING any previous ctx.config (the previous mapping object is not mutated). Failure cases raise BadParameter(ctx=ctx, param=param): invalid JSON or undecodable bytes -> message \"Invalid JSON in config file: {msg}\" where msg is `JSONDecodeError.msg` or `UnicodeDecodeError.reason`; valid JSON that is not an object -> \"Config file must contain a JSON object.\". Because the option is eager it is processed before every non-eager option in the same command, so those options see the loaded config; other eager options processed earlier do not. A subcommand's config_option replaces only that subcommand's context config; it does not change its parent's. Subcommand contexts created later by a group whose config_option loaded a file inherit sections by info_name via R1. `json` and `click.types` must be imported inside function bodies; no new module-level import may be added to any file (tests/test_imports.py allowlist).",
+   "inputs": "group with @config_option(); file {\"port\": 7, \"serve\": {\"port\": 8}}; `cli --config f.json serve`",
+   "output": "the group's own port option resolves 7 (CONFIG); the `serve` subcommand's port resolves 8 (CONFIG); file containing `[1]` fails; file containing `{` fails",
+   "errors": "BadParameter \"Invalid JSON in config file: Expecting property name enclosed in double quotes\" (for the file `{`); BadParameter \"Config file must contain a JSON object.\" (for `[1]`); each shown as \"Error: Invalid value for '--config': <message>\"; a missing file gives the existing Path error",
+   "precedence": "a file loaded by config_option beats a Context(config=...) passed from Python (replacement, not merge); with --config also given via its envvar, the usual CLI > envvar order applies to the --config option itself",
+   "bounds": "an empty JSON object {} is valid and results in ctx.config == {} (not None), so no inheritance happens for that context",
+   "state": "no module-level or per-option cache: two successive CliRunner.invoke calls pointing at the same path with the file rewritten in between see the new contents; nothing leaks between invocations since ctx.config lives on the Context"
+  },
+  {
+   "id": "R11",
+   "text": "ROUTE MATRIX (is config-source behavior the same as in the baseline path, main()?). main(): baseline. Config comes from `main(..., config=mapping)`, which flows through **extra into Context(config=...), from `context_settings={'config': ...}`, or from config_option. CliRunner.invoke: SAME. `runner.invoke(cli, args, config=mapping)` flows via **extra into main(), sources and errors are identical, and a fresh Context is built on every invoke, so no config state survives between invocations. ctx.invoke(callback_function): N/A, because no parameters are resolved, so config is never consulted for a plain callable. ctx.invoke(other_command): DIFFERENT, because the options of other_command are not resolved through consume_value; missing kwargs are filled from `param.get_default(ctx)` + `type_cast_value`, which ignores config (R4d), so an omitted `port` is the option default (or None), never the config value. The sub context made by `_make_sub_context` still inherits `config` per R1, so the callee can read `get_current_context().config`. ctx.invoke does not set parameter sources, so `get_parameter_source` for such kwargs stays None, as today. ctx.forward: DIFFERENT in the same way: kwargs come from the caller's `ctx.params`, which may contain values the caller resolved from CONFIG, and those values are forwarded as plain kwargs; the callee records no CONFIG source for them. Nested groups: SAME. Each level builds its Context with parent=..., so config sections are inherited by info_name (R1), and each command resolves only the options it declares. chain=True groups: SAME. Each chained subcommand context is created with parent=group ctx and its own info_name, so it gets `parent.config.get(info_name)`; a command name repeated in a chain gets the same section object in each context; the group's result_callback runs on the group context and sees the group's config.",
+   "inputs": "the six routes above with config={'port': 7, 'sub': {'port': 8}}",
+   "output": "main/CliRunner/nested/chain -> port from config with source CONFIG; ctx.invoke(cmd)/ctx.forward -> kwargs not taken from config; ctx.invoke(function) -> not applicable",
+   "errors": "none",
+   "precedence": "inside the SAME routes the R3 table applies",
+   "bounds": "config given only to a child via context_settings overrides inheritance for that child",
+   "state": "see R12"
+  },
+  {
+   "id": "R12",
+   "text": "State and compatibility guarantees. (1) Everything is a no-op when ctx.config is None: for contexts with no config, all existing behavior, parameter sources, help text, info dicts, error messages and warnings are byte-identical to before. In particular the existing test-suite expectations on --help, to_info_dict, and ParameterSource comparisons (`<`, `>=`) stay valid. (2) The same Command object used in two consecutive CliRunner.invoke calls with different config mappings resolves each call from its own mapping. Neither the Command nor its Options hold config state (no caching on Option/Command attributes). (3) Callbacks (Parameter.callback) receive config-sourced values after type conversion exactly as for other sources, and `ctx.params` holds them. (4) No new warnings are emitted (pytest runs with filterwarnings=error).",
+   "inputs": "one @click.command invoked twice with config={'n': 1} then config={'n': 2}, then with no config",
+   "output": "n == 1, then 2, then the option default",
+   "errors": "none",
+   "precedence": "none",
+   "bounds": "mutating the passed mapping between invocations is visible to the next invocation only, because ctx.config is the same object (R1)",
+   "state": "invocation-scoped on the Context; reset because each invocation constructs a new Context"
+  }
+ ],
+ "traps": [
+  "Putting config lookup into Parameter.get_default / lookup_default makes --help show config values as defaults, makes ctx.invoke(cmd) and ctx.forward pick config up, and reports DEFAULT or DEFAULT_MAP instead of CONFIG. It must live only in consume_value (R3, R4d, R11).",
+  "Appending CONFIG as the last enum member leaves it ordered after DEFAULT, so the existing `source >= DEFAULT_MAP` prompt check and `source < DEFAULT_MAP` deprecation check give wrong results. It must be inserted between ENVIRONMENT and DEFAULT_MAP with the stated integer values (R3, R4).",
+  "default_map treats a present None as a real value and calls callables, while config treats None as absent and never calls callables (R1, R2).",
+  "Non-bool flag: config False must be 'absent' (falls through to the next source), not False/'False'; a str exactly equal to flag_value must be checked before boolean parsing; ints and other types are absent, so 1 does not activate (R5).",
+  "Count options: config count is replaced by, not added to, CLI -v repetitions. Multiple options: a CLI value replaces the config list entirely, with no merge (R5, R6).",
+  "Strings for nargs != 1 are split by split_config_value (whitespace), NOT split_envvar_value (so Path with 'a:b' stays one item), and a multiple+nargs>1 string goes through batch(), which silently drops a trailing partial group (R6).",
+  "Error suffix applies only to exact BadParameter and only when the winning source is CONFIG; MissingParameter and other-source errors are unchanged (R7).",
+  "to_info_dict must only gain config_key when it is set; adding it unconditionally breaks the existing exact-dict tests. Likewise the help extras order is envvar, config, default, range, required (R8, R9).",
+  "Options with expose_value=False (help, version, config_option itself) must never read config, otherwise a config file key 'config' or 'help' would feed the option that loads it (R2, R10).",
+  "config_option must replace, not merge, ctx.config; must not cache file contents across invocations; and json / click.types must be imported lazily, since tests/test_imports.py restricts module-level imports (R10).",
+  "Inheritance must only happen for Mapping sections and must be skipped when the child has its own explicit config, including an explicit empty {} loaded from a file (R1, R10)."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ]
+}

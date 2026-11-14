@@ -1,0 +1,170 @@
+{
+ "feature": "Opt-in @response-file argument expansion (argv rewriting) with a per-Context switch, a once-per-invocation guard, nesting and cycle detection, completion support and a usage-line hint",
+ "summary": "A Context can be told to expand argv tokens of the form '@path' into the lines of a UTF-8 text file before the option parser sees them. The switch is `expand_response_files`, inherited from the parent Context like other settings. Expansion happens inside Command.parse_args, so main(), CliRunner.invoke, nested Groups and chain=True Groups all get it. It runs exactly once per invocation tree at the outermost expanding Context. A overridable Context hook (`read_response_file`) supplies file contents, and a second hook (`expand_args`) does the rewriting. A context_class can customise both. Files may include other files (cycle-checked), '@@' escapes a literal '@', and '--' stops expansion. Shell completion expands the already-typed words, offers file completion for an '@...' word, and the usage line gains '[@FILE]...'. With the feature off, behaviour is byte-identical to today.",
+ "public_api": [
+  "click.Context(..., show_default=None, expand_response_files: bool | None = None)  (new LAST keyword; also usable via context_settings, main(**extra), make_context(**extra), CliRunner.invoke(**extra))",
+  "Context.expand_response_files: bool  (effective setting)",
+  "Context.response_files: list[str]  (paths read by the most recent expand_args call that ran with expansion enabled; initially [])",
+  "Context.expand_args(self, args: Sequence[str]) -> list[str]  (overridable hook)",
+  "Context.read_response_file(self, path: str) -> str  (overridable hook)",
+  "click.expand_response_args(args: Sequence[str], read: Callable[[str], str] | None = None) -> list[str]  (new public helper in click.utils, exported from click/__init__.py)",
+  "click.parser._expand_response_args (private engine shared by the helper and Context.expand_args)"
+ ],
+ "keywords": [
+  "expand_response_files",
+  "response_files",
+  "expand_args",
+  "read_response_file",
+  "expand_response_args",
+  "_expand_response_args",
+  "[@FILE]...",
+  "Could not read response file",
+  "includes itself",
+  "parse_args",
+  "collect_usage_pieces",
+  "get_completions",
+  "resolve_command",
+  "context_class"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "Opt-in switch and precedence. `Context.__init__` gains a final keyword `expand_response_files: bool | None = None`. The stored attribute `ctx.expand_response_files` is always a bool, computed in this order: (1) a non-None value passed to the Context constructor; (2) otherwise, if the parent is not None, the parent's effective value; (3) otherwise False. `Command.make_context` already merges `context_settings` under explicit `**extra` keys (extra wins when the KEY is present, even if its value is None). So the full precedence for a context built by make_context is: key present in extra with a non-None value > `context_settings['expand_response_files']` (only consulted when the key is absent from extra) > parent's effective value > False. An explicit `expand_response_files=None` in extra shadows context_settings and therefore falls through to the parent / False. The same value is accepted through main(**extra) and CliRunner.invoke(**extra) because both forward to make_context. An explicit False on a child context beats a True parent for that child's own attribute (it affects the usage line and expand_args, see R9/R10), but see R7 for the once-per-tree guard.",
+   "inputs": "Context(cmd, expand_response_files=True|False|None), context_settings={'expand_response_files': ...}, main(args, expand_response_files=...), parent contexts",
+   "output": "ctx.expand_response_files is True or False per the precedence above; default (nothing set anywhere) is False.",
+   "errors": "none",
+   "precedence": "extra key (non-None) > context_settings (only when key absent from extra) > parent's effective value > False. Pairwise-testable: extra=False over context_settings=True; context_settings=True over parent False; parent True inherited when child sets nothing; extra=None shadows context_settings=True and takes the parent's value.",
+   "bounds": "Only bool/None are specified; the stored value is bool(value) when a non-None value is given.",
+   "state": "Per Context instance; nothing module-level."
+  },
+  {
+   "id": "R2",
+   "text": "Token syntax. Expansion is applied to EVERY element of the argv list (option names, option values, arguments and subcommand names alike, because it runs before parsing and knows nothing about the parser). The prefix is the literal character '@' and is only recognised at index 0 of a token. For a token T (before the '--' terminator, see R3): (a) T == '@' is kept as the literal token '@'; (b) T starts with '@@' becomes '@' + T[2:] (so '@@' -> '@', '@@x' -> '@x', '@@@x' -> '@@x') and is never read as a file; (c) otherwise, T starts with '@' and has length > 1: the response file named T[1:] is read (R4) and the token is replaced, in place, by the tokens of that file (an empty file contributes zero tokens); (d) any other token is kept unchanged. Option-looking tokens, '=' forms like '--name=@x' and tokens with '@' elsewhere are never expanded (only a token that STARTS with '@' is).",
+   "inputs": "list of str tokens",
+   "output": "new list[str]; order preserved; each @file token is replaced in place by that file's tokens (recursively, R4/R5).",
+   "errors": "none (file errors are R5)",
+   "precedence": "The '@@' escape (b) and lone '@' (a) are decided before any file lookup, so no file named '@x' or '' is ever opened for those tokens.",
+   "bounds": "Prefix only at position 0 of the token; '--name=@x' is untouched; '@' + one char is a file reference.",
+   "state": "none"
+  },
+  {
+   "id": "R3",
+   "text": "'--' terminator. The first token that is exactly '--' (whether it was in the original argv or produced by a response file at any nesting depth) is emitted unchanged, and from that point on NOTHING else is expanded or unescaped: all remaining tokens of the current file, of every enclosing file, and of the original argv are emitted verbatim in their original order (so '@x' and '@@x' after the terminator stay exactly '@x' / '@@x', and no file is opened for them). Blank lines in still-open response files are still dropped (that is file parsing, R4, not expansion). Only the FIRST '--' is special for expansion; later '--' tokens are just verbatim tokens.",
+   "inputs": "argv containing '--' directly or via a file",
+   "output": "e.g. expand_response_args(['a', '--', '@@x', '@f']) == ['a', '--', '@@x', '@f']; if file f.txt holds lines 'p', '--', '@@q' then ['@f.txt', '@@z'] -> ['p', '--', '@@q', '@@z'].",
+   "errors": "none",
+   "precedence": "R3 overrides R2: after the first '--', escapes are not processed and file references are not read. A '--' coming out of a nested file also stops expansion of the remaining OUTER original tokens.",
+   "bounds": "Only exact equality with '--'; '---' or '--x' are ordinary tokens.",
+   "state": "none"
+  },
+  {
+   "id": "R4",
+   "text": "File format, reading and nested path resolution. The engine calls the reader as `read(path) -> str`. The default reader (`Context.read_response_file` / default of click.expand_response_args) is exactly `open(path, encoding='utf-8-sig', newline='')` then `.read()`, so a UTF-8 BOM is dropped and line endings are NOT translated. The text is split on '\\n' ONLY (never str.splitlines, so U+2028, \\x0b, \\x0c, \\x1c-\\x1e are NOT separators); then for each line ONE trailing '\\r' is removed if present; a line that is then exactly '' is skipped; every other line, including whitespace-only lines and lines with leading/trailing spaces, becomes one token with its text kept verbatim (no strip, no shlex, no comments). Each produced token is subject to R2/R3 again (nesting). Path passed to the reader: for a reference found in the ORIGINAL argv it is T[1:] exactly as written (relative paths are relative to the process cwd at expansion time); for a reference found inside a file that was read as path P, if T[1:] is absolute (os.path.isabs) it is used as is, otherwise it is os.path.join(os.path.dirname(P), T[1:]) where P is the string that was passed to the reader for that including file (not an absolute-ized version).",
+   "inputs": "response file text; tokens inside files",
+   "output": "e.g. text 'a\\r\\n\\n b \\nc\\u2028d\\n' -> tokens ['a', ' b ', 'c\\u2028d']. For '@conf/main.txt' containing '@sub.txt', the nested read is called with 'conf/sub.txt'.",
+   "errors": "see R5",
+   "precedence": "Nested relative paths resolve against the INCLUDING file's directory (not the cwd); original-argv relative paths resolve against the cwd.",
+   "bounds": "Exactly one trailing '\\r' stripped per line; a line of only spaces is a token.",
+   "state": "The reader is called once per inclusion; there is no cache, so the same file included twice is read twice."
+  },
+  {
+   "id": "R5",
+   "text": "Errors (strict mode, i.e. Context.resilient_parsing False and the click.expand_response_args helper). (a) If the reader raises OSError or ValueError (UnicodeDecodeError is a ValueError) for path p (p = the string passed to the reader), raise UsageError with message exactly `Could not read response file {p!r}.` (e.g. \"Could not read response file 'missing.txt'.\"). Any other exception type from a custom reader propagates unchanged. (b) Cycle detection uses the stack of files currently being expanded, keyed by os.path.abspath(path). Before calling the reader for path p, if abspath(p) is already on the stack, raise UsageError with message exactly `Response file {p!r} includes itself.` (p = the path of the offending inner reference, as it would have been passed to the reader), and the reader is NOT called for it. The stack is pushed when a file starts being expanded and popped when it finishes, so the same file referenced twice as SIBLINGS (or in two different branches) is legal and is read each time; only a reference to a file that is an ancestor of the reference (directly or indirectly) is an error. Exit code of these errors in standalone mode is 2 and, via Context.expand_args, the exception carries ctx = that context.",
+   "inputs": "reader failures; a.txt containing '@a.txt'; a.txt -> b.txt -> a.txt; x.txt containing '@y.txt','@y.txt' where y.txt is plain",
+   "output": "a.txt self-include -> \"Response file 'a.txt' includes itself.\" (a->b->a reports the path of the inner reference to a.txt, e.g. 'a.txt' when both are in the same directory); the x.txt/y.txt case succeeds and y.txt contents appear twice.",
+   "errors": "UsageError(\"Could not read response file 'p'.\") ; UsageError(\"Response file 'p' includes itself.\")",
+   "precedence": "The cycle check happens before the read, so a cyclic path never triggers `Could not read` even if the file does not exist (cycle needs the file to have been read already, so this only matters for custom readers).",
+   "bounds": "Cycle key is os.path.abspath only (no realpath / symlink resolution).",
+   "state": "The cycle stack is local to one expansion call."
+  },
+  {
+   "id": "R6",
+   "text": "Resilient parsing. When the Context has resilient_parsing=True (shell completion), expansion never raises: an `@path` token whose read fails (R5a) or whose reference is a cycle (R5b) is emitted verbatim as the original token text (e.g. '@missing.txt', or '@a.txt' inside the file that referenced it) and expansion continues with the next token. Escapes ('@@x' -> '@x'), the lone '@', the '--' terminator and nesting of readable files behave exactly as in strict mode. Failed reads are not recorded in response_files (R7).",
+   "inputs": "Context(resilient_parsing=True) with missing/cyclic references",
+   "output": "ctx.expand_args(['@missing', '@@x', 'v']) == ['@missing', '@x', 'v'] (no exception).",
+   "errors": "none",
+   "precedence": "Resilient handling replaces R5 raising; it does not change R2-R4 semantics.",
+   "bounds": "Applies per token; later tokens are still expanded.",
+   "state": "none"
+  },
+  {
+   "id": "R7",
+   "text": "Integration point, once-per-tree guard and recorded state. `Command.parse_args(ctx, args)` is changed as follows. Step 1 is the EXISTING `no_args_is_help` check, evaluated on the RAW args (so `['@empty.txt']` is NOT 'no args' and does not raise NoArgsIsHelpError, even if the file expands to nothing; `[]` still does). `Group.parse_args` keeps its own raw-args check first, unchanged. Step 2 (new): if `ctx.expand_response_files` is True AND neither ctx nor any ancestor context has already performed an expansion (private flag, set by this step), then call `ctx.expand_args(args)` EXACTLY ONCE, set the flag on ctx, and use the returned list in place of args for everything that follows (parser, extra-args error text, ctx.args, ctx._protected_args). Step 3: the rest of parse_args is unchanged. Because the flag is checked on ctx and its ancestors, (i) a sub-context created by Group.invoke/make_context(parent=...) never re-expands tokens the root already expanded, and (ii) a SECOND call of `parse_args` on the same ctx (Group.resolve_command re-calls `self.parse_args(ctx, args)` when the unknown first token looks like an option, e.g. with ignore_unknown_options=True) does NOT expand again, so an already-unescaped '@x' coming from '@@x' is not turned into a file read. Only the context that actually ran step 2 has a non-empty `response_files`; contexts that skipped it keep `response_files == []`. If the root has expansion disabled but a descendant context has it enabled and no ancestor has expanded, that descendant expands its own args (the tokens after the subcommand name) once.",
+   "inputs": "Command/Group.parse_args(ctx, args) with ctx.expand_response_files True",
+   "output": "ctx.args / protected args contain expanded tokens; `ctx.response_files` lists, in read order (pre-order: a file is recorded right after it was read successfully and before its own nested references are processed), the path strings passed to the reader, one entry per read, duplicates kept, failed reads not recorded.",
+   "errors": "UsageError from expand_args propagates out of parse_args; augment_usage_errors(ctx) semantics apply (ctx is set to the context that expanded).",
+   "precedence": "no_args_is_help (raw args) is evaluated BEFORE expansion; the once-per-tree guard beats the per-context switch (an ancestor that expanded forces descendants to skip even if their own setting is True).",
+   "bounds": "Exactly one expand_args call per expanding context per ctx lifetime; when the setting is False no step 2 happens at all.",
+   "state": "`ctx.response_files` is set (replaced, not appended) by each expand_args call that ran with expansion enabled; it is per Context instance, so two separate CliRunner.invoke calls never see each other's lists and the default new-context value is []. A guard flag lives on the Context instance, not on the Command or at module level."
+  },
+  {
+   "id": "R8",
+   "text": "ROUTE MATRIX (which entry points expand '@' tokens, relative to main() as the baseline). main(): SAME (baseline) - args=sys.argv[1:] or the list given is expanded once in the root context's parse_args, after the shell-completion environment check; with standalone_mode=True a failure prints the usage error and exits 2, with standalone_mode=False the UsageError propagates. CliRunner.invoke: SAME as main() - string args are shlex-split first by CliRunner (existing), then main() runs; `expand_response_files=True` can be passed as an extra kwarg; relative paths resolve against the cwd at expansion time (inside runner.isolated_filesystem() that is the temp dir); an expansion failure gives exit_code 2 and output `Usage: ...\\nTry '...' for help.\\n\\nError: ...\\n`. ctx.invoke(callback, ...): N/A - there is no argv, the arguments are passed to the callback verbatim, a value like '@x' is never read, expand_args is not called, response_files is untouched. ctx.invoke(other_command, **kwargs): N/A - the sub-context is built without parse_args, kwargs are taken verbatim (strings starting with '@' are never expanded), the inherited setting is unused. ctx.forward(...): N/A - same reason as ctx.invoke (kwargs forwarded verbatim). Nested groups: DIFFERENT - the root context's parse_args expands the WHOLE list, including tokens that belong to the subcommand, and every sub-context (made by Group.invoke -> cmd.make_context(parent=ctx)) skips expansion per R7; sub-contexts report response_files == []. chain=True groups: DIFFERENT - same as nested groups: the root expands the whole list before it is split between chained subcommands, so '@f' appearing after any chained command name is expanded by the root, and each chained sub-context (created with allow_extra_args=True, allow_interspersed_args=False) skips expansion; the `--` terminator (R3) applies to the whole root list, so '--' before a later chained command name protects everything after it from expansion.",
+   "inputs": "the six entry points listed",
+   "output": "as described per entry point",
+   "errors": "main/CliRunner/nested/chain: same UsageErrors as R5; ctx.invoke/ctx.forward: none (no expansion happens)",
+   "precedence": "R7's once-per-tree guard decides nested/chain behaviour; R1 decides whether the root expands at all.",
+   "bounds": "N/A rows must not call expand_args and must not modify response_files.",
+   "state": "response_files is recorded only on the context that expanded (the root for nested/chain)."
+  },
+  {
+   "id": "R9",
+   "text": "Extension hooks and the public helper. `Context.expand_args(args)` is the single rewrite point and is overridable (e.g. in a custom `context_class`). Default behaviour: if `self.expand_response_files` is False return `list(args)` and leave `self.response_files` untouched; otherwise set `self.response_files = []`, run the engine (`click.parser._expand_response_args`) with reader `self.read_response_file` and resilient=self.resilient_parsing, appending each successfully read path to `self.response_files`, and return the new list; the input sequence is never mutated; UsageErrors raised by the engine get `ctx=self` before leaving the method. `Command.parse_args` MUST call `ctx.expand_args` (not the engine directly) and `Context.expand_args` MUST call `self.read_response_file` (not open()) so a context_class that overrides either hook is honoured: e.g. a subclass whose read_response_file serves files from a dict, or whose expand_args first rewrites '%x' to '@x' then calls super(). `Context._make_sub_context` and `make_context` already instantiate `type(self)` / `command.context_class`, so the subclass is used for all sub-contexts. `click.expand_response_args(args, read=None)` is the same engine, strict (non-resilient), with `read` defaulting to the default reader, no context (UsageError.ctx is None), and no recording; it is exported in `click.__all__`-style via `from .utils import expand_response_args as expand_response_args` in click/__init__.py.",
+   "inputs": "custom Context subclasses; click.expand_response_args(['@a'], read=lambda p: 'x\\ny')",
+   "output": "click.expand_response_args(['@a', 'z'], read=lambda p: 'x\\ny') == ['x', 'y', 'z']",
+   "errors": "UsageError per R5 (message identical to the Context route)",
+   "precedence": "Overridden hooks take precedence over defaults; parse_args uses whatever expand_args returns, even if the subclass returns a list that contains '@x' tokens (they are not expanded again).",
+   "bounds": "expand_args is called at most once per parse per R7; a custom read_response_file returning text is subject to the same R4 line rules.",
+   "state": "expand_args replaces response_files on every enabled call (reset-then-fill), so calling it twice yields only the second call's reads."
+  },
+  {
+   "id": "R10",
+   "text": "Usage line reflects the feature. `Command.collect_usage_pieces(ctx)`, after building its existing list (options_metavar piece followed by every param's usage pieces), appends the single piece `[@FILE]...` as the LAST element when `ctx.expand_response_files` is True (based on the effective value of the ctx passed in, so a sub-command's help and a Group's pieces both show it). `Group.collect_usage_pieces` still appends `subcommand_metavar` after that, so a group reads `Usage: cli [OPTIONS] [@FILE]... COMMAND [ARGS]...`, and a command with argument NAME reads `Usage: cli [OPTIONS] NAME [@FILE]...`. This text is what `--help` shows and what every UsageError shows, e.g. a missing file gives output `Usage: cli [OPTIONS] [@FILE]... COMMAND [ARGS]...\\nTry 'cli --help' for help.\\n\\nError: Could not read response file 'args.txt'.\\n` with exit code 2. `Context.command_path` is built from `Parameter.get_usage_pieces` and is NOT changed (no '[@FILE]...' in it). A command whose collect_usage_pieces override does not call super() simply does not get the piece.",
+   "inputs": "ctx.expand_response_files True/False, get_usage/get_help/UsageError.show",
+   "output": "see text",
+   "errors": "none",
+   "precedence": "Driven by the per-context effective value (R1), not by the once-per-tree guard (R7): a child with explicit False has no piece even though its parent expanded.",
+   "bounds": "Exactly one piece, exactly the text '[@FILE]...', always last in Command.collect_usage_pieces.",
+   "state": "none"
+  },
+  {
+   "id": "R11",
+   "text": "Shell completion. `ShellComplete.get_completions(args, incomplete)` becomes: (1) `ctx = _resolve_context(...)` (unchanged; its make_context calls already expand the root's args in resilient mode per R6/R7); (2) `root = ctx.find_root()`; if `root.expand_response_files` is True, replace `args` by `root.expand_args(args)` (a new list; resilient so never raises), otherwise keep `args` unchanged; (3) if `ctx.expand_response_files` is True AND `incomplete` starts with '@' but NOT with '@@' AND the literal token '--' is not in the (possibly expanded) args, return exactly `[CompletionItem(incomplete[1:], type='file')]` (so for incomplete '@conf/pa' the item value is 'conf/pa', and Bash/Zsh/Fish/PowerShell formatting is the existing format_completion of a 'file' item, e.g. bash 'file,conf/pa'); (4) otherwise `obj, incomplete = _resolve_incomplete(ctx, args, incomplete)` and `obj.shell_complete(ctx, incomplete)` exactly as before, but with the expanded args from (2), so an option name that came from a response file can make the next word a value completion, and a '--' that came from a file disables option-name completion. An incomplete starting with '@@' and every incomplete when the feature is off take step (4) unchanged.",
+   "inputs": "COMP_WORDS style inputs through get_completions; response files that contain option names",
+   "output": "e.g. root enabled, file f.txt = '--name', args ['@f.txt'], incomplete 'al' -> completions of the --name option value (not argument completions); incomplete '@co' -> [CompletionItem('co', type='file')].",
+   "errors": "none (completion never raises on bad files, R6)",
+   "precedence": "R3 beats the file-completion step: with '--' present (raw or from a file) an '@x' incomplete is NOT file-completed. Step (3) uses the DEEPEST resolved context's setting while step (2) uses the ROOT's setting.",
+   "bounds": "'@' alone completes as CompletionItem('', type='file').",
+   "state": "root.expand_args resets root.response_files to the reads of this call only (same contents as the make_context call)."
+  },
+  {
+   "id": "R12",
+   "text": "Backward compatibility (these stay byte-identical, pinned by tests). With `expand_response_files` False/unset everywhere: (a) tokens beginning with '@' or '@@' reach the parser exactly as given and the reader is never called; (b) help and usage output of every command and group is unchanged (no '[@FILE]...'); (c) `Context.to_info_dict()` returns exactly its current six keys (command, info_name, allow_extra_args, allow_interspersed_args, ignore_unknown_options, auto_envvar_prefix) in both the enabled and disabled case, and `Command.to_info_dict` is unchanged; (d) `Context.__init__` positional order is unchanged (the new keyword is last); (e) `Command.parse_args` hands the very same list object it received to the parser when expansion is not performed, so the existing behaviour that make_context consumes the caller's list is unchanged (when expansion IS performed the caller's list is not mutated by the expansion itself); (f) completion for an incomplete word starting with '@' behaves as before; (g) `Context.response_files` exists and is [] on every context; (h) no new warnings are emitted (pytest runs with filterwarnings=error), no new module-level imports are added to any click module (tests/test_imports.py allowlist; any `os`/`io` use inside parser.py/utils.py is function-local or already imported), and files are always opened with an explicit encoding.",
+   "inputs": "any existing test-suite scenario",
+   "output": "unchanged outputs",
+   "errors": "none",
+   "precedence": "R12 constrains every other rule: when R1 yields False nothing else in this contract is observable.",
+   "bounds": "to_info_dict key set is exactly the current six keys.",
+   "state": "no module-level or class-level mutable state is introduced."
+  }
+ ],
+ "traps": [
+  "Double expansion: sub-contexts created by Group.invoke, chained sub-contexts and the second parse_args call made by Group.resolve_command (for an option-looking unknown command with ignore_unknown_options=True) must not re-expand. A naive 'expand at the top of every parse_args' unescapes '@@x' to '@x' and then reads a file named 'x' (error) instead of reporting `No such command '-x'.`",
+  "no_args_is_help must be evaluated on RAW args before expansion: `cli @empty.txt` must not show help, and `cli` with no args still must.",
+  "Cycle detection must use the current ancestor STACK, not a global visited set: the same file included twice as siblings is legal (read twice, recorded twice in response_files), while a->b->a is an error 'Response file ... includes itself.'",
+  "Nested relative paths resolve against the including file's directory (using the path string as passed to the reader), while top-level references resolve against the cwd as written; using the cwd for both, or abspath for the dirname, is wrong.",
+  "Line splitting must be '\\n' only plus one trailing '\\r' strip, with whitespace preserved: str.splitlines() or strip() change tokens containing U+2028/\\x0b or leading/trailing spaces.",
+  "'--' from a nested file terminates expansion for the remaining lines, the enclosing files AND the remaining original argv; after it '@@x' must stay '@@x' (no unescape) and no file is read.",
+  "`expand_response_files=None` passed explicitly in main(**extra)/make_context(**extra) shadows context_settings (existing key-present merge) and falls to the parent; it is not 'unset'.",
+  "response_files must be reset-then-filled per expand_args call, per Context instance, record successful reads only, and keep duplicates; no module-level cache or list (two CliRunner.invoke calls must not leak into each other).",
+  "Completion must use the expanded args (a '--' or an option name from a file changes the result), must not treat '@@..' as file completion, and the file item value is incomplete[1:] without the '@'.",
+  "Context.to_info_dict must NOT gain a key (existing tests compare it exactly), and Context.command_path must not include '[@FILE]...'."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ]
+}

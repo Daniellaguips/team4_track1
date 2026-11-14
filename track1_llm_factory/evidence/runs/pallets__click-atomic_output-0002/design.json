@@ -1,0 +1,166 @@
+{
+ "feature": "atomic_output",
+ "summary": "Opt-in transactional stdout for a whole command tree. When atomic_output is enabled on the root invocation, every click.echo call made with the default stdout destination (file omitted, err=False) is held back and written to the real stdout only if the whole root main() invocation succeeds. Parsing, callbacks, nested groups, chain=True subcommands, ctx.invoke/ctx.forward, result_callback and context close callbacks are all part of one transaction. Any exception or non-zero exit discards the held output. Stderr is never held back. A one-line stderr notice reports discarded writes. The setting is exposed on Context, main()/context_settings, CliRunner (constructor and invoke), and a new top-level click.pending_output_writes() helper. Implementation note: do not add module-level imports that would break the tests/test_imports.py allowlist, and do not emit any warning on any path, since pytest runs with filterwarnings=error.",
+ "public_api": [
+  "click.Context(..., atomic_output: bool | None = None)",
+  "click.Context.atomic_output (bool attribute)",
+  "Command.main(..., atomic_output=True|False|None) via the existing **extra forwarding to Context",
+  "Command.context_settings['atomic_output']",
+  "click.testing.CliRunner(..., atomic_output: bool | None = None)",
+  "click.testing.CliRunner.invoke(..., atomic_output: bool | None = None)",
+  "click.pending_output_writes() -> int"
+ ],
+ "keywords": [
+  "atomic_output",
+  "pending_output_writes",
+  "echo",
+  "main",
+  "make_context",
+  "Context.exit",
+  "call_on_close",
+  "result_callback",
+  "CliRunner.invoke",
+  "standalone_mode",
+  "Discarded buffered output"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "Opt-in setting and validation. Context accepts a keyword atomic_output that is None (default), True or False, and exposes Context.atomic_output as a plain bool. For a root context (parent is None) it is the resolved setting from R2. For any non-root context it is always identical to the bool of its root context, whatever value that child was given. Every Context construction validates its atomic_output argument, including non-root contexts and including values that would be ignored. Anything that is neither None nor an actual bool (1, 0, 'yes', [] ...) is rejected. CliRunner(atomic_output=...) applies the same check at construction time. CliRunner.invoke(atomic_output=...) applies it before anything runs and raises directly from invoke(), even with catch_exceptions=True (it is not captured in Result).",
+   "inputs": "Context(cmd, atomic_output=v) for any v; CliRunner(atomic_output=v); runner.invoke(cmd, atomic_output=v); a command whose context_settings contains a non-bool atomic_output",
+   "output": "bool values and None are accepted. Context.atomic_output is a bool in every case (None resolves to False).",
+   "errors": "TypeError(\"'atomic_output' must be a bool or None, not {type_name}.\") where type_name is type(v).__name__, e.g. \"'atomic_output' must be a bool or None, not str.\" and \"'atomic_output' must be a bool or None, not int.\" for 1. A non-bool context_settings value raises the same TypeError when the context is built inside main(); under CliRunner it is captured as Result.exception with exit_code 1 and nothing is written to stdout.",
+   "precedence": "Validation happens before the non-root 'ignored' rule of R2: a child context given atomic_output='x' raises, while a child given True or False is accepted and silently ignored.",
+   "bounds": "bool is checked by exact bool type, so int 0 and 1 are errors.",
+   "state": "Pure construction-time check; no state."
+  },
+  {
+   "id": "R2",
+   "text": "Precedence of the setting on the root context, highest first: (1) an explicit True/False keyword passed to CliRunner.invoke, Command.main or Command.make_context; (2) the CliRunner(atomic_output=...) constructor default, which only applies to CliRunner.invoke calls; (3) Command.context_settings['atomic_output']; (4) False. None at any level means 'not given' and falls through to the next level; an explicit False at a higher level overrides True at a lower one. Non-root contexts never contribute: an explicit atomic_output (True or False) or a context_settings['atomic_output'] on a subcommand, subgroup or ctx.invoke target has no effect. Only the root context's resolved value decides whether the invocation is transactional.",
+   "inputs": "CliRunner(atomic_output=a).invoke(cmd, atomic_output=b) with cmd.context_settings={'atomic_output': c}, and subcommands that carry their own context_settings",
+   "output": "The root is transactional iff the first non-None value among b, a, c is True. A subcommand with context_settings={'atomic_output': True} under a non-atomic root buffers nothing. A subcommand with context_settings={'atomic_output': False} under an atomic root still shares the root's buffer.",
+   "errors": "none (invalid values: see R1)",
+   "precedence": "This table fully orders the sources. The 'children are ignored' clause interacts with R1: Context.atomic_output on every child equals the root's resolved bool, so inside a command callback click.get_current_context().atomic_output is the root's value.",
+   "bounds": "Exactly one level wins; there is no merging. Explicit False beats runner True and settings True.",
+   "state": "The setting is resolved once per main()/make_context call. The CliRunner default is not mutated by invoke(), and an invoke-level override affects only that call."
+  },
+  {
+   "id": "R3",
+   "text": "What is held back. While a transaction is active (R5), only calls to click.echo (and therefore click.secho, and help/version/usage text that click itself writes with echo) whose file argument is omitted and whose err is False are held back. Each such call records its message (str, bytes, bytearray, None or any object), nl and color arguments, and counts as exactly one write, even when the message is None or empty. Nothing is written to the destination while held. All other output is unaffected and appears immediately: echo(err=True), echo(file=<any stream, including sys.stdout itself>), print(), sys.stdout.write(), and subprocess output. Only echo calls made on the thread that is running main() are held; echo from other threads is written immediately and does not change the pending count. At commit, the held writes are replayed in their original order with their original nl/color arguments, to whatever stream the default standard output refers to at commit time (not at the time of the echo call), so an echo made inside contextlib.redirect_stdout(buf) during the run reaches the real stdout at commit and not buf.",
+   "inputs": "echo('a'); echo(b'b'); echo(); echo('c', nl=False); echo('d', err=True); echo('e', file=sys.stdout); print('f'); secho('g', fg='red')",
+   "output": "Held writes: 'a', b'b', empty, 'c', 'g' (count 5, with bytes written as bytes, the empty call as a bare newline and the nl=False call without one). Immediate: 'd' (stderr), 'e', 'f'. After a commit, stdout contains 'e' and 'f' first (they were immediate), then the held writes in order.",
+   "errors": "none",
+   "precedence": "Interacts with R6: stderr output is never held, so stdout and stderr interleaving in CliRunner Result.output differs from an unbuffered run only by all held stdout appearing at commit time. Interacts with R11: the committed bytes equal what an unbuffered run would have written.",
+   "bounds": "echo(None) and echo('') each count as 1 write. A write of bytes counts as 1.",
+   "state": "The held list is per transaction (R9)."
+  },
+  {
+   "id": "R4",
+   "text": "Commit/rollback decision, made when the root main() invocation finishes. COMMIT iff main() ends successfully: (a) it returns the command's return value normally with standalone_mode=False, (b) it ends via an Exit with exit code 0 (explicit ctx.exit(), ctx.exit(0), the implicit ctx.exit() in standalone mode, or --help/--version eager exits), or (c) it calls sys.exit(0) in standalone mode. DISCARD otherwise: any exception escaping the command tree (ClickException/UsageError/BadParameter/MissingParameter, Abort, KeyboardInterrupt, EOFError, OSError including EPIPE, or any other exception such as RuntimeError), and any Exit with a non-zero code. In standalone_mode=False a non-zero Exit makes main() return that integer instead of raising, and that return must also discard the held output. The command's return value never decides: a callback returning 1 or a non-empty value in non-standalone mode still commits.",
+   "inputs": "ctx.exit(0) / ctx.exit(2) / raise click.ClickException('x') / raise RuntimeError / return 1, run with standalone_mode True and False",
+   "output": "Commit: the held stdout is written, then main() returns/exits as it would without atomic_output. Discard: no held stdout is ever written, and the exit code, raised exception or returned integer are exactly those of an unbuffered run.",
+   "errors": "none (the original exception or exit code is preserved untouched)",
+   "precedence": "The decision is made after the whole window of R5 has completed: a failure anywhere in it (including in result_callback or a close callback) discards output that was echoed earlier by other, successful steps. ctx.exit(0) wins over earlier echoes from failed-then-caught steps (R7).",
+   "bounds": "Exit code 0 commits; every non-zero code (1, 2, 255, negative) discards.",
+   "state": "The decision applies to the whole transaction exactly once; there is no partial commit."
+  },
+  {
+   "id": "R5",
+   "text": "Transaction window. For a root context with Context.atomic_output True, the transaction begins in main() after the shell-completion check and before the root context parses its arguments, and ends only after the root context has been closed: that is, after every call_on_close callback and with_resource context-manager exit registered anywhere in the tree has run (including those run by ctx.exit() before the Exit is raised, and those run when the root context block exits). Therefore echo calls made during argument parsing (eager callbacks such as --version/--help, option and argument callbacks, type conversion callbacks), group callbacks, subcommand callbacks, chain=True subcommand callbacks, result_callback and close callbacks all belong to the one transaction. Echo calls made before main() is entered, after main() has returned or exited, or by a main() override outside the call to the base main() (R10) do not belong to it. A shell-completion request (the _PROG_COMPLETE environment variable) never starts a transaction, so its output is written directly exactly as without atomic_output.",
+   "inputs": "An eager option callback that echoes and a later parameter that raises BadParameter; a call_on_close callback that echoes; a --help request; a result_callback that raises",
+   "output": "Eager-callback echo followed by BadParameter: discarded (notice per R6, 1 write). call_on_close echo on success: committed after all earlier output. --help: the help text is committed because the eager exit has code 0. result_callback raising: the output of the group, subcommand and close callbacks is all discarded.",
+   "errors": "none",
+   "precedence": "Interacts with R4: because the window includes close callbacks, an exception raised inside a close callback flips an otherwise successful run to DISCARD. Interacts with R3: the window defines which echo calls are 'held while active'.",
+   "bounds": "The first held echo may come from parsing; the last may come from a close callback executed after the final user callback.",
+   "state": "Close callbacks run exactly as before, once per context teardown, and are not run twice by the commit."
+  },
+  {
+   "id": "R6",
+   "text": "stderr policy and discard notice. stderr output (echo(err=True), echo(file=sys.stderr), and everything click writes for errors such as 'Error: ...', usage lines, 'Aborted!', and the blank line written after Ctrl-C/EOF) is never held and appears at the moment it is written. When a transaction is discarded with n >= 1 held writes, exactly one line is written to stderr (immediate, never held): 'Discarded {n} buffered output write(s).' where n is the number of held writes (each echo call counts once, per R3) and the text is literal, with the characters '(s)' always present, e.g. 'Discarded 3 buffered output write(s).' This notice is written before any stderr output that main() itself produces to report the failure (blank line after ^C, usage, 'Error: ...', 'Aborted!'), but after any stderr the program had already written. In standalone_mode=False it is written before the exception propagates or the non-zero integer is returned to the caller. No notice is written on commit, and none when n is 0 (e.g. the tree only wrote to stderr).",
+   "inputs": "A tree that echoes 3 times then raises ClickException('boom'), in standalone and non-standalone mode; a tree that only echoes to stderr then fails; a commit",
+   "output": "Standalone ClickException: stderr is 'Discarded 3 buffered output write(s).\\nError: boom\\n' and stdout is empty, with exit code 1. Only-stderr tree failing: no notice. Commit: no notice. Abort after 2 held writes: stderr is 'Discarded 2 buffered output write(s).\\nAborted!\\n'.",
+   "errors": "none",
+   "precedence": "Depends on R4 (only on DISCARD) and R3 (what counts). Combined with R11, the stderr stream of a successful atomic run is byte-identical to the non-atomic run.",
+   "bounds": "n == 0 -> no line. n == 1 still reads 'Discarded 1 buffered output write(s).'",
+   "state": "n is reset for each transaction (R9)."
+  },
+  {
+   "id": "R7",
+   "text": "One shared transaction, no partial rollback. Nested groups, subgroups, ctx.invoke(callback), ctx.invoke(command), ctx.forward and every chain=True subcommand all share the root's single transaction: each held write is stored once, is written once at commit, and appears in global call order (never grouped per context). Child contexts, sub-contexts created by ctx.invoke, and result_callback never commit or discard on their own. click.pending_output_writes() returns the number of held writes so far in the active transaction on the calling thread (the same number whichever context in the tree is current), and 0 when no transaction is active. An exception raised inside the tree and caught by user code before reaching main() (for example try/except around ctx.invoke, or around ctx.forward) does not roll back anything: the output echoed by the failing step remains held and is committed if the root later succeeds. In chain=True, if the third of three subcommands fails, the output of the first two is discarded as well.",
+   "inputs": "Group -> subgroup -> command echoing at each level plus result_callback; chain=True group with 3 subcommands where the last raises; a callback that does try: ctx.invoke(failing_cmd) except ClickException: pass",
+   "output": "Success: output of group, subgroup, command and result_callback in that order, each once. Chain failure: stdout empty, notice counts all held writes from all subcommands. Caught-exception case: the failing step's earlier echoes are still in the committed output. pending_output_writes() read in the subcommand equals the number of echo calls made so far across all levels.",
+   "errors": "none",
+   "precedence": "Interacts with R4: only the exception/exit status that actually reaches main() decides; a non-zero ctx.exit() inside a sub-invocation that is caught by user code does not discard. Interacts with R2: a child's own setting cannot create a second buffer.",
+   "bounds": "pending_output_writes() counts echo calls with default stdout only (stderr/file echo calls do not change it).",
+   "state": "One counter per transaction, increasing monotonically until the transaction ends."
+  },
+  {
+   "id": "R8",
+   "text": "ROUTE MATRIX (atomic enabled on the root). main(): SAME as described - owns the transaction, commits/discards when main() finishes, per R4. CliRunner.invoke: SAME, because it calls main(); Result.stdout and the stdout part of Result.output contain exactly the committed bytes (empty after a discard), Result.stderr contains the immediate stderr plus the R6 notice, and if the exception escapes main() it is discarded before CliRunner captures it. Setting source differs: the R2 table applies and invoke(atomic_output=) is the highest-priority source. ctx.invoke (callback or Command) called while a root transaction is active: SAME - shares the buffer, never commits or discards; an exception it raises only discards if it reaches main(). ctx.invoke / Command.invoke(ctx) / Command.make_context called on a hand-made Context outside any main() call: N/A - there is no transaction, so Context.atomic_output may be True but echo writes immediately and click.pending_output_writes() is 0. ctx.forward: same as ctx.invoke in both situations. Nested groups: SAME - they share the one transaction (R7). chain=True groups: SAME - the transaction ends only after all chained subcommands and the result_callback have run (R7), and the result callback's echo is committed with the rest. A main() call made while another atomic invocation is active is not covered by this contract.",
+   "inputs": "The six routes above, each running a tree that echoes then either succeeds or fails",
+   "output": "As stated per route; the outputs for outside-main routes are written immediately and in call order, identical to the pre-feature behavior.",
+   "errors": "none",
+   "precedence": "Combines R2 (where the setting comes from per route), R4 (decision) and R7 (sharing).",
+   "bounds": "Outside-main contexts N/A: pending_output_writes() == 0 and nothing is ever discarded.",
+   "state": "Only main() creates and ends a transaction; no other route does."
+  },
+  {
+   "id": "R9",
+   "text": "State reset and isolation between invocations. A transaction starts empty and leaves no residue however it ends (commit, discard, non-standalone return, exception escaping main(), CliRunner with catch_exceptions=False re-raising). After it ends, echo writes immediately again, click.pending_output_writes() returns 0, and the next main()/CliRunner.invoke call starts with an empty buffer and count. Output committed by one invocation is never written again by a later one, and output discarded by one never appears in a later one. A later main() whose root resolves to atomic_output False is not buffered even if an earlier invocation was atomic; an atomic invocation after a non-atomic one buffers normally. Parsing failures that occur before any callback runs also leave no state.",
+   "inputs": "runner = CliRunner(); invoke atomic failing cmd, then invoke atomic succeeding cmd, then invoke non-atomic cmd; the same with catch_exceptions=False and a RuntimeError in the first call",
+   "output": "Second call's stdout is exactly its own output, without the first call's discarded lines; the third call's output is unbuffered; pending_output_writes() is 0 between calls.",
+   "errors": "none",
+   "precedence": "R4 decides the end-of-transaction path; R9 requires the same cleanup regardless of that path, including when the exception is not a click exception.",
+   "bounds": "Count restarts at 0 for every transaction, so the R6 notice of the second call counts only its own writes.",
+   "state": "Entire rule is about state reset; no state may survive past the end of main()."
+  },
+  {
+   "id": "R10",
+   "text": "Extension points keep working. The behavior of R3-R7 holds with a custom Command.context_class / Group subclass context (a Context subclass whose __init__ takes *args, **kwargs and forwards them), custom Command and Group subclasses (including ones overriding parse_args, invoke, make_context, format_help or format_usage, command_class / group_class on Group, and CommandCollection), and custom Group.result_callback functions. Echo calls from such overrides made inside the base class's call (before or after super().invoke(...) inside invoke, inside parse_args, etc.) are part of the transaction. A Command.main override that wraps super().main(...) only brackets the transaction: the transaction covers exactly the call to the base main(), so echo made by the override before calling super().main() is written immediately (appears before the committed output) and echo made after super().main() returns is written immediately too (appears after the commit or after the discard). A custom Context subclass that does not forward atomic_output gets the default False and the invocation is simply not atomic; no error is raised.",
+   "inputs": "A Context subclass passed as context_class; a Group subclass overriding invoke to echo before and after super().invoke(); a Command subclass overriding main to echo 'pre' then call super().main(**kw) then echo 'post'",
+   "output": "With success and atomic on: stdout is 'pre', then committed lines in order, then 'post'. With failure: 'pre' and 'post' are present (when super().main() returns a non-zero code in standalone_mode=False) while the lines inside the transaction are absent.",
+   "errors": "none",
+   "precedence": "R5's window defines the boundary of the base main(); R4 applies per base main() call, not per override.",
+   "bounds": "An override that catches SystemExit around super().main() sees the same exit codes as unbuffered runs (R11).",
+   "state": "Subclass instance attributes are untouched; no state is stored on the user's classes beyond what Context itself defines."
+  },
+  {
+   "id": "R11",
+   "text": "Everything else is byte-identical. When Context.atomic_output resolves to False, every existing behavior is unchanged: stdout/stderr bytes and their ordering, exit codes, raised exceptions, return values, and Result.output interleaving. Existing signatures stay backward compatible (new parameters are keyword-only-style additions with None defaults, so existing positional calls and existing Context subclasses still work). Context.to_info_dict() has no new key and help text/option lists of commands are unchanged, with no new option added. A request for shell completion produces exactly the same output with atomic_output True or False. When atomic_output is True and the invocation commits, stdout bytes, stderr bytes (no R6 notice) and the exit code or return value equal those of the same invocation with atomic_output False; the only observable difference is that Result.output places all held stdout after any stderr written during the run. No warning of any kind is emitted by any path of this feature (the test suite runs with filterwarnings=error).",
+   "inputs": "The same command tree run with atomic_output False, None and True, with --help, --version, a prompt, a failing and a succeeding variant; Context(cmd).to_info_dict() before/after",
+   "output": "atomic off equals the pre-feature output exactly. atomic on + success: Result.stdout and Result.stderr identical to atomic off, Result.exit_code identical; with a stderr line written between two stdout lines, Result.output shows the stderr line first and then both stdout lines.",
+   "errors": "none",
+   "precedence": "R3 and R6 define the only permitted differences; R4 defines when output is withheld.",
+   "bounds": "Prompt question text is not written via echo and is unchanged; stderr is never delayed.",
+   "state": "No global state is changed when atomic_output is False."
+  }
+ ],
+ "traps": [
+  "standalone_mode=False turns ctx.exit(2) into a plain return of 2, not an exception; an implementation that discards only on exceptions commits the output of a failed run (R4).",
+  "Output echoed during argument parsing (eager option callbacks, parameter callbacks) happens inside make_context, before the usual 'with ctx' block of main(); wrapping only the invoke phase leaves it unbuffered and un-discarded (R5).",
+  "call_on_close/with_resource callbacks run during teardown, after the user callbacks: committing before they run loses their ordering, and an exception from them must still discard earlier output (R4/R5).",
+  "Buffering by identity of sys.stdout or by replacing sys.stdout would wrongly hold print(), sys.stdout.write() and echo(file=sys.stdout); only echo with file omitted and err False is held (R3).",
+  "Committing in each child context's close (depth reaching 0) writes early or twice and breaks result_callback and chain failure rollback (R7).",
+  "Child contexts must ignore their own atomic_output (True under a non-atomic root, False under an atomic root), yet the type check still fires for them; None must fall through while False must override (R1/R2).",
+  "The commit destination is resolved at commit time, not when echo was called (R3).",
+  "An exception caught by user code around ctx.invoke/ctx.forward must not trigger rollback; an escaping non-click exception must, and the buffer must be cleared in both cases (R7/R9).",
+  "echo() with no message still counts as one write in the discard notice, and the count is 0-aware: no notice when there is nothing held (R3/R6).",
+  "A module-level buffer that is not reset on failure leaks discarded lines into the next CliRunner.invoke (R9).",
+  "bool is checked strictly: 1 and 0 are rejected, even though they are falsy/truthy (R1)."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ],
+ "shortcuts": [
+  "Wrap only Command.main() by swapping sys.stdout for a StringIO: this holds print()/echo(file=sys.stdout)/stderr-sharing writes (R3), mishandles the destination resolved at commit time, and loses the CliRunner stdout/stderr split.",
+  "Buffer and commit per Context (in Context.close/__exit__ when depth reaches 0 or in Group.invoke): child contexts commit early or twice, result_callback output escapes the transaction, and a failing chain=True subcommand does not roll back earlier subcommands (R7).",
+  "Only start buffering at Command.invoke()/inside 'with ctx': eager and option callbacks echoed during make_context/parse_args are neither held nor discarded, and close-callback echo is outside the decision (R5).",
+  "Decide success only by 'no exception escaped': ctx.exit(2) and non-standalone main() returning a non-zero integer wrongly commit (R4).",
+  "Implement everything inside CliRunner (capture then drop output): main() called directly, ctx.invoke, custom main overrides and the stderr notice are not covered, and Context.atomic_output/pending_output_writes() do not exist (R1, R8, R10).",
+  "Keep a module-level global buffer without clearing it in a finally path: a failed or exception-ending first invocation leaks lines into the next invoke, breaking R9."
+ ]
+}

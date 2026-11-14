@@ -1,0 +1,179 @@
+{
+ "feature": "Layered `config` value source for options (dotted-key mapping) with ParameterSource.CONFIG",
+ "summary": "Adds an opt-in `config` mapping on Context (also via `context_settings`, inherited by sub-contexts). Options read dotted keys such as `serve.port`. The source is reported as the new `ParameterSource.CONFIG`, ranked below environment variables and above prompt, `default_map` and `default`. It also works through ctx.invoke/ctx.forward, nested and chained groups. Config-sourced values are shown in --help and in error hints. Per-invocation tracking of unused keys is added, plus a `flatten_config` helper that turns nested dicts into dotted keys.",
+ "public_api": [
+  "click.Context(config=None) / Context.config",
+  "Command.context_settings['config']",
+  "Context.config_key_for(param) -> str | None",
+  "Context.unused_config_keys() -> list[str]",
+  "click.ParameterSource.CONFIG",
+  "click.Option(config_key=None, show_config=False)",
+  "click.flatten_config(mapping) -> dict[str, Any]",
+  "Option.get_help_extra(ctx) gains an optional 'config' entry"
+ ],
+ "keywords": [
+  "config",
+  "config_key",
+  "show_config",
+  "ParameterSource",
+  "consume_value",
+  "get_default",
+  "invoke",
+  "forward",
+  "get_error_hint",
+  "get_help_extra",
+  "OptionHelpExtra",
+  "flatten_config",
+  "_make_sub_context",
+  "context_settings",
+  "to_info_dict"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "Opt-in API and backward compatibility. `Context(..., config=None)` accepts None or a `collections.abc.Mapping` and exposes it as `Context.config` (the same object, not a copy). The mapping can also be supplied through `Command.context_settings['config']`, or as a `config=` keyword to `make_context`/`main`/`CliRunner.invoke`; an explicit keyword wins over `context_settings` as for every other setting. A context created without `config` inherits `parent.config`. A sub-command whose `context_settings` carries its own config uses it for itself and its descendants. `Option(config_key=None, show_config=False)` are new keywords: `config_key` must be None or a non-empty str. When no context in the chain has a config mapping, every existing observable behaviour stays byte-identical: help output, `Option.to_info_dict()`/`Context.to_info_dict()` key sets, error texts, sources, prompts, `get_help_extra` result, and relative ordering and names of the five existing ParameterSource members. A config mapping that lacks an option's key also leaves that option's behaviour unchanged. Custom `context_class` subclasses (that call `super().__init__`), custom `Option`/`Command`/`Group` subclasses that call `super()` in `consume_value`, `parse_args`, `get_help_extra` or `format_options` get all behaviours in this contract.",
+   "inputs": "Context(config=<Mapping|None>); Option(config_key=<str|None>, show_config=<bool>)",
+   "output": "Context.config is the given mapping (identity preserved) or the parent's.",
+   "errors": "TypeError(\"'config' must be a mapping, got list.\") (type name = type(value).__name__) when config is neither None nor a Mapping; ValueError(\"'config_key' must be a non-empty string.\") when config_key is not None and is not a non-empty str.",
+   "precedence": "keyword argument > context_settings > parent's config.",
+   "bounds": "An empty mapping is a valid config and counts as 'config enabled'.",
+   "state": "Constructing a Context never mutates the mapping."
+  },
+  {
+   "id": "R2",
+   "text": "Key derivation. For an Option `o` evaluated in context `ctx`, `ctx.config_key_for(o)` returns `o.config_key` verbatim when set (absolute, never prefixed). Otherwise it returns the `info_name`s of every context from the root's child down to `ctx` (the root context is always excluded, whatever its info_name; contexts whose info_name is None are skipped), followed by `o.name`, all joined with '.'. Examples: root option `max_retries` -> 'max_retries'; `cli serve --port` -> 'serve.port'; `cli db migrate --step` -> 'db.migrate.step'; a group's own option under `outer` -> 'outer.opt'. `o.name` is the parameter name (underscores), never the option spelling (dashes). Info names are used as given (e.g. 'init-db'). `config_key_for` returns None for an Argument, for an option whose name is '' (and has no config_key), and for the automatic help option; those never read config and are never recorded as consumed. Lookup is `key in mapping` then `mapping[key]`. A looked-up value of None means 'absent' and is treated exactly as if the key were missing. Config values are never called, even if callable.",
+   "inputs": "ctx, option",
+   "output": "dotted str key or None",
+   "errors": "none",
+   "precedence": "config_key override > derived path.",
+   "bounds": "Root context info_name (prog name) never appears in a key, so keys are identical under main(), CliRunner.invoke(prog_name=...) and any sys.argv[0].",
+   "state": "none"
+  },
+  {
+   "id": "R3",
+   "text": "Precedence table. A new member `ParameterSource.CONFIG` compares strictly between ENVIRONMENT and DEFAULT_MAP (COMMANDLINE < ENVIRONMENT < CONFIG < DEFAULT_MAP < DEFAULT; PROMPT stays first). Resolution for an option is: CLI > envvar > config > prompt > default_map > default. Pairwise outcomes: (a) CLI value present -> source COMMANDLINE, config not read, not consumed, and for `multiple`/count options CLI replaces config entirely with no merging or adding; (b) a non-empty env var present -> ENVIRONMENT (an empty or unset env var does not block config); (c) config value present -> source CONFIG, beating default_map and default; (d) a config value suppresses the prompt of an option with `prompt` (even if `prompt_required=True`), while an option with no config value prompts exactly as today, including with default_map/default present; (e) a bare `--opt` that the parser flags as needing a value still resolves to COMMANDLINE/prompt, never config. Because CONFIG < DEFAULT_MAP, config-sourced values count as explicitly provided: a `deprecated` option whose value came from config prints the usual red stderr `DeprecationWarning: The option '...' is deprecated.` message exactly as for CLI/env. In a shared-name feature-switch group, a CONFIG-sourced option beats DEFAULT/DEFAULT_MAP-sourced siblings in the shared slot and loses to COMMANDLINE/ENVIRONMENT-sourced siblings. `ctx.get_parameter_source(name)` returns CONFIG.",
+   "inputs": "any option with several sources set",
+   "output": "value and ParameterSource per the table",
+   "errors": "none",
+   "precedence": "CLI > envvar > config > prompt > default_map > default.",
+   "bounds": "A key that falls through under R4/R6 counts as absent for this table.",
+   "state": "Source is recorded before conversion, so callbacks and error hints can observe CONFIG."
+  },
+  {
+   "id": "R4",
+   "text": "Scalar semantics. A config value for an ordinary option (nargs=1, not multiple, not a flag, not count) goes through the same pipeline as any other source: type conversion of str and native values (8080 or '8080' for INT, Choice, Path, ...), then `required` validation, then the option `callback`. Config satisfies `required=True`. `\"\"` and `0`/`False` are real values (only None is absent). A string is never split for nargs=1. Under `resilient_parsing=True` config is still honoured and a conversion failure is swallowed to UNSET as for any other source. The callback and conversion see CONFIG as the source.",
+   "inputs": "config {'serve.port': '8080'} for option --port type=int",
+   "output": "ctx.params['port'] == 8080, source CONFIG",
+   "errors": "BadParameter from the type, e.g. \"Invalid value for '--port' (config: serve.port): 'abc' is not a valid integer.\"",
+   "precedence": "see R3",
+   "bounds": "Empty string for a str option yields '' with source CONFIG (unlike an empty env var, which is ignored).",
+   "state": "none"
+  },
+  {
+   "id": "R5",
+   "text": "multiple / nargs. For `multiple=True` (nargs=1) the config value must be a non-str iterable; each element is converted by the type and the result is a tuple. For nargs=N>1 (non-composite types, not multiple) it must be a non-str iterable of exactly N items. For multiple with nargs=N it is an iterable of N-item iterables. A str is never split on whitespace or separators for any of these (unlike env vars and default_map). An empty list/tuple is a real value: result `()`, source CONFIG, and if `required=True` the usual MissingParameter is raised. If the option appears on the command line at all, config is ignored entirely (no appending or merging).",
+   "inputs": "{'tag': ['a','b']} for multiple option --tag; {'size': [1,2]} for nargs=2 --size type=int",
+   "output": "('a','b'); (1, 2)",
+   "errors": "BadParameter('Value must be an iterable.') for a str value; BadParameter('Takes 2 values but 3 were given.') for wrong length (singular form 'Takes 2 values but 1 was given.').",
+   "precedence": "CLI occurrence > config (R3a).",
+   "bounds": "Length N exact; list of any length for multiple; empty allowed.",
+   "state": "none"
+  },
+  {
+   "id": "R6",
+   "text": "Flags and counting. (a) Boolean flags (including `--x/--no-x` pairs and flag_value=False): the config value is the resulting parameter value, converted by the boolean type (bool, or a case-insensitive/stripped recognised string such as 'Yes', 'off'). `\"\"` converts to False and is a real value. An unrecognised string raises the boolean type's usual BadParameter. (b) Non-boolean flags (flag_value is not bool): a config value equal (==) to `flag_value` yields flag_value; otherwise a bool or str that the boolean type reads as true yields flag_value; every other value (false readings, unrecognised strings, ints, other objects) falls through as if absent, with no error, no CONFIG source and no consumption (this differs from env vars, which yield False). Feature-switch siblings sharing a name each apply this rule to the same key, so config 'lower' activates only the sibling whose flag_value is 'lower'. (c) multiple=True flags follow R5 element-wise through the type. (d) count options: the config value is the total count, converted by the option's non-negative int type; `-vv` on the CLI replaces it and never adds to it; absent CLI gives the config value (0 allowed, source CONFIG).",
+   "inputs": "{'color': 'red'} for flag_value='red'; {'verbose': 3} for count -v",
+   "output": "'red' (CONFIG); 3 (CONFIG)",
+   "errors": "count: BadParameter('-1 is not in the range x>=0.') for -1; boolean: the existing boolean-conversion BadParameter message.",
+   "precedence": "Sibling arbitration per R3 (CONFIG beats DEFAULT siblings, loses to COMMANDLINE/ENVIRONMENT siblings).",
+   "bounds": "Equality with flag_value is checked before boolean reading; non-str/non-bool values never raise AttributeError.",
+   "state": "none"
+  },
+  {
+   "id": "R7",
+   "text": "`click.flatten_config(mapping)` returns a new dict in which nested Mapping values are flattened depth-first into dotted keys ({'serve': {'port': 1}} -> {'serve.port': 1}). Non-Mapping values (str, list, tuple, None, ...) are kept as leaves untouched. An empty nested mapping contributes no keys. A key containing '.' is joined as-is without escaping ({'a': {'b.c': 1}} -> {'a.b.c': 1}). All keys at every level must be str. Two paths that flatten to the same key are an error even if their values are equal ({'a.b': 1, 'a': {'b': 1}}). The input is never mutated. Result order is first-seen depth-first order.",
+   "inputs": "nested dict",
+   "output": "flat dict[str, Any]",
+   "errors": "TypeError(\"Config keys must be strings, got 1.\") (uses {key!r}); ValueError(\"Duplicate config key 'a.b'.\"); TypeError(\"'config' must be a mapping, got list.\") when the argument is not a Mapping.",
+   "precedence": "none",
+   "bounds": "Top-level key without nesting is returned unchanged.",
+   "state": "pure function; no module-level state."
+  },
+  {
+   "id": "R8",
+   "text": "Help display. An option with `show_config=True`, evaluated in a context where `ctx.config` is not None (an empty mapping counts), adds `config: <key>` (the R2 key, whether or not the mapping contains it) to its help record bracket, placed after `env var:` and before `default:`, e.g. `[env var: PORT; config: serve.port; default: 8080]`. `Option.get_help_extra(ctx)` includes `'config': '<key>'` in exactly those cases (add the entry to `types.OptionHelpExtra`). Without `show_config`, with ctx.config None, for hidden options (no record at all, as today) or for Arguments, nothing changes. The default text itself never reflects config values.",
+   "inputs": "Option('--port', show_config=True, show_envvar=True, envvar='PORT', default=8080, show_default=True) under `cli serve --help`",
+   "output": "'  --port INTEGER  [env var: PORT; config: serve.port; default: 8080]' (spacing per existing formatter)",
+   "errors": "none",
+   "precedence": "ordering of bracket items: env var, config, default, range, required.",
+   "bounds": "Key shown is relative to the displayed command's own context path.",
+   "state": "none"
+  },
+  {
+   "id": "R9",
+   "text": "Error hint. `Option.get_error_hint(ctx)` appends ` (config: <key>)` after the existing text (including any ` (env var: ...)` suffix) when `ctx` is not None and `ctx.get_parameter_source(option.name)` is `ParameterSource.CONFIG` at that moment. Every BadParameter/MissingParameter produced while processing a config-sourced value therefore names the key (e.g. `Invalid value for '--port' (config: serve.port): 'abc' is not a valid integer.`). With ctx None, with any other source, or with no config, the hint is byte-identical to today.",
+   "inputs": "bad config value for a show_envvar option",
+   "output": "\"'--port' (env var: 'PORT') (config: serve.port)\"",
+   "errors": "BadParameter / MissingParameter (existing types)",
+   "precedence": "env-var suffix first, config suffix second.",
+   "bounds": "Uses the source of the option's name slot, which is set before conversion.",
+   "state": "none"
+  },
+  {
+   "id": "R10",
+   "text": "ctx.invoke / ctx.forward with a Command. For every exposed Option of the target command missing from kwargs, the filled value is resolved as: explicit kwarg (or, for forward, the value in the forwarding ctx.params) > config > default_map > default. The config key is computed for the sub-context that invoke creates (its parent is the calling context, so the key path is the calling context's path plus the target command's name). Config values follow the R4-R6 interpretation (fall-through for non-bool flags, never split, None absent) and then the existing `type_cast_value`. As today, env vars, prompts, callbacks, `required` checks and sources are not applied in this route. Arguments and expose_value=False options are skipped as today. Errors raised here carry no ` (config: ...)` hint suffix, since no source is recorded.",
+   "inputs": "inside `serve`: ctx.invoke(other, ...) with config {'serve.other.level': 3}",
+   "output": "the callback of `other` receives level=3",
+   "errors": "BadParameter from type conversion, with no config hint suffix.",
+   "precedence": "kwarg/forwarded > config > default_map > default.",
+   "bounds": "Forwarded ctx.params values win over config even if they are None.",
+   "state": "A value used from config in this route is recorded as consumed (R11)."
+  },
+  {
+   "id": "R11",
+   "text": "Unused-key tracking. `ctx.unused_config_keys()` returns a fresh list, sorted, of the keys of `ctx.config` (empty list if None) that no option has taken a value from so far in this invocation tree. A key is consumed when an option's source becomes CONFIG (even if that option later loses sibling arbitration) or when R10 fills a kwarg from it. Keys whose value is None, keys that fell through (R6b), and keys shadowed by CLI or env are not consumed. Consumption is tracked by key string and shared by all contexts having the same root (sub-contexts, chain contexts, ctx.invoke/forward contexts). A new root Context (every `main()` or `CliRunner.invoke` call, even with the very same mapping object) starts with nothing consumed, and nothing is stored on the mapping, the Command or module level. Called from a group callback, sub-command options are not parsed yet and so appear unused; from a result_callback (or after all contexts are made) they are consumed.",
+   "inputs": "config {'a': 1, 'b': 2, 'c': None}, only option `a` exists",
+   "output": "['b', 'c']",
+   "errors": "none",
+   "precedence": "none",
+   "bounds": "Sorted by plain str ordering.",
+   "state": "Per root context. Reset between consecutive CliRunner.invoke / main calls; shared inside one invocation tree."
+  },
+  {
+   "id": "R12",
+   "text": "ROUTE MATRIX (relative to the main() baseline of R2-R9, R11). main(): baseline. CliRunner.invoke(cmd, args, config=..., env=..., prog_name=...): same (config reaches the context; keys do not contain prog_name; env vars still beat config; tracking starts fresh each call, with no carry-over between two invokes using the same mapping object). ctx.invoke(other_command): different, see R10 (fill only for missing kwargs; no env/prompt/callback/required; no source recorded, so no hint suffix; key path = caller path + target name). ctx.invoke(plain_function): N/A, a plain callable has no parameters so config is never consulted and the args/kwargs are forwarded unchanged. ctx.forward(other_command): different, like ctx.invoke, but forwarded ctx.params values win over config. Nested groups: same, keys include every group name below the root, e.g. 'outer.inner.cmd.opt', and a group's own options use its path, e.g. 'outer.opt'. chain=True groups: same keys and sources as non-chain, and the same sub-command used twice in a chain reads the same key both times (no exclusive consumption); different only in that sub-command contexts are created after the group callback, so unused_config_keys() inside the group callback still lists their keys (R11). result_callback: N/A for config lookup (it is a plain callable invoked via ctx.invoke); it observes full consumption via ctx.unused_config_keys().",
+   "inputs": "one config mapping routed through each entry point",
+   "output": "per cell above",
+   "errors": "none beyond R4-R6",
+   "precedence": "R3 in every 'same' cell; R10 in every ctx.invoke/forward cell.",
+   "bounds": "Custom context_class subclasses and custom Command/Group subclasses behave as 'same'.",
+   "state": "Tracking state is per root context (R11); nothing persists across routes or invocations."
+  }
+ ],
+ "traps": [
+  "Root context info_name (prog name) must be excluded from keys; using ctx.command_path or the full info_name chain makes keys differ between main(), sys.argv and CliRunner(prog_name=...).",
+  "Config absence is only None; '' / 0 / False / () are real values (unlike env var empty-string = unset, and unlike default_map where None is a real value).",
+  "Strings are never split for nargs != 1 (reusing the default_map or envvar path would split them and change the error behaviour).",
+  "For multiple and count options, any CLI occurrence replaces config entirely; merging or adding is wrong.",
+  "A non-bool flag with config False/unrecognised falls through to the next source instead of yielding False (envvar semantics differ); int values must not crash str_to_bool.",
+  "CONFIG must rank between ENVIRONMENT and DEFAULT_MAP: otherwise it fails to suppress prompts, fails to trigger the deprecation warning, and wrongly loses or wins feature-switch arbitration.",
+  "Consumed-key state must be per root context; storing it on the mapping, Command, or module level leaks across CliRunner.invoke calls.",
+  "flatten_config must reject duplicates produced by a dotted literal key plus nesting even when the values are equal, and must not escape dots.",
+  "ctx.invoke/forward fill defaults without calling consume_value, so config must be wired there separately, using the sub-context path (caller path + target name).",
+  "The config hint suffix depends on the CONFIG source only; CLI-sourced errors in the same command must stay unchanged."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ],
+ "shortcuts": [
+  "Patch only Parameter/Option.consume_value: ctx.invoke and ctx.forward (which call get_default/type_cast_value directly) then ignore config, violating R10 and the R12 matrix.",
+  "Merge the config mapping into ctx.default_map at Context creation: wrong source (DEFAULT_MAP), wrong precedence against prompt and default_map, None treated as present, strings split for nargs, and R9/R11 impossible.",
+  "Derive keys from ctx.info_name only, ctx.command_path, or including the root name: breaks nested groups, chain=True, ctx.invoke sub-contexts and CliRunner prog_name independence (R2, R12).",
+  "Keep the consumed-key set on the config mapping, Command object or a module global: leaks across consecutive CliRunner.invoke calls and is not shared with chain/ctx.invoke sub-contexts (R11).",
+  "Only add ParameterSource.CONFIG at the end of the enum or leave comparisons untouched: prompts are not suppressed, deprecation warnings are skipped and feature-switch arbitration is wrong (R3, R6)."
+ ]
+}

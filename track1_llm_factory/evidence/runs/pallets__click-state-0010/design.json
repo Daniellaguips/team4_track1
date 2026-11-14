@@ -1,0 +1,176 @@
+{
+ "feature": "Invocation ledger: an opt-in, tree-wide, chronological record of what a CLI run did (command runs, ctx.invoke/ctx.forward calls, deprecation notices, result callbacks, user events), exposed on Context and on CliRunner results",
+ "summary": "A Context tree can be switched into 'ledger' mode. Every context in the tree then shares one append-only, chronological record of automatic entries (command run, call, forward, result, command/param deprecation) plus user-recorded events. `ctx.ledger` returns an immutable snapshot, `Context.record_event` adds custom entries, a `ledger_option` decorator can enable it from the command line and print it at the end, and `CliRunner` can enable it and returns it as `Result.ledger`. Each main() or CliRunner.invoke call starts with an empty ledger. Nested groups, chain=True groups, ctx.invoke(Command), ctx.forward, result callbacks and custom context_class/command subclasses must all contribute to the same ledger, and nothing changes when the feature is off.",
+ "public_api": [
+  "click.Context(..., ledger: bool | None = None) -- new LAST keyword-only-in-practice parameter; positional order of existing parameters is unchanged",
+  "click.Context.ledger_enabled -> bool (read-only property)",
+  "click.Context.ledger -> tuple[tuple[str, str, str], ...] (read-only property, snapshot)",
+  "click.Context.record_event(kind: str, name: str) -> None",
+  "click.ledger_option(*param_decls, **kwargs) decorator, exported from the click package",
+  "click.testing.CliRunner(..., ledger: bool = False) -- new last constructor parameter",
+  "click.testing.Result.ledger -> tuple[tuple[str, str, str], ...] and a new last constructor keyword `ledger=()`"
+ ],
+ "keywords": [
+  "ledger",
+  "record_event",
+  "ledger_enabled",
+  "ledger_option",
+  "trace-ledger",
+  "Result.ledger",
+  "context_class",
+  "_make_sub_context",
+  "forward",
+  "result_callback",
+  "deprecated"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "Enablement is a property of a whole context tree, not of one context. A context created without a parent is a root. A root is enabled iff its `ledger` argument is True (None and False both mean disabled). For a context created with a parent, the `ledger` argument is ignored: it reports the same enabled state as the rest of its tree. If the tree is switched on later (see R9), every context of that tree, including contexts that already existed, reports `ledger_enabled` True from that moment on. `ledger_enabled` is read-only (assigning raises the normal AttributeError).",
+   "inputs": "Context(cmd, ledger=True/False/None); child Context(cmd, parent=p, ledger=True/False)",
+   "output": "ctx.ledger_enabled is a bool. Root: True only for ledger=True. Child: always equal to the tree's current state, never to its own argument.",
+   "errors": "none",
+   "precedence": "A child's own `ledger` argument never overrides the tree state (so Context(child_cmd, parent=disabled_root, ledger=True).ledger_enabled is False, and with an enabled root and ledger=False it is True). Interacts with R9: a later switch-on by ledger_option beats an earlier ledger=False on the root.",
+   "bounds": "n/a",
+   "state": "The enabled flag is shared by the whole tree and is never copied at child-creation time. A new root always starts disabled-or-enabled purely from its own argument; it never inherits from the 'current context' or from a previously run root."
+  },
+  {
+   "id": "R2",
+   "text": "`ctx.ledger` returns a tuple of 3-tuples `(kind, name, path)` of str, in the chronological order the entries were recorded. All contexts of one tree (root, subcommand contexts, sub-contexts made by ctx.invoke(Command)/ctx.forward, contexts made by a custom context_class) read and append to ONE shared ledger. When the tree is disabled, `ctx.ledger` is `()` and nothing is ever recorded. The returned tuple is a snapshot: entries recorded after it was read never appear in it, and the snapshot itself is immutable. A context created with no parent (for example a fresh `other_cmd.main(...)` or `make_context(parent=None)` called from inside a callback) has its own separate, initially empty ledger that is NOT merged into the outer tree's ledger. `path` is the `info_name` of every context from the root down to the context the entry belongs to, joined by single spaces, skipping any context whose info_name is None (root of CliRunner run with a command named 'cli' gives 'cli'; its subcommand 'sub' gives 'cli sub'). It uses info names, not `Context.command_path`, so no usage pieces such as '[OPTIONS]' appear. `name` is `ctx.command.name` (or '' if None) for every automatic kind, which can differ from the last path component when the command is registered under another name (for example `group.add_command(cmd, 'alias')` gives name='real-name', path='cli alias').",
+   "inputs": "any enabled tree",
+   "output": "tuple of (kind, name, path) 3-tuples; () if disabled",
+   "errors": "none",
+   "precedence": "n/a",
+   "bounds": "Empty ledger is `()` (a tuple, not a list or None).",
+   "state": "Per tree, append-only for the life of the root context. Not cleared by ctx.close(), by leaving a `with ctx:` block, or by ctx.exit(). Reading it twice with no events in between returns equal tuples."
+  },
+  {
+   "id": "R3",
+   "text": "Automatic kinds `invoke` and `result`. (a) One `invoke` entry is recorded each time a command's own invoke step runs for an enabled context: the root command, every group (when it dispatches to a subcommand, and when it runs because invoke_without_command is set and no subcommand was given), every subcommand, and every command of a chain=True group. It is recorded before that command's deprecation notice (R4) and before its callback runs. It is not recorded when the group fails before running its own invoke step: a non-chain group whose subcommand name cannot be resolved (NoSuchCommand), a group without invoke_without_command called without a subcommand ('Missing command.'), or no_args_is_help. A chain=True group DOES record its own `invoke` entry before the unknown subcommand fails. (b) One `result` entry is recorded for a group each time its result callback is about to run, whether one or several `@group.result_callback()` decorators were stacked (exactly one entry, not one per decorator), and also when invoke_without_command runs the group alone. It is recorded after the group's subcommand(s) finished and before the result callback body runs. Groups without a result callback record no `result` entry. A failing subcommand (exception) means no `result` entry. A custom Command/Group subclass whose `invoke` override calls `super().invoke(ctx)` produces exactly the same single `invoke` entry as the stock class.",
+   "inputs": "any run through main() / CliRunner.invoke / make_context+invoke",
+   "output": "e.g. root group 'cli' with result callback and subcommand 'sub': [('invoke','cli','cli'), ('invoke','sub','cli sub'), ('result','cli','cli')]",
+   "errors": "none",
+   "precedence": "Interacts with R4: for the same command, the `invoke` entry comes first, then its `deprecated_command` entry. Interacts with R2: name/path split as defined there (alias registration).",
+   "bounds": "Chain mode order: the group's `invoke` first, then (see R4) all parse-time entries of every chained subcommand, then each subcommand's `invoke` in command-line order, then one `result` entry. Non-chain order: group `invoke`, then the subcommand's parse-time entries, then subcommand `invoke`, then `result`.",
+   "state": "Entries are recorded at the moment the step happens; a snapshot taken inside the group's callback therefore contains the group's `invoke` entry but no subcommand entry yet."
+  },
+  {
+   "id": "R4",
+   "text": "Deprecation entries. Whenever Click emits the red 'DeprecationWarning: ...' message for a deprecated command, one `deprecated_command` entry is recorded with name=command name and path=that command's context path; whenever it emits that message for a deprecated parameter (option or argument, value supplied by command line, environment variable or prompt), one `deprecated_param` entry is recorded with name=`param.name` and path=the path of the context that is parsing it. An entry is recorded exactly when a message is echoed, including in resilient_parsing contexts, and never when no message is echoed (defaults and default_map values record nothing). The wording and stderr output of the messages are unchanged. Parameter notices happen during parsing, so they appear before the `invoke` entry of the same command; command notices appear right after that command's `invoke` entry. In a chain=True group, all subcommands are parsed before any is run, so the `deprecated_param` entries of every chained subcommand (in command-line order, within one command in the order the options were processed) come after the group's own `invoke` (and its `deprecated_command`) and before the first subcommand `invoke` entry.",
+   "inputs": "deprecated=True/str on a Command, Option or Argument",
+   "output": "e.g. `cli old --flag` with old(deprecated=True) and --flag(deprecated=True): [('invoke','cli','cli'), ('deprecated_param','flag','cli old'), ('invoke','old','cli old'), ('deprecated_command','old','cli old')]",
+   "errors": "none",
+   "precedence": "Interacts with R3: invoke first, then deprecated_command. Interacts with R9: if the ledger is switched on by ledger_option while parameters are being processed, parameter notices processed earlier are not recorded (no back-fill).",
+   "bounds": "ctx.invoke(other_command) does not echo a command deprecation notice today and must not start to; therefore no `deprecated_command` entry from it (see R5).",
+   "state": "Same shared tree ledger; one entry per echoed message even if the same parameter is given repeatedly (one message per processing, as today)."
+  },
+  {
+   "id": "R5",
+   "text": "`ctx.invoke` and `ctx.forward` entries. When `ctx.invoke(cmd, ...)` is called with a Command, one `call` entry is recorded with name=cmd.name (or ''), path=path of the context created for it (current path + ' ' + cmd.name; the new context's info_name is cmd.name), recorded immediately before cmd's callback executes, after parameter defaults were filled in. When `ctx.forward(cmd, ...)` is called, exactly one `forward` entry (same name/path rule) is recorded at that same moment and NO `call` entry, even though forward delegates to invoke. `ctx.invoke(plain_function, ...)` records nothing. Neither records `invoke`, `deprecated_command` or `deprecated_param` entries for the target command. If the call fails before the callback is reached (target has no callback -> TypeError; forward given a non-Command -> TypeError; a default fails type conversion -> BadParameter), nothing is recorded for that call. Exceptions raised inside the target's callback do not remove the entry already recorded. Entries are recorded on the shared tree ledger of the calling context, so nesting (a callback reached through ctx.invoke itself calling ctx.invoke) yields paths like 'cli a b'.",
+   "inputs": "ctx.invoke(Command, **kw), ctx.forward(Command, **kw), ctx.invoke(function)",
+   "output": "ctx.invoke(other) from the callback of 'cli sub': ('call','other','cli sub other'); ctx.forward(other): ('forward','other','cli sub other')",
+   "errors": "Existing errors unchanged: TypeError('The given command does not have a callback that can be invoked.') and TypeError('Callback is not a command.'); no entry is recorded when they are raised.",
+   "precedence": "forward beats call: a forward produces only the `forward` entry. A disabled tree records nothing for either.",
+   "bounds": "Result callbacks are invoked through ctx.invoke with a plain function and therefore never produce `call` entries.",
+   "state": "Shared with the whole tree; the sub-context created for the call joins the caller's tree and reports the same ledger_enabled."
+  },
+  {
+   "id": "R6",
+   "text": "`ctx.record_event(kind, name)` appends the entry `(kind, name, path-of-ctx)` to the shared ledger and returns None. Validation happens in this order and ALWAYS, even when the tree is disabled: (1) if kind or name is not a `str` -> TypeError; (2) if kind == '' -> ValueError; (3) if kind is one of the reserved kinds `invoke`, `call`, `forward`, `result`, `deprecated_command`, `deprecated_param` -> ValueError. `name` may be the empty string. When the tree is disabled, a valid call is a silent no-op (the ledger stays `()`). User entries are interleaved chronologically with automatic ones and are visible to every context of the tree.",
+   "inputs": "record_event('audit', 'x')",
+   "output": "ledger gains ('audit','x','cli sub') when called from sub's callback",
+   "errors": "TypeError('Ledger kind and name must be strings.') ; ValueError('Ledger kind must not be empty.') ; ValueError(\"'invoke' is a reserved ledger kind.\") (the kind is formatted with !r, e.g. \"'result' is a reserved ledger kind.\")",
+   "precedence": "Type check beats empty check beats reserved check: record_event('', 1) raises the TypeError; record_event('', 'x') raises the empty-kind ValueError.",
+   "bounds": "Kinds are case-sensitive: 'Invoke' is allowed. Whitespace-only kind ' ' is non-empty and allowed.",
+   "state": "Entries recorded by user code survive until the root is discarded; they are not deduplicated (calling twice records two entries)."
+  },
+  {
+   "id": "R7",
+   "text": "Enablement sources for a root context created by `Command.main`, `Command.make_context` or `CliRunner.invoke`, from highest to lowest precedence: (1) an explicit non-None `ledger=` keyword passed to `main()`/`make_context()`/`CliRunner.invoke()`; (2) `CliRunner(ledger=True)` (only applies to runs started by that runner, only when `invoke` got no non-None `ledger=`; a runner constructed with ledger=False passes nothing and thereby does not override anything); (3) `ledger` key of the command's `context_settings`; (4) default: disabled. `ledger=None` passed explicitly counts as 'not given'. Consequences: `runner.invoke(cli, ledger=False)` disables even for `CliRunner(ledger=True)` and even for context_settings ledger True; `CliRunner(ledger=True)` enables even when context_settings has ledger False; `CliRunner(ledger=False)` plus context_settings ledger True is enabled. ledger_option (R9) can additionally switch a disabled tree on after creation but never switches an enabled tree off.",
+   "inputs": "ledger kwarg, CliRunner(ledger=), context_settings={'ledger': ...}",
+   "output": "see precedence list",
+   "errors": "none; a Context subclass whose __init__ rejects an unexpected `ledger` keyword only fails if a ledger value is actually passed to it (a run that passes none never passes the keyword)",
+   "precedence": "kwarg > CliRunner(ledger=True) > context_settings > False; ledger_option can only add 'on' afterwards.",
+   "bounds": "Only exact True enables a root; the constructor flag is a bool.",
+   "state": "The runner stores only its constructor flag; no ledger state lives on the runner between invoke calls."
+  },
+  {
+   "id": "R8",
+   "text": "`Result.ledger` is the ledger snapshot of the root context that `cli.main(...)` created for this `CliRunner.invoke` call, taken after main() finished, so it includes entries recorded while the root context was being closed. It is `()` when that root was disabled, and `()` if no root context could be created. It is populated even when the command exits non-zero, raises (catch_exceptions True or False; with False the exception propagates and no Result is returned, as today), or ends via SystemExit/Abort/click.exceptions.Exit. Contexts created as separate roots inside callbacks are not included. Two successive `runner.invoke` calls on the same runner (and the same Command object) each get an independent ledger: the second Result.ledger never contains entries from the first. `Result.__repr__` and every other Result attribute are unchanged.",
+   "inputs": "runner.invoke(cli, args, ledger=True) or CliRunner(ledger=True)",
+   "output": "tuple of entries as in R2-R6",
+   "errors": "none",
+   "precedence": "Enablement per R7.",
+   "bounds": "Result(...) constructed manually without `ledger` has `.ledger == ()`.",
+   "state": "Reset between separate invoke() calls: each call starts from an empty ledger because each run builds a new root; also true when the same Command is invoked twice in a row and when a failing run precedes a passing one."
+  },
+  {
+   "id": "R9",
+   "text": "`click.ledger_option(*param_decls, **kwargs)` attaches a flag option, default declaration `--trace-ledger`, with is_flag=True, expose_value=False, is_eager=True and default help text exactly 'Print the invocation ledger to stderr when the program ends.' (all overridable via kwargs like the other pre-configured options). When the flag is given (and the context is not resilient_parsing, in which case it does nothing) it (a) switches the whole tree on from that moment: earlier events are NOT back-filled and later ones are recorded, and (b) arranges that when the ROOT context of the tree is closed, the ledger is printed to standard error, one `click.echo(err=True)` line per entry in the form `kind<TAB>name<TAB>path`, and nothing is printed if the ledger is empty. The print happens once per tree even if several ledger_options are present and flagged in the tree, even if the root is closed via ctx.exit() (which closes twice), and after all command and result callbacks of the run completed (in a chain=True group it therefore contains all chained subcommands, not just those run before the option's own command closed). When the option sits on a subcommand, it registers on the root, not on its own context; and since the root's own `invoke` entry already happened it is absent from that ledger. When the flag is not given, the option changes nothing (it never turns an enabled tree off, never prints).",
+   "inputs": "@click.ledger_option() on a root group / command / subcommand; args like ['--trace-ledger', 'sub']",
+   "output": "stderr lines such as 'invoke\\tcli\\tcli' and 'invoke\\tsub\\tcli sub'",
+   "errors": "none",
+   "precedence": "Beats `ledger=False` from R7 (turns the tree on) but not a ledger entry already missed. `--help` is also eager: whichever of `--help` and `--trace-ledger` is on the command line first is processed first; if `--help` comes first the process exits before the ledger option is processed and nothing is printed.",
+   "bounds": "Zero-entry ledgers print no lines at all (not even an empty line).",
+   "state": "Print-once guard is per tree, so two separate CliRunner.invoke runs each print their own ledger from scratch."
+  },
+  {
+   "id": "R10",
+   "text": "Extension points. (a) A user Context subclass set as `command.context_class` (including one whose `__init__(self, *args, **kwargs)` forwards to super, and one that adds extra required-by-name keyword arguments with defaults) shares the tree ledger exactly like the stock class: child contexts Click creates through its own paths (subcommand contexts, ctx.invoke/ctx.forward sub-contexts) are created with no `ledger` argument and must still be enabled and share the ledger when the root is enabled. (b) A user Command/Group subclass (via `cls=`, `command_class`, `group_class`) overriding `invoke` or `parse_args` or `get_command`/`list_commands`, and `CommandCollection`, produce the same entries as the stock classes (a CommandCollection source command appears with its own `command.name` and the path of the name it was looked up by). (c) A subclass `invoke` that calls `super().invoke(ctx)` more than once records one `invoke` entry per super call; one that never calls super records none. (d) A subclass of Context overriding `ledger` or `ledger_enabled` is out of scope.",
+   "inputs": "context_class / command_class / group_class customisation",
+   "output": "identical entries to stock classes",
+   "errors": "none",
+   "precedence": "Interacts with R1: the subclass's own constructor arguments cannot change a child's enabled state.",
+   "bounds": "n/a",
+   "state": "Subclass instances created in separate runs never share a ledger."
+  },
+  {
+   "id": "R11",
+   "text": "ROUTE MATRIX (all about one enabled tree; 'ledger' means the shared ledger of R2). main(): SAME -- the root created by each main() call starts with an empty ledger (observable inside callbacks via get_current_context().ledger and via ledger_option's stderr output); with standalone_mode=True the ledger is lost when the process exits, so it is only observable through R9 output. CliRunner.invoke: SAME as main() plus `Result.ledger` (R8) and `ledger=`/CliRunner(ledger=) enablement (R7); each call is a fresh ledger, never carried across calls of the same runner. ctx.invoke(Command): DIFFERENT -- records a `call` entry (R5) instead of `invoke`, with no `deprecated_command`/`deprecated_param` entries; it joins the caller's ledger. ctx.invoke(plain function): N/A -- no command is run, so no entry is recorded and the ledger is unchanged (result callbacks use this route and get their own `result` entry from R3 instead). ctx.forward: DIFFERENT -- records exactly one `forward` entry and no `call` entry. Nested groups (group inside group): SAME -- every level shares the root ledger; paths grow ('cli g sub'); each level records its own `invoke`, and each level's result callback records its own `result` entry, inner before outer. chain=True groups: DIFFERENT -- parse-time (`deprecated_param`) entries of all chained subcommands precede the first subcommand `invoke` entry; one `result` entry at the end; adding a chain=True group inside a chain=True group stays an error as today (RuntimeError, unchanged), so nested-chain is N/A.",
+   "inputs": "each route as named",
+   "output": "as in the matrix",
+   "errors": "none beyond existing ones",
+   "precedence": "ctx.forward beats ctx.invoke (single entry). chain ordering beats the generic 'chronological in command-line order' intuition only for parse-time entries.",
+   "bounds": "n/a",
+   "state": "Only CliRunner.invoke and main() create fresh roots; ctx.invoke/forward/nested/chain never reset or fork the ledger."
+  },
+  {
+   "id": "R12",
+   "text": "Backward compatibility, byte-identical when the feature is not used (no `ledger=`, no CliRunner(ledger=True), no context_settings 'ledger', no ledger_option): stdout, stderr, exit codes, help pages, usage lines, error messages, `Context.to_info_dict()`, `Command.to_info_dict()` (no new keys), `Parameter.to_info_dict()`, `repr()` of Context/Command/Result, the order of existing Context.__init__ parameters, the set of parameters returned by `Command.get_params`, and the ordering of existing callbacks are unchanged. Existing public names keep working; `click.ledger_option` is added to the package exports. Importing `click` must not import any stdlib module that the module-level import allowlist test does not already permit, and no new warning (the test run turns warnings into errors) may be emitted by any existing code path. A run with the feature enabled differs from the same run with it disabled only in ledger contents and in what R9 prints; command results (return values, exit codes, stdout) are identical.",
+   "inputs": "any existing click program/test",
+   "output": "unchanged",
+   "errors": "none",
+   "precedence": "Beats every other rule: where an enabled-feature rule would change disabled-feature output, the disabled behavior wins.",
+   "bounds": "n/a",
+   "state": "Disabled trees hold no entries: `ctx.ledger == ()` after any amount of activity."
+  }
+ ],
+ "traps": [
+  "Storing the ledger per Context and copying or creating it in each child (via Context.__init__) makes nested, chained and ctx.invoke/forward sub-contexts lose or fork entries; it must be one ledger per tree.",
+  "Copying the enabled boolean to children at construction time breaks `ledger_option` turning the tree on later (existing contexts must see it) and breaks `ledger=True` passed to a child being ignored.",
+  "Keeping the ledger in a module-level/class-level list or on the CliRunner leaks entries from one CliRunner.invoke/main call into the next (R8 reset); also a Command reused across runs must not accumulate.",
+  "ctx.forward delegates to ctx.invoke, so recording inside invoke yields both `forward` and `call` (double entry); exactly one `forward` is required.",
+  "Recording `invoke` in Context.invoke or only in main() misses group dispatch, chained commands and callbacks reached through make_context; recording in Command.invoke only records subclasses that call super.",
+  "Chain mode order: all chained subcommands are parsed (parse-time deprecated_param entries) before any is invoked; recording per subcommand 'as it runs' in a naive way gives the wrong order, and the chain=True group records its `invoke` even though a later unknown subcommand fails, unlike non-chain groups.",
+  "`name` must be `command.name` while `path` uses the context info_name; with aliases (add_command(cmd, 'alias')) they differ, and `Context.command_path` must NOT be used for path because it embeds usage pieces.",
+  "record_event must validate even when the tree is disabled (an early `if not enabled: return` skips the errors); and TypeError must win over the empty-kind ValueError.",
+  "Returning the live internal list from `ctx.ledger` lets later events mutate old snapshots; it must be an immutable snapshot tuple.",
+  "ledger_option must print once, at the ROOT's close, not on its own subcommand context's close (in chain mode earlier subcommand contexts close before later ones run) and not twice when ctx.exit() closes the root and `with` exit closes it again.",
+  "context_settings['ledger'] vs make_context(**extra): runner must pass `ledger` only when it is True or explicitly given, otherwise it would clobber context_settings with False."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ],
+ "shortcuts": [
+  "Patch only Command.main to create/own a ledger and expose it on the Context: ctx.invoke/ctx.forward sub-contexts, direct make_context usage, Result.ledger, chain and nested groups are then wrong or missing (R2, R5, R8, R11).",
+  "Give every Context its own ledger list (or copy the parent's list in __init__): nested groups, chain=True and ctx.invoke(Command) sub-contexts do not see one shared chronological record, and a later switch-on by ledger_option is not seen by existing contexts (R1, R2, R9).",
+  "Record only inside Command.invoke (or only in Group.invoke): `call`/`forward` entries, `result` entries, parse-time `deprecated_param` ordering in chain mode and the 'one entry per super().invoke' behaviour of subclasses come out wrong (R3, R4, R5, R10).",
+  "Keep the ledger in a module/class-level global or on the CliRunner and clear it in CliRunner.invoke: direct main() calls and reused commands leak or lose entries, and a failing run followed by a passing one is wrong (R8, R11).",
+  "Implement forward by simply delegating to invoke (and let invoke record `call`): produces `call` instead of the required single `forward` entry (R5).",
+  "Make ledger_option print from a callback registered on its own ctx: prints too early in chain mode and for subcommand-level options, and may print twice on ctx.exit() (R9)."
+ ]
+}

@@ -1,0 +1,170 @@
+{
+ "feature": "Per-run call ledger on Context (opt-in invocation tracking)",
+ "summary": "Adds an opt-in, invocation-scoped ledger of CallRecord tuples that is shared by a root Context and all of its descendants. It records command invocations, ctx.invoke / ctx.forward of other commands, result callbacks, and emitted deprecation messages. A subclass hook `Context.on_call` and a public `Context.record_call` make it extensible. `CliRunner` can capture a fresh ledger per invoke and expose it as `Result.ledger`. The decorator `pass_ledger` hands the live ledger to callbacks. With tracking off (the default), all existing behavior stays byte-identical.",
+ "public_api": [
+  "click.CallRecord (typing.NamedTuple: kind: str, name: str | None, depth: int)",
+  "click.Context(..., track_calls: bool | None = None, ledger: list[CallRecord] | None = None) (new keyword params appended after show_default)",
+  "click.Context.ledger: list[CallRecord] | None",
+  "click.Context.record_call(kind: str, name: str | None = None) -> CallRecord | None",
+  "click.Context.on_call(record: CallRecord) -> None (no-op hook for subclasses)",
+  "click.pass_ledger (decorator; passes ctx.ledger as the first argument)",
+  "click.testing.CliRunner(..., track_calls: bool = False) (appended after capture)",
+  "click.testing.CliRunner.invoke(..., color=False, track_calls: bool | None = None, **extra) (new named param after color)",
+  "click.testing.Result.ledger: tuple[CallRecord, ...] | None (new trailing constructor kwarg ledger=None)"
+ ],
+ "keywords": [
+  "ledger",
+  "CallRecord",
+  "track_calls",
+  "record_call",
+  "on_call",
+  "pass_ledger",
+  "_make_sub_context",
+  "_process_result",
+  "handle_parse_result",
+  "forward",
+  "Result.ledger",
+  "context_class"
+ ],
+ "rules": [
+  {
+   "id": "R1",
+   "text": "`click.CallRecord` is a `typing.NamedTuple` with fields `kind` (str), `name` (str or None) and `depth` (int), in that order. It is exported from the `click` package. A CallRecord compares equal to the plain tuple with the same three values, e.g. `CallRecord('command', 'cli', 0) == ('command', 'cli', 0)`. Exactly five kinds are produced by Click itself and are reserved: 'command', 'invoke', 'forward', 'result', 'deprecated'. Every record's `depth` is the number of ancestor contexts (length of the `.parent` chain) of the context the record is attributed to, so a root context has depth 0. Introducing CallRecord must not add any new module-level import to any click module (the tests/test_imports.py allowlist stays valid).",
+   "inputs": "CallRecord('command', 'cli', 0)",
+   "output": "tuple-equal to ('command', 'cli', 0); fields accessible as .kind, .name, .depth; `click.CallRecord` importable",
+   "errors": "none",
+   "precedence": "none",
+   "bounds": "depth >= 0; name may be None when the command or info_name is None",
+   "state": "records are immutable tuples"
+  },
+  {
+   "id": "R2",
+   "text": "`Context.__init__` gains two keyword parameters at the END of its signature (after `show_default`): `track_calls: bool | None = None` and `ledger: list | None = None`. It resolves the attribute `ctx.ledger` with the following ordered table; the first matching row wins. (1) `track_calls is False` -> `ctx.ledger is None`, and any `ledger` argument is ignored (the passed list is left untouched). (2) `ledger` is not None -> `ctx.ledger` is exactly that list object (even if the parent has a different ledger). (3) The parent exists and `parent.ledger is not None` -> `ctx.ledger is parent.ledger` (the same list object, never a copy) when `track_calls` is True or None. (4) `track_calls is True` -> a new empty list. (5) otherwise -> None. Consequence: a child created with `track_calls=False` has no ledger, and its own descendants (with track_calls None) inherit None; a descendant created with `track_calls=True` under such a parent gets a new, separate list by row 4.",
+   "inputs": "Context(cmd, track_calls=..., ledger=..., parent=...)",
+   "output": "ctx.ledger per the table above",
+   "errors": "TypeError(\"'ledger' must be a list or None.\") when `ledger` is neither None nor a `list` instance (checked before the table, even when track_calls is False)",
+   "precedence": "Row 1 (track_calls=False) beats row 2 (explicit ledger), which beats row 3 (parent's ledger), which beats row 4 (fresh list). Because `make_context` merges `context_settings` only for keys not already in `extra`, a `track_calls` or `ledger` passed to `main()`/`make_context()` beats the same key in `Command.context_settings`.",
+   "bounds": "An explicit empty list [] is a valid ledger (it is not None, so tracking is enabled)",
+   "state": "The ledger list object is created once per root context and shared by identity with all descendants"
+  },
+  {
+   "id": "R3",
+   "text": "When `Command.invoke(ctx)` is entered (including via `Group.invoke`, which calls `super().invoke(ctx)`) and `ctx.ledger is not None`, the first thing it does is append `CallRecord('command', ctx.info_name, <depth of ctx>)`, BEFORE the deprecation message is echoed and BEFORE the callback runs. A record is made even when the command has `callback=None`. A group gets its 'command' record only if `Command.invoke` is actually reached: a non-chain or chain group with no subcommand and `invoke_without_command=False` fails with `Missing command.` before reaching it, so it records nothing. `--help` (which exits during parsing) and parse errors likewise record no 'command' record for that command.",
+   "inputs": "root group `cli` with subcommand `sub`, invoked as `cli sub`",
+   "output": "ledger starts with ('command','cli',0), ('command','sub',1) (see R6 for the full order)",
+   "errors": "none",
+   "precedence": "The 'command' record always precedes the 'deprecated' record of the same command (R4).",
+   "bounds": "Standalone (non-group) command invoked via main: ledger == [('command', name, 0)]",
+   "state": "Recorded at invocation time, not at context creation time"
+  },
+  {
+   "id": "R4",
+   "text": "Deprecation messages emit a 'deprecated' record, appended immediately BEFORE the message is echoed, under exactly the same conditions as the existing echo. (a) Command: in `Command.invoke`, after the 'command' record (R3), when `self.deprecated` is truthy, append `CallRecord('deprecated', self.name, depth)`. (b) Parameter: in `Parameter.handle_parse_result`, when the existing condition `self.deprecated and value is not UNSET and source < ParameterSource.DEFAULT_MAP` holds, append `CallRecord('deprecated', self.name, depth of that ctx)`, where `self.name` is the Python parameter name (e.g. 'old_opt', not '--old-opt'). A deprecated option supplied via the command line OR an environment variable (both are < DEFAULT_MAP) records; one that takes its default or default_map value records nothing. Parameter records are produced at parse time, i.e. inside `make_context`, so they precede the 'command' record of the same command, and the message text and stderr output remain byte-identical to before.",
+   "inputs": "deprecated option passed on the CLI; deprecated command invoked",
+   "output": "('deprecated','old_opt',1) before ('command','sub',1); ('command','dep',0) then ('deprecated','dep',0)",
+   "errors": "none",
+   "precedence": "R3 ordering: for one command, parameter records come first (parse time), then 'command', then the command's own 'deprecated'. In a group, the subcommand's parameter records come after the group's 'command' record, because the subcommand context is created after the group callback starts (non-chain mode).",
+   "bounds": "ctx.invoke(other_cmd) never parses, so it produces no parameter 'deprecated' records, and it never calls Command.invoke, so it produces no command 'deprecated' record",
+   "state": "One record per message echoed; no deduplication"
+  },
+  {
+   "id": "R5",
+   "text": "`Context.invoke(other_cmd, ...)` where the first argument is a `Command` appends exactly one record `CallRecord('invoke', other_cmd.name, <depth of the new sub context>)`; `Context.forward(cmd, ...)` appends exactly one record `CallRecord('forward', cmd.name, <depth of the new sub context>)` and NOT additionally an 'invoke' record, even though `forward` delegates to `invoke` internally. The record is appended after the defaults for missing kwargs have been computed and `ctx.params` updated, and immediately before the other command's callback is called. The sub context comes from `_make_sub_context`, so it shares the ledger (R2 row 3) and, if the parent's ledger is None, the record is not made. `ctx.invoke(plain_callable, ...)` appends nothing.",
+   "inputs": "ctx.invoke(other_cmd, x=1); ctx.forward(other_cmd)",
+   "output": "[... ('invoke','other',1)] / [... ('forward','other',1)]",
+   "errors": "The existing TypeError('The given command does not have a callback that can be invoked.') is raised BEFORE any record is made (so no record for a callback-less command); TypeError('Callback is not a command.') from forward likewise precedes any record",
+   "precedence": "forward vs invoke: a forwarded call yields only 'forward'. Neither 'invoke' nor 'forward' ever yields a 'command' record, since the callback is called directly rather than through Command.invoke.",
+   "bounds": "Depth is the calling context's depth + 1; a deeper chain (A invokes B, B's callback invokes C) gives depths 1 and 2 in order of occurrence",
+   "state": "Shared with the caller's ledger by identity"
+  },
+  {
+   "id": "R6",
+   "text": "Result callbacks: in `Group.invoke`, whenever `_process_result` runs and `self._result_callback is not None`, it appends exactly one `CallRecord('result', ctx.info_name, <group ctx depth>)` immediately before the result callback is invoked, once per `_process_result` call regardless of how many callbacks were stacked via `@group.result_callback()` (stacked callbacks are one wrapped function). No record when the group has no result callback. Resulting order for non-chain `cli sub`: group 'command', sub parameter 'deprecated' records, sub 'command', (sub 'deprecated'), then the group's 'result'. For nested groups, the inner group's 'result' comes before the outer group's 'result'. For `chain=True` groups: group 'command'; then all subcommand contexts are created (so ALL subcommands' parameter 'deprecated' records appear, in command-line order); then each subcommand's 'command' record (and its own command 'deprecated') in command-line order as they execute; then a single 'result'. If a later chained subcommand fails to parse, the earlier subcommands have NOT been invoked and have no 'command' records. With `invoke_without_command=True` and no subcommand, the order is group 'command' then 'result' (if a result callback exists).",
+   "inputs": "group with result_callback and subcommand(s), chain True/False",
+   "output": "e.g. chain `cli a b`: [('command','cli',0), ('command','a',1), ('command','b',1), ('result','cli',0)]",
+   "errors": "none",
+   "precedence": "Records are made at invocation time, so a UsageError while creating the 2nd chained context leaves only the group's 'command' record (plus any parameter 'deprecated' records emitted before the failure)",
+   "bounds": "Subcommand depth is group depth + 1; nested groups increase the depth per level",
+   "state": "A single list is shared across the whole tree, including all chained sub contexts"
+  },
+  {
+   "id": "R7",
+   "text": "Public `Context.record_call(kind, name=None)` validates `kind`, then (if `self.ledger is None`) returns None without appending or calling the hook; otherwise it appends `CallRecord(kind, name, <depth of self>)` to `self.ledger`, calls `self.on_call(record)` once, and returns the record. Validation happens first, so invalid kinds raise even when tracking is disabled. Click's own internal records (R3 to R6) use the same append-and-hook path but bypass the reserved-kind check.",
+   "inputs": "ctx.record_call('audit', 'db')",
+   "output": "CallRecord('audit', 'db', depth) appended and returned; None when tracking is off",
+   "errors": "ValueError('Call kind must be a non-empty string.') if kind is not a str or is empty; ValueError(\"Call kind 'command' is reserved.\") (formatted with `{kind!r}`) when kind is one of the five reserved kinds",
+   "precedence": "Validation precedes the disabled check (R2 row 1/5 does not suppress the ValueError)",
+   "bounds": "Whitespace-only kinds such as ' ' are accepted (only the empty string is rejected)",
+   "state": "Appends to the shared list; visible immediately from every context in the tree"
+  },
+  {
+   "id": "R8",
+   "text": "`Context.on_call(self, record)` is a public no-op hook called after the record has been appended to the ledger (so `record is ctx.ledger[-1]` holds inside the hook, unless the hook itself appends). It is called on the context the record is attributed to: 'command' and 'deprecated'(command) -> the command's own ctx; 'deprecated'(param) -> the ctx being parsed; 'invoke'/'forward' -> the NEW sub context created by `_make_sub_context` (so it is an instance of `type(self)` of the calling context); 'result' -> the group's ctx. Therefore a custom `context_class` (on `Command.context_class`) receives the hook for its own records, and a subclass that is the root context class also receives 'invoke'/'forward' for sub contexts of its own type. The hook is not called when the ledger is None. An exception raised by the hook propagates unchanged (it is not swallowed or wrapped) and the already-appended record stays in the ledger. If the hook itself calls `ctx.record_call(...)`, the nested record is appended after the record that triggered it.",
+   "inputs": "class AuditCtx(Context): def on_call(self, record): seen.append((type(self).__name__, record))",
+   "output": "hook receives each record once, attributed per the rule above",
+   "errors": "none (exceptions from user hook propagate)",
+   "precedence": "Append (R7) happens strictly before the hook; the hook sees the full ledger including its own record",
+   "bounds": "Subcommand with its own context_class: its 'command' record goes to that class, while the group's 'result' goes to the group ctx's class",
+   "state": "Hook is per-context-instance but the ledger it sees is the shared tree-wide list"
+  },
+  {
+   "id": "R9",
+   "text": "`CliRunner.__init__` gains `track_calls: bool = False` (appended after `capture`, stored as `self.track_calls`); `CliRunner.invoke` gains a named parameter `track_calls: bool | None = None` placed right after `color` and before `**extra`; `Result.__init__` gains `ledger: tuple | None = None` after `exc_info`. Effective tracking for an invoke is `track_calls` if it is not None, else `self.track_calls`. If effective tracking is True, `invoke` creates a brand-new empty list for THIS invoke only, passes it to `cli.main(...)` as `ledger=<that list>` (it does not pass `track_calls`), and after main finishes (normally, via SystemExit, or via a caught/uncaught exception, in the existing `finally`) sets `Result.ledger = tuple(that list)`, a snapshot containing all records made up to that point. If effective tracking is False, `Result.ledger is None` and extra kwargs are passed through untouched. Two successive invokes of the same command each produce independent ledgers with identical content (no accumulation).",
+   "inputs": "CliRunner(track_calls=True).invoke(cli, ['sub']); runner.invoke(cli, track_calls=False)",
+   "output": "result.ledger is a tuple of CallRecord; None when not tracking; () when the command's context_settings contain track_calls=False (R2 row 1 beats the supplied ledger, which stays empty)",
+   "errors": "TypeError(\"'ledger' cannot be passed to CliRunner.invoke when tracking calls.\") raised directly from `invoke` (not captured into the Result even with catch_exceptions=True, and before any isolation or invocation happens) when effective tracking is True and 'ledger' is in `**extra`. When effective tracking is False, a user `ledger=` in extra is forwarded to main unchanged and Result.ledger stays None.",
+   "precedence": "invoke(track_calls=...) beats CliRunner.track_calls (both True/False directions). A `track_calls=False` in the command's `context_settings` beats the runner-supplied ledger (R2 row 1), giving an empty tuple. A Result-level snapshot is taken in the `finally`, so a failing command (exit_code 1 from UsageError, uncaught exception with catch_exceptions=True) still reports the records made before the failure.",
+   "bounds": "An invoke that fails before any command runs (e.g. unknown subcommand: group's 'command' record exists, nothing more) reports exactly those records",
+   "state": "A fresh list per invoke; the previous Result.ledger tuples are never mutated by later invokes"
+  },
+  {
+   "id": "R10",
+   "text": "`click.pass_ledger` (in decorators.py, exported from `click`) works like `pass_obj`: the wrapped function receives `get_current_context().ledger` (the live shared list, or None when tracking is disabled) as its first positional argument, followed by the original args. It uses `update_wrapper` so `__name__`/`__doc__` are preserved. It does NOT create any record itself (it is a plain callable wrapper, so it behaves like R5's plain-callable case).",
+   "inputs": "@click.command() @click.pass_ledger def cmd(ledger): ...",
+   "output": "inside cmd, `ledger` is `ctx.ledger` (same object) containing at least the command's own ('command', name, depth) record",
+   "errors": "No new error; outside any context the existing RuntimeError('There is no active click context.') from get_current_context propagates",
+   "precedence": "Placed inside a Command callback, the ledger already contains the 'command' record for that command because R3 records before the callback runs",
+   "bounds": "Disabled tracking -> argument is None, not an empty list",
+   "state": "Live reference: later appends are visible through the object the callback holds"
+  },
+  {
+   "id": "R11",
+   "text": "ROUTE MATRIX. Compared with the baseline Context rules (R2 to R8): (a) `Command.main(track_calls=True | ledger=...)`: SAME (these kwargs go through `**extra` into the root Context via make_context; the ledger is reachable only from callbacks/hooks via ctx.ledger or pass_ledger because main returns the callback value or exits). (b) `CliRunner.invoke`: DIFFERENT -> fresh list per invoke, supplied as `ledger=`, exposed as the tuple `Result.ledger` (R9); an explicit `ledger` in extra with tracking on raises TypeError. (c) `ctx.invoke(Command)`: DIFFERENT -> one 'invoke' record, no 'command' record and no 'deprecated' records (the callback is called directly); depth = caller depth + 1. (d) `ctx.invoke(plain callable)`: N/A -> no record and no sub context, because there is no Command to attribute; Click's own internal call `ctx.invoke(self.callback, **ctx.params)` from `Command.invoke` must therefore not add records. (e) `ctx.forward(Command)`: DIFFERENT -> one 'forward' record, never also 'invoke'. (f) Nested groups: SAME sharing by identity, depth +1 per level, inner 'result' before outer 'result'. (g) `chain=True` groups: DIFFERENT -> subcommand parameter 'deprecated' records for all chained commands come before any chained 'command' record, 'command' records are made in execution order, and exactly one 'result' record follows; chained sub contexts are created with `allow_extra_args=True, allow_interspersed_args=False` but still inherit the shared ledger via parent.",
+   "inputs": "each route as described",
+   "output": "as in each route",
+   "errors": "TypeError for route (b) when 'ledger' is in extra and tracking is on; see R5 for TypeErrors on (c)/(e)",
+   "precedence": "Route (e) vs (c): forward wins as a distinct kind. Route (g) vs R6: parse-time records before invocation-time records.",
+   "bounds": "Every listed route has a defined outcome; there are no unlisted routes",
+   "state": "All routes append to the one list owned by the root context"
+  },
+  {
+   "id": "R12",
+   "text": "Backward compatibility (these behaviors stay byte-identical and are pinned by existing tests). With tracking off (the default): `ctx.ledger is None`; `Context.to_info_dict()` returns exactly the same keys and values as before (NO 'track_calls' or 'ledger' key is added); `Command.to_info_dict` and help/usage output are unchanged; `Context.__init__`, `CliRunner.__init__`, `CliRunner.invoke` and `Result.__init__` keep all existing positional parameter positions; `ctx.params` never contains ledger-related keys; callbacks receive exactly the same kwargs. With tracking ON, nothing observable apart from the ledger changes: the same stdout/stderr bytes (deprecation messages included), the same exit codes, the same return values, and the same exceptions. `Context.close()`, exiting the context manager, and `ctx.exit()` never clear or modify the ledger.",
+   "inputs": "any existing test of click with default settings; the same program with track_calls on and off",
+   "output": "identical results apart from the ledger",
+   "errors": "none beyond those specified above",
+   "precedence": "R12 constrains every other rule: no rule may alter output, exit codes, or parameter values",
+   "bounds": "Existing tests that compare whole `to_info_dict()` dictionaries must still pass without edits",
+   "state": "No module-level or class-level mutable ledger state may exist: ledgers live only on the root context's list"
+  }
+ ],
+ "traps": [
+  "Implementing `forward` by calling `invoke` naively yields an 'invoke' record instead of 'forward' (or both); exactly one 'forward' record is required.",
+  "`ctx.invoke(cmd)` calls `cmd.callback` directly and never `Command.invoke`; recording 'command' or 'deprecated' for it is wrong. Conversely, `Command.invoke` internally calls `ctx.invoke(callback)` with a plain callable, which must not add records (no double counting).",
+  "Chained groups create all sub contexts first and invoke them afterwards. Recording 'command' at context-creation time gives the wrong order and wrongly records commands that never ran when a later chained command fails to parse; parameter 'deprecated' records are parse-time and come before ALL chained 'command' records.",
+  "A copied list (`list(parent.ledger)`) or a new list per sub context breaks sharing; the ledger must be the same object by identity across the whole context tree, including `_make_sub_context` sub contexts and chained contexts.",
+  "State must reset between runs: a module-level, class-level or `Command`-level list would accumulate across `CliRunner.invoke` calls; `Result.ledger` must be an immutable snapshot tuple of a fresh per-invoke list, including when the invoke fails or the command raises SystemExit.",
+  "`track_calls=False` must beat an explicit `ledger` argument and also cut off the inherited ledger for the subtree; `track_calls=True` below a disabled parent creates a new separate list instead of sharing. The `context_settings` False vs the runner-supplied ledger case yields `Result.ledger == ()`, not None.",
+  "Stacked `@result_callback()` decorators wrap into one function and produce one 'result' record, not one per decorator; groups without a result callback produce none; inner nested 'result' precedes outer 'result'.",
+  "A group failing with `Missing command.` (not invoke_without_command) never reaches `Command.invoke`, so it must not have a 'command' record, while `invoke_without_command=True` groups record 'command' and then 'result'.",
+  "`record_call` must validate `kind` before the disabled check, and the on_call hook must run AFTER the append so the hook sees its own record in the ledger; the hook must not be called when tracking is disabled.",
+  "Adding a key to `Context.to_info_dict()` would break existing exact-dict tests; no new key may be added."
+ ],
+ "levers": [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5"
+ ]
+}

@@ -1,0 +1,19 @@
+{
+ "instance_id": "pallets__click-lazy_defaults-0323",
+ "model": "anthropic/claude-sonnet-5.5",
+ "wall_seconds": 851,
+ "model_calls": 5,
+ "attempts": 3,
+ "n_input_tokens": 415455,
+ "n_output_tokens": 142105,
+ "n_cache_tokens": 274256,
+ "cost_usd": 1.7309,
+ "ok": false,
+ "failed_stage": "gold",
+ "card": "lazy_defaults",
+ "seed": 323,
+ "prompts_version": "v6.9-noworked",
+ "lineage": {
+  "design_from": "/private/tmp/claude-503/-Users-daniella/2f2d1ae7-88c6-4960-ac24-3d8844aa1843/scratchpad/repaired-lazy-0023.json"
+ }
+}

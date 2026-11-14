@@ -1,0 +1,5 @@
+{
+ "ok": false,
+ "stage": "fairness/judge",
+ "report": "tests depend on unstated behavior:\n- LEAKAGE (minor): R10 names the implementation file ('in decorators.py') and defines pass_ledger by analogy to the existing internal behavior of pass_obj.\n- LEAKAGE (minor): R5 says the invoke record 'is made after missing keyword arguments have been filled in with their defaults'. This explains the internal flow of the existing Context.invoke instead of stating observable behavior.\n- LEAKAGE (minor): R4 and R6 describe how existing click works: 'emitted when the parameter has a value and its source is more explicit than the default map', and the order of group parsing versus subcommand parsing in chain and non-chain groups. This is a walkthrough of existing parse and invoke internals."
+}
