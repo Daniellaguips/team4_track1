@@ -1,0 +1,61 @@
+<!doctype html><html><head><meta charset="utf-8"><title>pallets__click-duration-param-type-8450ca</title>
+<style>body{font:16px/1.55 -apple-system,Segoe UI,sans-serif;max-width:900px;margin:32px auto;padding:0 20px;color:#1d1d1f}
+.card{background:#f3f6fb;border-left:4px solid #0a66c2;padding:14px 18px;border-radius:8px;margin-bottom:28px}
+.card b{color:#0a66c2} code,pre{background:#f4f4f4;border-radius:6px} pre{padding:12px;overflow:auto} code{padding:1px 4px}
+table{border-collapse:collapse} td,th{border:1px solid #ddd;padding:6px 10px} h1{margin-top:0}</style></head><body>
+<div class="card"><b>Live demo task</b> · <code>pallets__click-duration-param-type-8450ca</code><br>
+Generated just now by team4's blueprint factory (seed 101) in 48 s, with all 9 gates passed on the first attempt.<br>
+Organizer self-check: <b>gold reward 1.0</b> (F2P 16/16, P2P 37/37) · <b>untouched repo reward 0.0</b> (F2P 0/16) · <b>ALL SOUND</b><br>
+<i>Below is exactly what the AI coding agent receives. The gold patch and hidden tests are not shown to it.</i></div>
+<h1>Add a <code>Duration</code> parameter type to Click</h1>
+<p>Click ships value types such as <code>click.IntRange</code> and <code>click.DateTime</code>, but nothing for
+human-friendly time spans like <code>--timeout 1h30m</code>. Add a new parameter type, <code>Duration</code>, that
+converts such strings to <code>datetime.timedelta</code>.</p>
+<h2>Public interface</h2>
+<pre><code class="language-python">click.Duration(min: datetime.timedelta | None = None, max: datetime.timedelta | None = None)
+</code></pre>
+<ul>
+<li>Define the class in <code>click/types.py</code> as a subclass of <code>click.ParamType</code>, and export it from the
+  package so that both <code>click.Duration</code> and <code>click.types.Duration</code> refer to it.</li>
+<li><code>Duration().name</code> is <code>"duration"</code>, so the default metavar shown in help is <code>DURATION</code>
+  (e.g. <code>--timeout DURATION</code>).</li>
+<li><code>convert(value, param, ctx)</code> returns a <code>datetime.timedelta</code>.</li>
+</ul>
+<h2>Requirements</h2>
+<p><strong>R1 — Grammar.</strong> After stripping leading and trailing whitespace, a valid value is one or more
+<em>components</em> written back to back with no separators. A component is one or more ASCII digits
+(<code>0</code>–<code>9</code>, leading zeros allowed) immediately followed by exactly one lowercase unit letter.
+The available unit letters are exactly:
+   - <code>w</code> — weeks (7 days) (604800 seconds)
+   - <code>d</code> — days (86400 seconds)
+   - <code>h</code> — hours (3600 seconds)
+   - <code>m</code> — minutes (60 seconds)
+   - <code>s</code> — seconds (1 seconds)</p>
+<p>Anything else is invalid, including: the empty string, whitespace inside the value (<code>1h 30m</code>),
+signs (<code>-5m</code>), decimal points (<code>1.5h</code>), upper-case units (<code>1H</code>), unknown letters (<code>1x</code>), a unit
+without digits (<code>h</code>) and digits after the last unit (<code>1h30</code>).</p>
+<p><strong>R2 — Component order.</strong> Components must appear in strictly decreasing unit size (for example <code>1h30m</code> is valid, <code>30m1h</code> is invalid). Consequently each unit can appear at most once.</p>
+<p><strong>R3 — Digits only.</strong> A value consisting only of digits (no unit letter at all), such as <code>90</code>, is invalid: every component must carry a unit letter.</p>
+<p><strong>R4 — Value.</strong> The result is the sum of all components, as a <code>timedelta</code> with whole seconds.
+<code>0s</code> is valid and yields <code>timedelta(0)</code>.</p>
+<p><strong>R5 — Non-string input.</strong> A value that is already a <code>datetime.timedelta</code> is used as is (it is not
+re-parsed). Any other non-string value is converted with <code>str()</code> and then parsed by the rules
+above (so an <code>int</code> default such as <code>90</code> follows rule R3).</p>
+<p><strong>R6 — Bounds.</strong> <code>min</code> and <code>max</code> are inclusive limits; either may be <code>None</code> (no limit). They apply
+to every converted value, including <code>timedelta</code> values from R5. When the value is shorter than
+<code>min</code>, fail with the message <code>{n} seconds is below the minimum of {lo} seconds.</code>; when it is
+longer than <code>max</code>, fail with <code>{n} seconds is above the maximum of {hi} seconds.</code> Here <code>{n}</code>,
+<code>{lo}</code> and <code>{hi}</code> are the whole number of seconds of the value and of the limit, written as
+plain integers (for example <code>30 seconds is below the minimum of 60 seconds.</code>).</p>
+<p><strong>R7 — Invalid input message.</strong> When a value is not valid by R1–R3, fail with the message
+<code>'&lt;text&gt;' is not a valid duration.</code> where <code>&lt;text&gt;</code> is the original string value (or the <code>str()</code>
+of a non-string value) before stripping, quoted exactly as Python's <code>repr()</code> of that string
+quotes it. For example the input <code>1h1h</code> produces <code>'1h1h' is not a valid duration.</code></p>
+<p><strong>R8 — Error reporting.</strong> All failures go through the standard <code>ParamType.fail</code> mechanism
+(raising <code>click.BadParameter</code>), so on the command line they render like other invalid values,
+e.g. <code>Error: Invalid value for '--timeout': '1h1h' is not a valid duration.</code> with exit code 2.</p>
+<p><strong>R9 — Introspection.</strong> <code>to_info_dict()</code> returns the usual <code>param_type</code> and <code>name</code> entries plus
+<code>"min"</code> and <code>"max"</code>, each the limit's whole number of seconds as an <code>int</code>, or <code>None</code> when unset.
+For example <code>click.Duration(max=timedelta(hours=1)).to_info_dict()</code> is
+<code>{"param_type": "Duration", "name": "duration", "min": None, "max": 3600}</code>.</p>
+<p>Existing types and behaviour must not change.</p></body></html>
