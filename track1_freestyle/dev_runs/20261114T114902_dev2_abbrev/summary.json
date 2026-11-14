@@ -1,0 +1,29 @@
+{
+ "run_id": "20261114T114902_dev2_abbrev",
+ "pipeline": "track1-freestyle/click-blueprint-factory/1.0.0",
+ "base_commit": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+ "image": "localhost/t1-click-env:63288ad38b2a",
+ "candidates": 1,
+ "accepted": 0,
+ "first_pass_valid": 0,
+ "wall_seconds": 41.9,
+ "records": [
+  {
+   "instance_id": "pallets__click-group-command-abbreviations-f29899",
+   "family": "abbrev",
+   "knobs": {
+    "ambiguity": "alphabetical",
+    "hidden": "excluded"
+   },
+   "status": "rejected",
+   "first_pass_valid": false,
+   "wall_seconds": 41.2,
+   "attempts": 1,
+   "failed_gates": [
+    "fairness_lint",
+    "nop"
+   ],
+   "reason": "failed gates: ['fairness_lint', 'nop']"
+  }
+ ]
+}

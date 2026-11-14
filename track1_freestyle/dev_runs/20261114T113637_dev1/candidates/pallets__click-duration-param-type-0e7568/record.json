@@ -1,0 +1,47 @@
+{
+ "instance_id": "pallets__click-duration-param-type-0e7568",
+ "family": "duration",
+ "knobs": {
+  "units": "dhms",
+  "order": "descending",
+  "bare_number": "seconds"
+ },
+ "axes": {
+  "capability": "value conversion / input grammar (new ParamType)",
+  "module": "click.types (+ package export)",
+  "behavior_shape": "string grammar -> datetime.timedelta, inclusive bounds",
+  "integration": "ParamType.fail error path, metavar/help, to_info_dict, defaults"
+ },
+ "generator": "deterministic blueprint (no LLM)",
+ "model": "none",
+ "model_calls": 0,
+ "n_input_tokens": 0,
+ "n_output_tokens": 0,
+ "n_cache_tokens": 0,
+ "base_commit": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+ "code_version": "a02d7935fc6b764c4f1b151acc7dde418f5e2aae",
+ "attempts": [
+  {
+   "attempt": 1,
+   "verdict": "rejected",
+   "reason": "failed gates: ['fairness_lint']",
+   "gates": {
+    "structure": true,
+    "base_health": true,
+    "grounding": true,
+    "novelty": true,
+    "fairness_lint": false,
+    "isolation": true,
+    "gold": true,
+    "nop": true,
+    "mutation": true,
+    "full_suite_under_gold": true
+   }
+  }
+ ],
+ "repairs": [],
+ "human_edits_after_generation": [],
+ "status": "rejected",
+ "first_pass_valid": false,
+ "wall_seconds": 66.5
+}

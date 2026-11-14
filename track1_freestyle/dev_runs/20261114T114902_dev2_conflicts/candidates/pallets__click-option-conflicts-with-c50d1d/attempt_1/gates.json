@@ -1,0 +1,214 @@
+[
+ {
+  "gate": "structure",
+  "ok": true,
+  "kind": "static",
+  "detail": {
+   "errors": [],
+   "warnings": []
+  }
+ },
+ {
+  "gate": "base_health",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "passed": 2434,
+   "failed": [],
+   "collected": 2435,
+   "note": "full existing suite at base_commit inside the task image"
+  }
+ },
+ {
+  "gate": "grounding",
+  "ok": true,
+  "kind": "static",
+  "detail": {
+   "modified_existing_files": [
+    "src/click/core.py"
+   ],
+   "new_files": [],
+   "anchors": 4,
+   "touched_symbols": [
+    "src/click/core.py::Command.parse_args",
+    "src/click/core.py::Option.__init__",
+    "src/click/core.py::Option.get_error_hint",
+    "src/click/core.py::Parameter.handle_parse_result"
+   ],
+   "note": "every gold edit is anchored on text that occurs exactly once at base"
+  }
+ },
+ {
+  "gate": "novelty",
+  "ok": true,
+  "kind": "network",
+  "detail": {
+   "upstream_main": "e38188e9e205005d5af5f9e59df51904c984586a",
+   "blocking": [],
+   "github_merged_pr_hits_for_manual_review": [
+    {
+     "n": 3452,
+     "title": "platform-dependent `testing.CaptureMode` type alias",
+     "state": "closed",
+     "merged": true
+    }
+   ],
+   "github_checked": true,
+   "scope": "git grep of src/ at base and origin/main, git log -G base..main, GitHub PR search"
+  }
+ },
+ {
+  "gate": "fairness_lint",
+  "ok": false,
+  "kind": "static",
+  "detail": {
+   "problems": [
+    "asserted text not in spec: \"Error: Option '--json' cannot be used together with '--yaml'.\"",
+    "asserted text not in spec: 'True True DEFAULT_MAP'",
+    "asserted text not in spec: \"Option '--color' cannot be used together with '--plain'.\"",
+    "asserted text not in spec: \"Option '-j' / '--json' cannot be used together with '-y' / '--yaml'.\"",
+    "asserted text not in spec: \"Error: Option '--a' cannot be used together with '--b'.\""
+   ],
+   "requirements": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "n_tests": 12
+  }
+ },
+ {
+  "gate": "isolation",
+  "ok": true,
+  "kind": "static+container",
+  "detail": {
+   "problems": [],
+   "checks": [
+    "no test names/paths or harness files in spec",
+    "spec quotes <=2 gold lines",
+    "Dockerfile copies nothing from the package",
+    "image has no /solution, /tests, feature test files; /app is one commit (no upstream history); clean tree"
+   ]
+  }
+ },
+ {
+  "gate": "gold",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "reward": 1.0,
+   "f2p_passed": 12,
+   "f2p_total": 12,
+   "p2p_passed": 48,
+   "p2p_total": 48,
+   "secs": 4.8
+  }
+ },
+ {
+  "gate": "nop",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "f2p_all_reported": true,
+   "reward": 0.0,
+   "f2p_passed": 0,
+   "f2p_total": 12,
+   "p2p_passed": 48,
+   "p2p_total": 48,
+   "secs": 5.4,
+   "f2p_status_counts": {
+    "FAILED": 12
+   }
+  }
+ },
+ {
+  "gate": "mutation",
+  "ok": false,
+  "kind": "container",
+  "detail": {
+   "killed": {
+    "source_rule_flipped": true,
+    "defaults_count": true,
+    "string_split_into_chars": true,
+    "no_dedup": false,
+    "pair_order_swapped": true,
+    "checked_during_resilient": true,
+    "self_reference_not_ignored": true
+   },
+   "score": "6/7",
+   "per_mutant": {
+    "source_rule_flipped": {
+     "reward": 0.9167,
+     "f2p_passed": 11,
+     "f2p_total": 12,
+     "p2p_passed": 48,
+     "p2p_total": 48,
+     "secs": 4.8
+    },
+    "defaults_count": {
+     "reward": 0.75,
+     "f2p_passed": 9,
+     "f2p_total": 12,
+     "p2p_passed": 48,
+     "p2p_total": 48,
+     "secs": 4.7
+    },
+    "string_split_into_chars": {
+     "reward": 0.9167,
+     "f2p_passed": 11,
+     "f2p_total": 12,
+     "p2p_passed": 48,
+     "p2p_total": 48,
+     "secs": 4.6
+    },
+    "no_dedup": {
+     "reward": 1.0,
+     "f2p_passed": 12,
+     "f2p_total": 12,
+     "p2p_passed": 48,
+     "p2p_total": 48,
+     "secs": 4.7
+    },
+    "pair_order_swapped": {
+     "reward": 0.5833,
+     "f2p_passed": 7,
+     "f2p_total": 12,
+     "p2p_passed": 48,
+     "p2p_total": 48,
+     "secs": 4.7
+    },
+    "checked_during_resilient": {
+     "reward": 0.9167,
+     "f2p_passed": 11,
+     "f2p_total": 12,
+     "p2p_passed": 48,
+     "p2p_total": 48,
+     "secs": 4.7
+    },
+    "self_reference_not_ignored": {
+     "reward": 0.9167,
+     "f2p_passed": 11,
+     "f2p_total": 12,
+     "p2p_passed": 48,
+     "p2p_total": 48,
+     "secs": 4.6
+    }
+   }
+  }
+ },
+ {
+  "gate": "full_suite_under_gold",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "tail": [
+    "........................................................................ [ 99%]",
+    ".......................                                                  [100%]",
+    "2446 passed, 24 skipped, 31000 deselected, 1 xfailed in 6.09s"
+   ],
+   "note": "entire existing suite + feature tests with gold applied (extra, not graded)"
+  }
+ }
+]

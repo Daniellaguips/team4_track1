@@ -1,0 +1,12 @@
+{
+    "task": {
+        "path": "generated_tasks/pallets__click-prompt-max-attempts-ac2a26"
+    },
+    "trial_name": "pallets__click-prompt-max-attemp__AUzqwpq",
+    "trials_dir": "/u/erdos/csga2/yt35/project/track1_freestyle/evidence/selfcheck_runs/pallets__click-prompt-max-attempts-ac2a26/oracle/2026-11-14__12-04-34",
+    "environment": {
+        "type": "podman",
+        "delete": false
+    },
+    "job_id": "2f9bc7ee-5e2b-4f48-974b-f38fc8920449"
+}

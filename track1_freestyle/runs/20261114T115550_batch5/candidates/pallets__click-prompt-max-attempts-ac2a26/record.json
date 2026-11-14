@@ -1,0 +1,47 @@
+{
+ "instance_id": "pallets__click-prompt-max-attempts-ac2a26",
+ "family": "attempts",
+ "knobs": {
+  "empty": "free",
+  "exhausted": "usage_error"
+ },
+ "axes": {
+  "capability": "interactive input state machine (retry budget)",
+  "module": "click.termui.prompt/confirm + click.core.Option.prompt_for_value",
+  "behavior_shape": "loop with failure counter across conversion / confirmation / empty paths",
+  "integration": "Option prompt plumbing (typed values, boolean flags, confirmation_prompt), Abort/UsageError exit codes"
+ },
+ "generator": "deterministic blueprint (no LLM)",
+ "model": "none",
+ "model_calls": 0,
+ "n_input_tokens": 0,
+ "n_output_tokens": 0,
+ "n_cache_tokens": 0,
+ "base_commit": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+ "code_version": "ddeb3d49236104d74ab51e0e6083a2798648bdc2",
+ "attempts": [
+  {
+   "attempt": 1,
+   "verdict": "accepted",
+   "reason": "all gates passed",
+   "gates": {
+    "structure": true,
+    "base_health": true,
+    "grounding": true,
+    "novelty": true,
+    "fairness_lint": true,
+    "isolation": true,
+    "gold": true,
+    "nop": true,
+    "mutation": true,
+    "full_suite_under_gold": true
+   }
+  }
+ ],
+ "repairs": [],
+ "human_edits_after_generation": [],
+ "status": "accepted",
+ "first_pass_valid": true,
+ "wall_seconds": 54.2,
+ "package": "generated_tasks/pallets__click-prompt-max-attempts-ac2a26"
+}

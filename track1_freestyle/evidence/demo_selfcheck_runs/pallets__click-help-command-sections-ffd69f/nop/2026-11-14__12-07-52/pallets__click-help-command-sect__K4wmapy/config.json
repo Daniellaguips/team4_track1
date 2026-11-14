@@ -1,0 +1,15 @@
+{
+    "task": {
+        "path": "demo_tasks/pallets__click-help-command-sections-ffd69f"
+    },
+    "trial_name": "pallets__click-help-command-sect__K4wmapy",
+    "trials_dir": "/u/erdos/csga2/yt35/project/track1_freestyle/evidence/demo_selfcheck_runs/pallets__click-help-command-sections-ffd69f/nop/2026-11-14__12-07-52",
+    "agent": {
+        "name": "nop"
+    },
+    "environment": {
+        "type": "podman",
+        "delete": false
+    },
+    "job_id": "59a63996-3977-422f-ba69-ac88cebac226"
+}

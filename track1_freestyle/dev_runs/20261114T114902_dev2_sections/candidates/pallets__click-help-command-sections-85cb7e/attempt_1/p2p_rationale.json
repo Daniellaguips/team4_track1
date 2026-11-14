@@ -1,0 +1,202 @@
+{
+ "per_symbol": {
+  "src/click/core.py::Command.__init__": [
+   "tests/test_abort_interrupt.py::test_interrupt_while_exiting_after_success",
+   "tests/test_abort_interrupt.py::test_interrupt_while_reporting_abort[body-1]",
+   "tests/test_abort_interrupt.py::test_interrupt_while_reporting_abort[body-2]",
+   "tests/test_abort_interrupt.py::test_interrupt_while_reporting_abort[body-None]",
+   "tests/test_abort_interrupt.py::test_interrupt_while_reporting_abort[prompt-1]",
+   "tests/test_abort_interrupt.py::test_interrupt_while_reporting_abort[prompt-None]",
+   "tests/test_abort_interrupt.py::test_interrupt_while_reporting_error",
+   "tests/test_abort_interrupt.py::test_late_interrupt_with_disabled_standalone_mode",
+   "tests/test_arguments.py::test_argument_custom_class_can_override_type_cast_value_and_never_sees_unset[argument_kwargs0-pass_argv0]",
+   "tests/test_arguments.py::test_argument_custom_class_can_override_type_cast_value_and_never_sees_unset[argument_kwargs1-pass_argv1]",
+   "tests/test_arguments.py::test_argument_custom_class_can_override_type_cast_value_and_never_sees_unset[argument_kwargs2-pass_argv2]",
+   "tests/test_arguments.py::test_argument_custom_class_can_override_type_cast_value_and_never_sees_unset[argument_kwargs3-pass_argv3]"
+  ],
+  "src/click/core.py::Group.format_commands": [
+   "tests/test_basic.py::test_basic_group",
+   "tests/test_basic.py::test_summary_line",
+   "tests/test_commands.py::test_auto_shorthelp",
+   "tests/test_commands.py::test_deprecated_help_text_is_not_translated",
+   "tests/test_formatting.py::test_removing_multiline_marker",
+   "tests/test_basic.py::test_hidden_command",
+   "tests/test_basic.py::test_hidden_group"
+  ],
+  "src/click/formatting.py::HelpFormatter.write_dl": [
+   "tests/test_arguments.py::test_argument_help_deprecated_without_help_lists_all",
+   "tests/test_arguments.py::test_argument_help_empty_string_lists_all",
+   "tests/test_arguments.py::test_argument_help_lists_undocumented_arguments",
+   "tests/test_basic.py::test_choice_option",
+   "tests/test_basic.py::test_datetime_option_default",
+   "tests/test_basic.py::test_param_named_help[custom-flags]",
+   "tests/test_basic.py::test_param_named_help[option]",
+   "tests/test_commands.py::test_help_param_priority",
+   "tests/test_context.py::test_no_state_leaks",
+   "tests/test_custom_classes.py::test_context_formatter_class",
+   "tests/test_normalization.py::test_choice_normalization",
+   "tests/test_options.py::test_choice_default_rendering[choices2-None-None]"
+  ],
+  "src/click/core.py::Command.get_short_help_str": [
+   "tests/test_commands.py::test_deprecated_help_text_is_not_translated",
+   "tests/test_basic.py::test_basic_group",
+   "tests/test_basic.py::test_summary_line",
+   "tests/test_commands.py::test_auto_shorthelp",
+   "tests/test_formatting.py::test_removing_multiline_marker",
+   "tests/test_shell_completion.py::test_add_different_name",
+   "tests/test_shell_completion.py::test_chained",
+   "tests/test_shell_completion.py::test_group",
+   "tests/test_shell_completion.py::test_nested_group[args0--expect0]",
+   "tests/test_shell_completion.py::test_nested_group[args1--expect1]",
+   "tests/test_shell_completion.py::test_nested_group[args2--expect2]"
+  ]
+ },
+ "why": {
+  "tests/test_abort_interrupt.py::test_interrupt_while_exiting_after_success": [
+   "src/click/core.py::Command.__init__"
+  ],
+  "tests/test_abort_interrupt.py::test_interrupt_while_reporting_abort[body-1]": [
+   "src/click/core.py::Command.__init__"
+  ],
+  "tests/test_abort_interrupt.py::test_interrupt_while_reporting_abort[body-2]": [
+   "src/click/core.py::Command.__init__"
+  ],
+  "tests/test_abort_interrupt.py::test_interrupt_while_reporting_abort[body-None]": [
+   "src/click/core.py::Command.__init__"
+  ],
+  "tests/test_abort_interrupt.py::test_interrupt_while_reporting_abort[prompt-1]": [
+   "src/click/core.py::Command.__init__"
+  ],
+  "tests/test_abort_interrupt.py::test_interrupt_while_reporting_abort[prompt-None]": [
+   "src/click/core.py::Command.__init__"
+  ],
+  "tests/test_abort_interrupt.py::test_interrupt_while_reporting_error": [
+   "src/click/core.py::Command.__init__"
+  ],
+  "tests/test_abort_interrupt.py::test_late_interrupt_with_disabled_standalone_mode": [
+   "src/click/core.py::Command.__init__"
+  ],
+  "tests/test_arguments.py::test_argument_custom_class_can_override_type_cast_value_and_never_sees_unset[argument_kwargs0-pass_argv0]": [
+   "src/click/core.py::Command.__init__"
+  ],
+  "tests/test_arguments.py::test_argument_custom_class_can_override_type_cast_value_and_never_sees_unset[argument_kwargs1-pass_argv1]": [
+   "src/click/core.py::Command.__init__"
+  ],
+  "tests/test_arguments.py::test_argument_custom_class_can_override_type_cast_value_and_never_sees_unset[argument_kwargs2-pass_argv2]": [
+   "src/click/core.py::Command.__init__"
+  ],
+  "tests/test_arguments.py::test_argument_custom_class_can_override_type_cast_value_and_never_sees_unset[argument_kwargs3-pass_argv3]": [
+   "src/click/core.py::Command.__init__"
+  ],
+  "tests/test_arguments.py::test_argument_help_deprecated_without_help_lists_all": [
+   "src/click/formatting.py::HelpFormatter.write_dl"
+  ],
+  "tests/test_arguments.py::test_argument_help_empty_string_lists_all": [
+   "src/click/formatting.py::HelpFormatter.write_dl"
+  ],
+  "tests/test_arguments.py::test_argument_help_lists_undocumented_arguments": [
+   "src/click/formatting.py::HelpFormatter.write_dl"
+  ],
+  "tests/test_basic.py::test_basic_group": [
+   "src/click/core.py::Group.format_commands",
+   "src/click/core.py::Command.get_short_help_str"
+  ],
+  "tests/test_basic.py::test_choice_option": [
+   "src/click/formatting.py::HelpFormatter.write_dl"
+  ],
+  "tests/test_basic.py::test_datetime_option_default": [
+   "src/click/formatting.py::HelpFormatter.write_dl"
+  ],
+  "tests/test_basic.py::test_hidden_command": [
+   "src/click/core.py::Group.format_commands"
+  ],
+  "tests/test_basic.py::test_hidden_group": [
+   "src/click/core.py::Group.format_commands"
+  ],
+  "tests/test_basic.py::test_param_named_help[custom-flags]": [
+   "src/click/formatting.py::HelpFormatter.write_dl"
+  ],
+  "tests/test_basic.py::test_param_named_help[option]": [
+   "src/click/formatting.py::HelpFormatter.write_dl"
+  ],
+  "tests/test_basic.py::test_summary_line": [
+   "src/click/core.py::Group.format_commands",
+   "src/click/core.py::Command.get_short_help_str"
+  ],
+  "tests/test_commands.py::test_auto_shorthelp": [
+   "src/click/core.py::Group.format_commands",
+   "src/click/core.py::Command.get_short_help_str"
+  ],
+  "tests/test_commands.py::test_deprecated_help_text_is_not_translated": [
+   "src/click/core.py::Group.format_commands",
+   "src/click/core.py::Command.get_short_help_str"
+  ],
+  "tests/test_commands.py::test_help_param_priority": [
+   "src/click/formatting.py::HelpFormatter.write_dl"
+  ],
+  "tests/test_context.py::test_no_state_leaks": [
+   "src/click/formatting.py::HelpFormatter.write_dl"
+  ],
+  "tests/test_custom_classes.py::test_context_formatter_class": [
+   "src/click/formatting.py::HelpFormatter.write_dl"
+  ],
+  "tests/test_formatting.py::test_removing_multiline_marker": [
+   "src/click/core.py::Group.format_commands",
+   "src/click/core.py::Command.get_short_help_str"
+  ],
+  "tests/test_normalization.py::test_choice_normalization": [
+   "src/click/formatting.py::HelpFormatter.write_dl"
+  ],
+  "tests/test_options.py::test_choice_default_rendering[choices2-None-None]": [
+   "src/click/formatting.py::HelpFormatter.write_dl"
+  ],
+  "tests/test_shell_completion.py::test_add_different_name": [
+   "src/click/core.py::Command.get_short_help_str"
+  ],
+  "tests/test_shell_completion.py::test_chained": [
+   "src/click/core.py::Command.get_short_help_str"
+  ],
+  "tests/test_shell_completion.py::test_group": [
+   "src/click/core.py::Command.get_short_help_str"
+  ],
+  "tests/test_shell_completion.py::test_nested_group[args0--expect0]": [
+   "src/click/core.py::Command.get_short_help_str"
+  ],
+  "tests/test_shell_completion.py::test_nested_group[args1--expect1]": [
+   "src/click/core.py::Command.get_short_help_str"
+  ],
+  "tests/test_shell_completion.py::test_nested_group[args2--expect2]": [
+   "src/click/core.py::Command.get_short_help_str"
+  ]
+ },
+ "touched": {
+  "src/click/core.py::Command.__init__": {
+   "lines": [
+    1036,
+    1078
+   ],
+   "reason": "encloses gold hunk"
+  },
+  "src/click/core.py::Group.format_commands": {
+   "lines": [
+    1978,
+    2004
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  },
+  "src/click/formatting.py::HelpFormatter.write_dl": {
+   "lines": [
+    229,
+    271
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  },
+  "src/click/core.py::Command.get_short_help_str": {
+   "lines": [
+    1243,
+    1257
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  }
+ }
+}

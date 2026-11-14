@@ -1,0 +1,38 @@
+[
+ [
+  "abbrev",
+  {
+   "ambiguity": "alphabetical",
+   "hidden": "included"
+  }
+ ],
+ [
+  "sections",
+  {
+   "default": "last",
+   "order": "alphabetical"
+  }
+ ],
+ [
+  "attempts",
+  {
+   "empty": "free",
+   "exhausted": "usage_error"
+  }
+ ],
+ [
+  "conflicts",
+  {
+   "report": "all",
+   "sources": "explicit"
+  }
+ ],
+ [
+  "duration",
+  {
+   "bare_number": "seconds",
+   "order": "any",
+   "units": "wdhms"
+  }
+ ]
+]

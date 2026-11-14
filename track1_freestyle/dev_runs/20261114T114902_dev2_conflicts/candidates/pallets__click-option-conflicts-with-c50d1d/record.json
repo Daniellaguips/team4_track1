@@ -1,0 +1,46 @@
+{
+ "instance_id": "pallets__click-option-conflicts-with-c50d1d",
+ "family": "conflicts",
+ "knobs": {
+  "report": "first",
+  "sources": "commandline"
+ },
+ "axes": {
+  "capability": "cross-parameter constraint validation",
+  "module": "click.core.Option.__init__ + Command.parse_args",
+  "behavior_shape": "post-processing check over parameter-source state, pair detection/dedup",
+  "integration": "ParameterSource (command line/env/default/default_map), get_error_hint, resilient parsing, callback ordering"
+ },
+ "generator": "deterministic blueprint (no LLM)",
+ "model": "none",
+ "model_calls": 0,
+ "n_input_tokens": 0,
+ "n_output_tokens": 0,
+ "n_cache_tokens": 0,
+ "base_commit": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+ "code_version": "a8fa9d414e4bdf74f87cbeaf653047167802558b",
+ "attempts": [
+  {
+   "attempt": 1,
+   "verdict": "rejected",
+   "reason": "failed gates: ['fairness_lint', 'mutation']",
+   "gates": {
+    "structure": true,
+    "base_health": true,
+    "grounding": true,
+    "novelty": true,
+    "fairness_lint": false,
+    "isolation": true,
+    "gold": true,
+    "nop": true,
+    "mutation": false,
+    "full_suite_under_gold": true
+   }
+  }
+ ],
+ "repairs": [],
+ "human_edits_after_generation": [],
+ "status": "rejected",
+ "first_pass_valid": false,
+ "wall_seconds": 56.6
+}

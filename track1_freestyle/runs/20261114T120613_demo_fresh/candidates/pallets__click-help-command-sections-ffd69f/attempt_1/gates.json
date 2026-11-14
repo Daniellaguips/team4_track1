@@ -1,0 +1,206 @@
+[
+ {
+  "gate": "structure",
+  "ok": true,
+  "kind": "static",
+  "detail": {
+   "errors": [],
+   "warnings": []
+  }
+ },
+ {
+  "gate": "base_health",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "passed": 2434,
+   "failed": [],
+   "collected": 2435,
+   "note": "full existing suite at base_commit inside the task image"
+  }
+ },
+ {
+  "gate": "grounding",
+  "ok": true,
+  "kind": "static",
+  "detail": {
+   "modified_existing_files": [
+    "src/click/core.py"
+   ],
+   "new_files": [],
+   "anchors": 3,
+   "touched_symbols": [
+    "src/click/core.py::Command.__init__",
+    "src/click/core.py::Command.get_short_help_str",
+    "src/click/core.py::Group.format_commands",
+    "src/click/formatting.py::HelpFormatter.write_dl"
+   ],
+   "note": "every gold edit is anchored on text that occurs exactly once at base"
+  }
+ },
+ {
+  "gate": "novelty",
+  "ok": true,
+  "kind": "network",
+  "detail": {
+   "upstream_main": "e38188e9e205005d5af5f9e59df51904c984586a",
+   "blocking": [],
+   "github_merged_pr_hits_for_manual_review": [
+    {
+     "n": 3473,
+     "title": "Add help parameter to arguments",
+     "state": "closed",
+     "merged": true
+    },
+    {
+     "n": 2925,
+     "title": "Make distinct sections for advanced patterns and extending click.",
+     "state": "closed",
+     "merged": true
+    }
+   ],
+   "github_checked": true,
+   "scope": "git grep of src/ at base and origin/main, git log -G base..main, GitHub PR search"
+  }
+ },
+ {
+  "gate": "fairness_lint",
+  "ok": true,
+  "kind": "static",
+  "detail": {
+   "problems": [],
+   "requirements": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6"
+   ],
+   "n_tests": 10
+  }
+ },
+ {
+  "gate": "isolation",
+  "ok": true,
+  "kind": "static+container",
+  "detail": {
+   "problems": [],
+   "checks": [
+    "no test names/paths or harness files in spec",
+    "spec quotes <=2 gold lines",
+    "Dockerfile copies nothing from the package",
+    "image has no /solution, /tests, feature test files; /app is one commit (no upstream history); clean tree"
+   ]
+  }
+ },
+ {
+  "gate": "gold",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "reward": 1.0,
+   "f2p_passed": 10,
+   "f2p_total": 10,
+   "p2p_passed": 37,
+   "p2p_total": 37,
+   "secs": 4.5
+  }
+ },
+ {
+  "gate": "nop",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "f2p_all_reported": true,
+   "reward": 0.0,
+   "f2p_passed": 0,
+   "f2p_total": 10,
+   "p2p_passed": 37,
+   "p2p_total": 37,
+   "secs": 4.9,
+   "f2p_status_counts": {
+    "FAILED": 10
+   }
+  }
+ },
+ {
+  "gate": "mutation",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "killed": {
+    "global_alignment": true,
+    "order_flipped": true,
+    "default_position_flipped": true,
+    "explicit_commands_separate": true,
+    "per_section_limit": true,
+    "case_insensitive": true
+   },
+   "score": "6/6",
+   "per_mutant": {
+    "global_alignment": {
+     "reward": 0.8,
+     "f2p_passed": 8,
+     "f2p_total": 10,
+     "p2p_passed": 37,
+     "p2p_total": 37,
+     "secs": 4.5
+    },
+    "order_flipped": {
+     "reward": 0.7,
+     "f2p_passed": 7,
+     "f2p_total": 10,
+     "p2p_passed": 37,
+     "p2p_total": 37,
+     "secs": 4.6
+    },
+    "default_position_flipped": {
+     "reward": 0.9,
+     "f2p_passed": 9,
+     "f2p_total": 10,
+     "p2p_passed": 37,
+     "p2p_total": 37,
+     "secs": 4.5
+    },
+    "explicit_commands_separate": {
+     "reward": 0.9,
+     "f2p_passed": 9,
+     "f2p_total": 10,
+     "p2p_passed": 37,
+     "p2p_total": 37,
+     "secs": 4.6
+    },
+    "per_section_limit": {
+     "reward": 0.9,
+     "f2p_passed": 9,
+     "f2p_total": 10,
+     "p2p_passed": 37,
+     "p2p_total": 37,
+     "secs": 4.6
+    },
+    "case_insensitive": {
+     "reward": 0.9,
+     "f2p_passed": 9,
+     "f2p_total": 10,
+     "p2p_passed": 37,
+     "p2p_total": 37,
+     "secs": 4.5
+    }
+   }
+  }
+ },
+ {
+  "gate": "full_suite_under_gold",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "tail": [
+    "........................................................................ [ 99%]",
+    ".....................                                                    [100%]",
+    "2444 passed, 24 skipped, 31000 deselected, 1 xfailed in 6.00s"
+   ],
+   "note": "entire existing suite + feature tests with gold applied (extra, not graded)"
+  }
+ }
+]

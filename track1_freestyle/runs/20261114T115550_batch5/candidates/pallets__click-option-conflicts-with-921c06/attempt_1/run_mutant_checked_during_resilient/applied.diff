@@ -1,0 +1,74 @@
+diff --git a/src/click/core.py b/src/click/core.py
+index e4b6b57..cef2a33 100644
+--- a/src/click/core.py
++++ b/src/click/core.py
+@@ -1384,6 +1384,8 @@ class Command:
+             if value is UNSET:
+                 ctx.params[name] = None
+ 
++        self._check_conflicts(ctx)
++
+         if args and not ctx.allow_extra_args and not ctx.resilient_parsing:
+             ctx.fail(
+                 ngettext(
+@@ -1397,6 +1399,42 @@ class Command:
+         ctx._opt_prefixes.update(parser._opt_prefixes)
+         return args
+ 
++    def _check_conflicts(self, ctx: Context) -> None:
++        """Fail if two parameters declared as conflicting were both provided."""
++        explicit = {ParameterSource.COMMANDLINE, ParameterSource.ENVIRONMENT}
++        params = self.get_params(ctx)
++        by_name: dict[str, Parameter] = {}
++        for p in params:
++            if p.name is not None:
++                by_name.setdefault(p.name, p)
++
++        def provided(p: Parameter) -> bool:
++            return p.name is not None and ctx.get_parameter_source(p.name) in explicit
++
++        pairs: list[tuple[Parameter, Parameter]] = []
++        seen: set[frozenset[str]] = set()
++        for p in params:
++            for other_name in getattr(p, "conflicts_with", ()):
++                other = by_name.get(other_name)
++                if other is None or other is p:
++                    continue
++                key = frozenset((t.cast(str, p.name), t.cast(str, other.name)))
++                if key in seen:
++                    continue
++                if provided(p) and provided(other):
++                    seen.add(key)
++                    pairs.append((p, other))
++        if not pairs:
++            return
++        raise UsageError(
++            _("Conflicting options: {pairs}.").format(
++                pairs="; ".join(
++                    f"{a.get_error_hint(ctx)} and {b.get_error_hint(ctx)}" for a, b in pairs
++                )
++            ),
++            ctx,
++        )
++
+     def invoke(self, ctx: Context) -> t.Any:
+         """Given a context, this invokes the attached callback (if it exists)
+         in the right way.
+@@ -2999,6 +3037,7 @@ class Option(Parameter):
+         show_choices: bool = True,
+         show_envvar: bool = False,
+         deprecated: bool | str = False,
++        conflicts_with: cabc.Sequence[str] | None = None,
+         **attrs: t.Any,
+     ) -> None:
+         super().__init__(
+@@ -3053,6 +3092,9 @@ class Option(Parameter):
+         self.show_default = show_default
+         self.show_choices = show_choices
+         self.show_envvar = show_envvar
++        if isinstance(conflicts_with, str):
++            conflicts_with = (conflicts_with,)
++        self.conflicts_with: tuple[str, ...] = tuple(conflicts_with or ())
+ 
+         # Phase 5: validate. Raises on illegal kwarg combinations.
+         self._validate(prompt, deprecated)

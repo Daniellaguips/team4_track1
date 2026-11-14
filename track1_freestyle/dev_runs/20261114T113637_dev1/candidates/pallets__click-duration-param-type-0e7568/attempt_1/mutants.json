@@ -1,0 +1,10 @@
+{
+ "bounds_exclusive": "treats min/max as exclusive limits",
+ "no_strip": "does not strip surrounding whitespace",
+ "message_uses_stripped_text": "reports the stripped text in the error",
+ "passthrough_skips_bounds": "returns timedelta input before checking bounds",
+ "bare_number_flipped": "inverts the digits-only rule",
+ "order_rule_wrong": "uses the other ordering rule",
+ "upper_case_units": "accepts upper-case unit letters",
+ "info_dict_timedelta": "reports raw timedelta limits in to_info_dict"
+}

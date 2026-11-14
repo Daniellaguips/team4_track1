@@ -1,0 +1,44 @@
+{
+ "instance_id": "pallets__click-prompt-max-attempts-701650",
+ "family": "attempts",
+ "knobs": {
+  "empty": "counts",
+  "exhausted": "abort"
+ },
+ "axes": {
+  "capability": "interactive input state machine (retry budget)",
+  "module": "click.termui.prompt/confirm + click.core.Option.prompt_for_value",
+  "behavior_shape": "loop with failure counter across conversion / confirmation / empty paths",
+  "integration": "Option prompt plumbing (typed values, boolean flags, confirmation_prompt), Abort/UsageError exit codes"
+ },
+ "generator": "deterministic blueprint (no LLM)",
+ "model": "none",
+ "model_calls": 0,
+ "n_input_tokens": 0,
+ "n_output_tokens": 0,
+ "n_cache_tokens": 0,
+ "base_commit": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+ "code_version": "a8fa9d414e4bdf74f87cbeaf653047167802558b",
+ "attempts": [
+  {
+   "attempt": 1,
+   "verdict": "rejected",
+   "reason": "grounding: src/click/termui.py: anchor occurs 2 times (need exactly 1): '    raise Abort()\\n'",
+   "gates": {
+    "structure": true,
+    "base_health": true,
+    "grounding": false,
+    "novelty": true,
+    "fairness_lint": false,
+    "isolation": true,
+    "gold": true,
+    "nop": false
+   }
+  }
+ ],
+ "repairs": [],
+ "human_edits_after_generation": [],
+ "status": "rejected",
+ "first_pass_valid": false,
+ "wall_seconds": 24.2
+}

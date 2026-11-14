@@ -1,0 +1,194 @@
+{
+ "per_symbol": {
+  "src/click/types.py::DateTime.convert": [
+   "tests/test_basic.py::test_datetime_option_default",
+   "tests/test_basic.py::test_datetime_option_custom"
+  ],
+  "src/click/types.py::_NumberRangeBase.convert": [
+   "tests/test_options.py::test_counting",
+   "tests/test_utils/test_prompt.py::test_prompt_default_validated_by_type",
+   "tests/test_termui.py::test_hide_input_error_message[intrange-numeric-substring-not-masked]",
+   "tests/test_types/test_FloatRange.py::test_float_range_no_clamp_open",
+   "tests/test_types/test_FloatRange.py::test_range[type0-1.2-1.2]",
+   "tests/test_types/test_IntRange.py::test_range[type0-3-3]",
+   "tests/test_types/test_FloatRange.py::test_range[type4-inf-1.5]",
+   "tests/test_types/test_IntRange.py::test_range[type6-6-5]",
+   "tests/test_types/test_IntRange.py::test_range[type8-5-4]",
+   "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params15-0]",
+   "tests/test_commands.py::test_unprocessed_options",
+   "tests/test_shell_completion.py::test_option_count"
+  ],
+  "src/click/types.py::ParamType.to_info_dict": [
+   "tests/test_info_dict.py::test_argument_to_info_dict_nargs",
+   "tests/test_info_dict.py::test_command[Command]",
+   "tests/test_info_dict.py::test_command[Group]",
+   "tests/test_info_dict.py::test_command_to_info_dict_multiple_arguments",
+   "tests/test_info_dict.py::test_context",
+   "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[custom-label-argument]",
+   "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[custom-label-option]",
+   "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[help-argument]",
+   "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[help-option]",
+   "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[no-help-argument]",
+   "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[no-help-option]",
+   "tests/test_info_dict.py::test_param_to_info_dict_help[None-argument]"
+  ],
+  "src/click/types.py::ParamType.fail": [
+   "tests/test_basic.py::test_choice_argument",
+   "tests/test_basic.py::test_choice_argument_custom_type",
+   "tests/test_basic.py::test_choice_argument_enum",
+   "tests/test_basic.py::test_choice_option",
+   "tests/test_basic.py::test_datetime_option_default",
+   "tests/test_basic.py::test_file_lazy_mode",
+   "tests/test_basic.py::test_param_squatting_help_option_name",
+   "tests/test_basic.py::test_path_option",
+   "tests/test_formatting.py::test_formatting_usage_error_metavar_bad_arg",
+   "tests/test_normalization.py::test_choice_normalization",
+   "tests/test_options.py::test_boolean_envvar_bad_values[0.0]",
+   "tests/test_options.py::test_boolean_envvar_bad_values[00]"
+  ]
+ },
+ "why": {
+  "tests/test_basic.py::test_choice_argument": [
+   "src/click/types.py::ParamType.fail"
+  ],
+  "tests/test_basic.py::test_choice_argument_custom_type": [
+   "src/click/types.py::ParamType.fail"
+  ],
+  "tests/test_basic.py::test_choice_argument_enum": [
+   "src/click/types.py::ParamType.fail"
+  ],
+  "tests/test_basic.py::test_choice_option": [
+   "src/click/types.py::ParamType.fail"
+  ],
+  "tests/test_basic.py::test_datetime_option_custom": [
+   "src/click/types.py::DateTime.convert"
+  ],
+  "tests/test_basic.py::test_datetime_option_default": [
+   "src/click/types.py::DateTime.convert",
+   "src/click/types.py::ParamType.fail"
+  ],
+  "tests/test_basic.py::test_file_lazy_mode": [
+   "src/click/types.py::ParamType.fail"
+  ],
+  "tests/test_basic.py::test_param_squatting_help_option_name": [
+   "src/click/types.py::ParamType.fail"
+  ],
+  "tests/test_basic.py::test_path_option": [
+   "src/click/types.py::ParamType.fail"
+  ],
+  "tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params15-0]": [
+   "src/click/types.py::_NumberRangeBase.convert"
+  ],
+  "tests/test_commands.py::test_unprocessed_options": [
+   "src/click/types.py::_NumberRangeBase.convert"
+  ],
+  "tests/test_formatting.py::test_formatting_usage_error_metavar_bad_arg": [
+   "src/click/types.py::ParamType.fail"
+  ],
+  "tests/test_info_dict.py::test_argument_to_info_dict_nargs": [
+   "src/click/types.py::ParamType.to_info_dict"
+  ],
+  "tests/test_info_dict.py::test_command[Command]": [
+   "src/click/types.py::ParamType.to_info_dict"
+  ],
+  "tests/test_info_dict.py::test_command[Group]": [
+   "src/click/types.py::ParamType.to_info_dict"
+  ],
+  "tests/test_info_dict.py::test_command_to_info_dict_multiple_arguments": [
+   "src/click/types.py::ParamType.to_info_dict"
+  ],
+  "tests/test_info_dict.py::test_context": [
+   "src/click/types.py::ParamType.to_info_dict"
+  ],
+  "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[custom-label-argument]": [
+   "src/click/types.py::ParamType.to_info_dict"
+  ],
+  "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[custom-label-option]": [
+   "src/click/types.py::ParamType.to_info_dict"
+  ],
+  "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[help-argument]": [
+   "src/click/types.py::ParamType.to_info_dict"
+  ],
+  "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[help-option]": [
+   "src/click/types.py::ParamType.to_info_dict"
+  ],
+  "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[no-help-argument]": [
+   "src/click/types.py::ParamType.to_info_dict"
+  ],
+  "tests/test_info_dict.py::test_param_to_info_dict_deprecated_help[no-help-option]": [
+   "src/click/types.py::ParamType.to_info_dict"
+  ],
+  "tests/test_info_dict.py::test_param_to_info_dict_help[None-argument]": [
+   "src/click/types.py::ParamType.to_info_dict"
+  ],
+  "tests/test_normalization.py::test_choice_normalization": [
+   "src/click/types.py::ParamType.fail"
+  ],
+  "tests/test_options.py::test_boolean_envvar_bad_values[0.0]": [
+   "src/click/types.py::ParamType.fail"
+  ],
+  "tests/test_options.py::test_boolean_envvar_bad_values[00]": [
+   "src/click/types.py::ParamType.fail"
+  ],
+  "tests/test_options.py::test_counting": [
+   "src/click/types.py::_NumberRangeBase.convert"
+  ],
+  "tests/test_shell_completion.py::test_option_count": [
+   "src/click/types.py::_NumberRangeBase.convert"
+  ],
+  "tests/test_termui.py::test_hide_input_error_message[intrange-numeric-substring-not-masked]": [
+   "src/click/types.py::_NumberRangeBase.convert"
+  ],
+  "tests/test_types/test_FloatRange.py::test_float_range_no_clamp_open": [
+   "src/click/types.py::_NumberRangeBase.convert"
+  ],
+  "tests/test_types/test_FloatRange.py::test_range[type0-1.2-1.2]": [
+   "src/click/types.py::_NumberRangeBase.convert"
+  ],
+  "tests/test_types/test_FloatRange.py::test_range[type4-inf-1.5]": [
+   "src/click/types.py::_NumberRangeBase.convert"
+  ],
+  "tests/test_types/test_IntRange.py::test_range[type0-3-3]": [
+   "src/click/types.py::_NumberRangeBase.convert"
+  ],
+  "tests/test_types/test_IntRange.py::test_range[type6-6-5]": [
+   "src/click/types.py::_NumberRangeBase.convert"
+  ],
+  "tests/test_types/test_IntRange.py::test_range[type8-5-4]": [
+   "src/click/types.py::_NumberRangeBase.convert"
+  ],
+  "tests/test_utils/test_prompt.py::test_prompt_default_validated_by_type": [
+   "src/click/types.py::_NumberRangeBase.convert"
+  ]
+ },
+ "touched": {
+  "src/click/types.py::DateTime.convert": {
+   "lines": [
+    566,
+    587
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  },
+  "src/click/types.py::_NumberRangeBase.convert": {
+   "lines": [
+    666,
+    697
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  },
+  "src/click/types.py::ParamType.to_info_dict": {
+   "lines": [
+    122,
+    141
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  },
+  "src/click/types.py::ParamType.fail": {
+   "lines": [
+    215,
+    222
+   ],
+   "reason": "declared focus symbol (feature extends it)"
+  }
+ }
+}

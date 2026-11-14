@@ -1,0 +1,78 @@
+{
+ "main": "e38188e9e205005d5af5f9e59df51904c984586a",
+ "git": {
+  "allow_abbreviations|_resolve_abbreviation|Ambiguous command": {
+   "base": [],
+   "main": [],
+   "commits_after_base_touching": []
+  }
+ },
+ "github_prs": [
+  {
+   "query": "abbreviation",
+   "total": 1,
+   "items": [
+    {
+     "n": 3865,
+     "title": "Fix short help abbreviation",
+     "state": "closed",
+     "merged": true
+    }
+   ]
+  },
+  {
+   "query": "command prefix",
+   "total": 6,
+   "items": [
+    {
+     "n": 3799,
+     "title": "AI junk",
+     "state": "closed",
+     "merged": false
+    },
+    {
+     "n": 1011,
+     "title": "Documenting how `auto_envvar_prefix` works with command groups",
+     "state": "closed",
+     "merged": true
+    },
+    {
+     "n": 1930,
+     "title": "Fix shell completion for arguments with non-alphanumeric characters",
+     "state": "closed",
+     "merged": true
+    },
+    {
+     "n": 3210,
+     "title": "Add glossary of terms to documentation",
+     "state": "closed",
+     "merged": false
+    },
+    {
+     "n": 2715,
+     "title": "Bump the python-requirements group in /requirements with 3 updates",
+     "state": "closed",
+     "merged": true
+    }
+   ]
+  },
+  {
+   "query": "ambiguous command",
+   "total": 2,
+   "items": [
+    {
+     "n": 3799,
+     "title": "AI junk",
+     "state": "closed",
+     "merged": false
+    },
+    {
+     "n": 3394,
+     "title": "docs: add glossary of terms to general reference",
+     "state": "closed",
+     "merged": false
+    }
+   ]
+  }
+ ]
+}

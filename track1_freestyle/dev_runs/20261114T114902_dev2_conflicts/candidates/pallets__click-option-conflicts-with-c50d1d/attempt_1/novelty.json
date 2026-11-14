@@ -1,0 +1,34 @@
+{
+ "main": "e38188e9e205005d5af5f9e59df51904c984586a",
+ "git": {
+  "conflicts_with|mutually_exclusive|cannot be used together": {
+   "base": [],
+   "main": [],
+   "commits_after_base_touching": []
+  }
+ },
+ "github_prs": [
+  {
+   "query": "mutually exclusive",
+   "total": 1,
+   "items": [
+    {
+     "n": 3452,
+     "title": "platform-dependent `testing.CaptureMode` type alias",
+     "state": "closed",
+     "merged": true
+    }
+   ]
+  },
+  {
+   "query": "conflicts_with",
+   "total": 0,
+   "items": []
+  },
+  {
+   "query": "exclusive options",
+   "total": 0,
+   "items": []
+  }
+ ]
+}

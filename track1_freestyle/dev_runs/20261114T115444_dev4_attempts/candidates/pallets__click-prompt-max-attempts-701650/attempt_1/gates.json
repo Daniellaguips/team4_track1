@@ -1,0 +1,211 @@
+[
+ {
+  "gate": "structure",
+  "ok": true,
+  "kind": "static",
+  "detail": {
+   "errors": [],
+   "warnings": []
+  }
+ },
+ {
+  "gate": "base_health",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "passed": 2434,
+   "failed": [],
+   "collected": 2435,
+   "note": "full existing suite at base_commit inside the task image"
+  }
+ },
+ {
+  "gate": "grounding",
+  "ok": true,
+  "kind": "static",
+  "detail": {
+   "modified_existing_files": [
+    "src/click/core.py",
+    "src/click/termui.py"
+   ],
+   "new_files": [],
+   "anchors": 15,
+   "touched_symbols": [
+    "src/click/core.py::Option.__init__",
+    "src/click/core.py::Option.prompt_for_value",
+    "src/click/termui.py::confirm",
+    "src/click/termui.py::prompt"
+   ],
+   "note": "every gold edit is anchored on text that occurs exactly once at base"
+  }
+ },
+ {
+  "gate": "novelty",
+  "ok": true,
+  "kind": "network",
+  "detail": {
+   "upstream_main": "e38188e9e205005d5af5f9e59df51904c984586a",
+   "blocking": [],
+   "github_merged_pr_hits_for_manual_review": [],
+   "github_checked": true,
+   "scope": "git grep of src/ at base and origin/main, git log -G base..main, GitHub PR search"
+  }
+ },
+ {
+  "gate": "fairness_lint",
+  "ok": true,
+  "kind": "static",
+  "detail": {
+   "problems": [],
+   "requirements": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "n_tests": 12
+  }
+ },
+ {
+  "gate": "isolation",
+  "ok": true,
+  "kind": "static+container",
+  "detail": {
+   "problems": [],
+   "checks": [
+    "no test names/paths or harness files in spec",
+    "spec quotes <=2 gold lines",
+    "Dockerfile copies nothing from the package",
+    "image has no /solution, /tests, feature test files; /app is one commit (no upstream history); clean tree"
+   ]
+  }
+ },
+ {
+  "gate": "gold",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "reward": 1.0,
+   "f2p_passed": 12,
+   "f2p_total": 12,
+   "p2p_passed": 39,
+   "p2p_total": 39,
+   "secs": 4.1
+  }
+ },
+ {
+  "gate": "nop",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "f2p_all_reported": true,
+   "reward": 0.0,
+   "f2p_passed": 0,
+   "f2p_total": 12,
+   "p2p_passed": 39,
+   "p2p_total": 39,
+   "secs": 4.4,
+   "f2p_status_counts": {
+    "FAILED": 12
+   }
+  }
+ },
+ {
+  "gate": "mutation",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "killed": {
+    "off_by_one": true,
+    "mismatch_not_counted": true,
+    "empty_rule_flipped": true,
+    "wrong_exhaustion_exception": true,
+    "bool_accepted": true,
+    "flag_prompt_not_forwarded": true,
+    "message_suppressed_on_last": true,
+    "confirm_not_counted": true
+   },
+   "score": "8/8",
+   "per_mutant": {
+    "off_by_one": {
+     "reward": 0.4167,
+     "f2p_passed": 5,
+     "f2p_total": 12,
+     "p2p_passed": 39,
+     "p2p_total": 39,
+     "secs": 4.1
+    },
+    "mismatch_not_counted": {
+     "reward": 0.9167,
+     "f2p_passed": 11,
+     "f2p_total": 12,
+     "p2p_passed": 39,
+     "p2p_total": 39,
+     "secs": 4.2
+    },
+    "empty_rule_flipped": {
+     "reward": 0.9167,
+     "f2p_passed": 11,
+     "f2p_total": 12,
+     "p2p_passed": 39,
+     "p2p_total": 39,
+     "secs": 4.1
+    },
+    "wrong_exhaustion_exception": {
+     "reward": 0.4167,
+     "f2p_passed": 5,
+     "f2p_total": 12,
+     "p2p_passed": 39,
+     "p2p_total": 39,
+     "secs": 4.4
+    },
+    "bool_accepted": {
+     "reward": 0.9167,
+     "f2p_passed": 11,
+     "f2p_total": 12,
+     "p2p_passed": 39,
+     "p2p_total": 39,
+     "secs": 4.3
+    },
+    "flag_prompt_not_forwarded": {
+     "reward": 0.9167,
+     "f2p_passed": 11,
+     "f2p_total": 12,
+     "p2p_passed": 39,
+     "p2p_total": 39,
+     "secs": 3.8
+    },
+    "message_suppressed_on_last": {
+     "reward": 0.9167,
+     "f2p_passed": 11,
+     "f2p_total": 12,
+     "p2p_passed": 39,
+     "p2p_total": 39,
+     "secs": 3.9
+    },
+    "confirm_not_counted": {
+     "reward": 0.8333,
+     "f2p_passed": 10,
+     "f2p_total": 12,
+     "p2p_passed": 39,
+     "p2p_total": 39,
+     "secs": 3.9
+    }
+   }
+  }
+ },
+ {
+  "gate": "full_suite_under_gold",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "tail": [
+    "........................................................................ [ 99%]",
+    ".......................                                                  [100%]",
+    "2446 passed, 24 skipped, 31000 deselected, 1 xfailed in 5.99s"
+   ],
+   "note": "entire existing suite + feature tests with gold applied (extra, not graded)"
+  }
+ }
+]

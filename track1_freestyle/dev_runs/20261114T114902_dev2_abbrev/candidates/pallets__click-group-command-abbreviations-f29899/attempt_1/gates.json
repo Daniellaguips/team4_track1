@@ -1,0 +1,244 @@
+[
+ {
+  "gate": "structure",
+  "ok": true,
+  "kind": "static",
+  "detail": {
+   "errors": [],
+   "warnings": []
+  }
+ },
+ {
+  "gate": "base_health",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "passed": 2434,
+   "failed": [],
+   "collected": 2435,
+   "note": "full existing suite at base_commit inside the task image"
+  }
+ },
+ {
+  "gate": "grounding",
+  "ok": true,
+  "kind": "static",
+  "detail": {
+   "modified_existing_files": [
+    "src/click/core.py"
+   ],
+   "new_files": [],
+   "anchors": 4,
+   "touched_symbols": [
+    "src/click/core.py::CommandCollection.list_commands",
+    "src/click/core.py::Group.__init__",
+    "src/click/core.py::Group.invoke",
+    "src/click/core.py::Group.resolve_command"
+   ],
+   "note": "every gold edit is anchored on text that occurs exactly once at base"
+  }
+ },
+ {
+  "gate": "novelty",
+  "ok": true,
+  "kind": "network",
+  "detail": {
+   "upstream_main": "e38188e9e205005d5af5f9e59df51904c984586a",
+   "blocking": [],
+   "github_merged_pr_hits_for_manual_review": [
+    {
+     "n": 3865,
+     "title": "Fix short help abbreviation",
+     "state": "closed",
+     "merged": true
+    },
+    {
+     "n": 1011,
+     "title": "Documenting how `auto_envvar_prefix` works with command groups",
+     "state": "closed",
+     "merged": true
+    },
+    {
+     "n": 1930,
+     "title": "Fix shell completion for arguments with non-alphanumeric characters",
+     "state": "closed",
+     "merged": true
+    },
+    {
+     "n": 2715,
+     "title": "Bump the python-requirements group in /requirements with 3 updates",
+     "state": "closed",
+     "merged": true
+    }
+   ],
+   "github_checked": false,
+   "scope": "git grep of src/ at base and origin/main, git log -G base..main, GitHub PR search"
+  }
+ },
+ {
+  "gate": "fairness_lint",
+  "ok": false,
+  "kind": "static",
+  "detail": {
+   "problems": [
+    "asserted text not in spec: \"Error: No such command 'sto'.\"",
+    "asserted text not in spec: \"Error: Ambiguous command 'sta'. Could be: start, status.\"",
+    "asserted text not in spec: \"Error: Ambiguous command 'b'. Could be: build, bundle.\"",
+    "asserted text not in spec: \"Error: Ambiguous command 'list'. Could be:\"",
+    "keyword sources= not named in spec"
+   ],
+   "requirements": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7"
+   ],
+   "n_tests": 13
+  }
+ },
+ {
+  "gate": "isolation",
+  "ok": true,
+  "kind": "static+container",
+  "detail": {
+   "problems": [],
+   "checks": [
+    "no test names/paths or harness files in spec",
+    "spec quotes <=2 gold lines",
+    "Dockerfile copies nothing from the package",
+    "image has no /solution, /tests, feature test files; /app is one commit (no upstream history); clean tree"
+   ]
+  }
+ },
+ {
+  "gate": "gold",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "reward": 1.0,
+   "f2p_passed": 13,
+   "f2p_total": 13,
+   "p2p_passed": 21,
+   "p2p_total": 21,
+   "secs": 2.6
+  }
+ },
+ {
+  "gate": "nop",
+  "ok": false,
+  "kind": "container",
+  "detail": {
+   "f2p_all_reported": true,
+   "reward": 0.0769,
+   "f2p_passed": 1,
+   "f2p_total": 13,
+   "p2p_passed": 21,
+   "p2p_total": 21,
+   "secs": 3.3,
+   "f2p_status_counts": {
+    "FAILED": 12,
+    "PASSED": 1
+   }
+  }
+ },
+ {
+  "gate": "mutation",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "killed": {
+    "uses_commands_mapping": true,
+    "hidden_rule_flipped": true,
+    "candidate_order_flipped": true,
+    "returns_typed_prefix": true,
+    "names_not_normalized": true,
+    "empty_token_matches": true,
+    "raises_when_resilient": true,
+    "first_match_wins": true
+   },
+   "score": "8/8",
+   "per_mutant": {
+    "uses_commands_mapping": {
+     "reward": 0.9231,
+     "f2p_passed": 12,
+     "f2p_total": 13,
+     "p2p_passed": 21,
+     "p2p_total": 21,
+     "secs": 2.6
+    },
+    "hidden_rule_flipped": {
+     "reward": 0.9231,
+     "f2p_passed": 12,
+     "f2p_total": 13,
+     "p2p_passed": 21,
+     "p2p_total": 21,
+     "secs": 2.7
+    },
+    "candidate_order_flipped": {
+     "reward": 0.9231,
+     "f2p_passed": 12,
+     "f2p_total": 13,
+     "p2p_passed": 21,
+     "p2p_total": 21,
+     "secs": 2.6
+    },
+    "returns_typed_prefix": {
+     "reward": 0.8462,
+     "f2p_passed": 11,
+     "f2p_total": 13,
+     "p2p_passed": 21,
+     "p2p_total": 21,
+     "secs": 2.7
+    },
+    "names_not_normalized": {
+     "reward": 0.9231,
+     "f2p_passed": 12,
+     "f2p_total": 13,
+     "p2p_passed": 21,
+     "p2p_total": 21,
+     "secs": 2.6
+    },
+    "empty_token_matches": {
+     "reward": 0.9231,
+     "f2p_passed": 12,
+     "f2p_total": 13,
+     "p2p_passed": 21,
+     "p2p_total": 21,
+     "secs": 2.6
+    },
+    "raises_when_resilient": {
+     "reward": 0.9231,
+     "f2p_passed": 12,
+     "f2p_total": 13,
+     "p2p_passed": 21,
+     "p2p_total": 21,
+     "secs": 2.7
+    },
+    "first_match_wins": {
+     "reward": 0.6154,
+     "f2p_passed": 8,
+     "f2p_total": 13,
+     "p2p_passed": 21,
+     "p2p_total": 21,
+     "secs": 2.6
+    }
+   }
+  }
+ },
+ {
+  "gate": "full_suite_under_gold",
+  "ok": true,
+  "kind": "container",
+  "detail": {
+   "tail": [
+    "........................................................................ [ 99%]",
+    "........................                                                 [100%]",
+    "2447 passed, 24 skipped, 31000 deselected, 1 xfailed in 6.29s"
+   ],
+   "note": "entire existing suite + feature tests with gold applied (extra, not graded)"
+  }
+ }
+]

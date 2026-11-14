@@ -1,0 +1,12 @@
+{
+    "task": {
+        "path": "demo_tasks/pallets__click-help-command-sections-ffd69f"
+    },
+    "trial_name": "pallets__click-help-command-sect__B4KfrV6",
+    "trials_dir": "/u/erdos/csga2/yt35/project/track1_freestyle/evidence/demo_selfcheck_runs/pallets__click-help-command-sections-ffd69f/oracle/2026-11-14__12-07-23",
+    "environment": {
+        "type": "podman",
+        "delete": false
+    },
+    "job_id": "29b9ed06-183b-430e-962c-981a57bbfbe1"
+}

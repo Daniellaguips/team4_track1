@@ -1,0 +1,120 @@
+{
+    "id": "9a135a0a-61bf-4eb3-a2c4-575655e1ddbc",
+    "task_name": "pallets__click-group-command-abbreviations-583fa0",
+    "trial_name": "pallets__click-group-command-abb__SFVFPwV",
+    "trial_uri": "file:///u/erdos/csga2/yt35/project/track1_freestyle/evidence/selfcheck_runs/pallets__click-group-command-abbreviations-583fa0/nop/2026-11-14__12-02-25/pallets__click-group-command-abb__SFVFPwV",
+    "task_id": {
+        "path": "generated_tasks/pallets__click-group-command-abbreviations-583fa0"
+    },
+    "source": null,
+    "task_checksum": "44327c313f1a65795b6813040217eece53a1466ab6b74ffa7b9b7d04425ed4f4",
+    "config": {
+        "task": {
+            "path": "generated_tasks/pallets__click-group-command-abbreviations-583fa0",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": null
+        },
+        "trial_name": "pallets__click-group-command-abb__SFVFPwV",
+        "trials_dir": "/u/erdos/csga2/yt35/project/track1_freestyle/evidence/selfcheck_runs/pallets__click-group-command-abbreviations-583fa0/nop/2026-11-14__12-02-25",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "nop",
+            "import_path": null,
+            "model_name": null,
+            "base_url": null,
+            "model_api_key_name": null,
+            "model_api_format": null,
+            "skip_model_parsing": false,
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [],
+            "kwargs": {},
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "podman",
+            "import_path": null,
+            "force_build": false,
+            "delete": false,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "64d49efe-1e3e-485c-bb2b-3c0e4396f9f6",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "nop",
+        "version": "1.0.0",
+        "model_info": null
+    },
+    "agent_result": {
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null,
+        "model_usage": null,
+        "rollout_details": null,
+        "metadata": null
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 0.0
+        }
+    },
+    "verifier_environment_mode": "shared",
+    "exception_info": null,
+    "started_at": "2026-11-14T17:02:26.171061Z",
+    "finished_at": "2026-11-14T17:02:44.180604Z",
+    "environment_setup": {
+        "started_at": "2026-11-14T17:02:26.257749Z",
+        "finished_at": "2026-11-14T17:02:28.716097Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-11-14T17:02:28.716276Z",
+        "finished_at": "2026-11-14T17:02:28.716442Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-11-14T17:02:28.716671Z",
+        "finished_at": "2026-11-14T17:02:28.718744Z"
+    },
+    "verifier": {
+        "started_at": "2026-11-14T17:02:29.907524Z",
+        "finished_at": "2026-11-14T17:02:33.843301Z"
+    },
+    "step_results": null
+}

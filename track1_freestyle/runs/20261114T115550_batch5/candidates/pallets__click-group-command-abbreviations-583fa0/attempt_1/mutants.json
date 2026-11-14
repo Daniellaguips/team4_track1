@@ -1,0 +1,10 @@
+{
+ "uses_commands_mapping": "iterates self.commands instead of list_commands()",
+ "hidden_rule_flipped": "applies the opposite hidden-command rule",
+ "candidate_order_flipped": "orders ambiguity candidates by the other rule",
+ "returns_typed_prefix": "returns the typed prefix as the command name",
+ "names_not_normalized": "compares raw names against the normalized token",
+ "empty_token_matches": "lets an empty token match",
+ "raises_when_resilient": "raises the ambiguity error during resilient parsing",
+ "first_match_wins": "picks the first candidate instead of reporting ambiguity"
+}

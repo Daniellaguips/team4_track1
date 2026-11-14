@@ -1,0 +1,10 @@
+[
+ [
+  "duration",
+  {
+   "units": "dhms",
+   "order": "descending",
+   "bare_number": "seconds"
+  }
+ ]
+]

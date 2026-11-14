@@ -1,0 +1,8 @@
+{
+ "global_alignment": "renders all sections with one shared column width",
+ "order_flipped": "orders named sections by the other rule",
+ "default_position_flipped": "puts the default section on the other side",
+ "explicit_commands_separate": "treats help_section='Commands' as a separate section",
+ "per_section_limit": "computes the short-help limit per section",
+ "case_insensitive": "merges sections case-insensitively"
+}

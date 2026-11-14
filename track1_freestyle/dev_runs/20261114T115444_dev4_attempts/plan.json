@@ -1,0 +1,9 @@
+[
+ [
+  "attempts",
+  {
+   "empty": "counts",
+   "exhausted": "abort"
+  }
+ ]
+]

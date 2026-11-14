@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Local shim: forwards to the pinned Harbor 0.25 CLI and selects the rootless Podman environment
+# for `harbor run` (this host cannot reach the Docker daemon socket). Not needed with Docker.
+REAL="$(cd "$(dirname "$0")/../.." && pwd)/.venv/bin/harbor"
+if [ "${1:-}" = "run" ] && [[ " $* " != *" -e "* ]] && [[ " $* " != *" --env "* ]]; then
+  exec "$REAL" "$@" -e podman
+fi
+exec "$REAL" "$@"

@@ -1,0 +1,86 @@
+[
+ {
+  "family": "abbrev",
+  "knobs": {
+   "ambiguity": "alphabetical",
+   "hidden": "included"
+  }
+ },
+ {
+  "family": "sections",
+  "knobs": {
+   "default": "last",
+   "order": "alphabetical"
+  }
+ },
+ {
+  "family": "attempts",
+  "knobs": {
+   "empty": "free",
+   "exhausted": "usage_error"
+  }
+ },
+ {
+  "family": "conflicts",
+  "knobs": {
+   "report": "all",
+   "sources": "explicit"
+  }
+ },
+ {
+  "family": "duration",
+  "knobs": {
+   "bare_number": "seconds",
+   "order": "any",
+   "units": "wdhms"
+  }
+ },
+ {
+  "family": "duration",
+  "knobs": {
+   "units": "dhms",
+   "order": "descending",
+   "bare_number": "seconds"
+  },
+  "source": "dev_runs"
+ },
+ {
+  "family": "attempts",
+  "knobs": {
+   "empty": "counts",
+   "exhausted": "abort"
+  },
+  "source": "dev_runs"
+ },
+ {
+  "family": "conflicts",
+  "knobs": {
+   "report": "first",
+   "sources": "commandline"
+  },
+  "source": "dev_runs"
+ },
+ {
+  "family": "abbrev",
+  "knobs": {
+   "ambiguity": "alphabetical",
+   "hidden": "excluded"
+  },
+  "source": "dev_runs"
+ },
+ {
+  "family": "sections",
+  "knobs": {
+   "default": "first",
+   "order": "first_seen"
+  },
+  "source": "dev_runs"
+ },
+ {
+  "family": "sections",
+  "knobs": {
+   "default": "first",
+   "order": "alphabetical"
+  }
+ }
+]

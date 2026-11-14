@@ -1,0 +1,29 @@
+# selfcheck output: /u/erdos/csga2/yt35/project/track1_freestyle/evidence/selfcheck_runs
+
+== pallets__click-duration-param-type-9f8a40 ==
+  oracle  reward=1.0   F2P=16/16 P2P=37/37
+  nop     reward=0.0   F2P=0/16 P2P=37/37
+  ✓ mechanically sound
+
+== pallets__click-group-command-abbreviations-583fa0 ==
+  oracle  reward=1.0   F2P=12/12 P2P=21/21
+  nop     reward=0.0   F2P=0/12 P2P=21/21
+  ✓ mechanically sound
+
+== pallets__click-help-command-sections-56c8e3 ==
+  oracle  reward=1.0   F2P=10/10 P2P=37/37
+  nop     reward=0.0   F2P=0/10 P2P=37/37
+  ✓ mechanically sound
+
+== pallets__click-option-conflicts-with-921c06 ==
+  oracle  reward=1.0   F2P=12/12 P2P=48/48
+  nop     reward=0.0   F2P=0/12 P2P=48/48
+  ✓ mechanically sound
+
+== pallets__click-prompt-max-attempts-ac2a26 ==
+  oracle  reward=1.0   F2P=12/12 P2P=39/39
+  nop     reward=0.0   F2P=0/12 P2P=39/39
+  ✓ mechanically sound
+
+ALL SOUND
+SELFCHECK_EXIT=0

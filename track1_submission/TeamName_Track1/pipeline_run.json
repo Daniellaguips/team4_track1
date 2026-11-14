@@ -1,0 +1,75 @@
+{
+ "pipeline": "track1-freestyle/click-blueprint-factory/1.0.0",
+ "tasks": [
+  {
+   "instance_id": "pallets__click-duration-param-type-9f8a40",
+   "model": "none",
+   "wall_seconds": 65.9,
+   "model_calls": 0,
+   "attempts": 1,
+   "n_input_tokens": 0,
+   "n_output_tokens": 0,
+   "n_cache_tokens": 0,
+   "cost_usd": 0.0,
+   "first_pass_valid": true,
+   "run": "20261114T115550_batch5",
+   "record": "runs/20261114T115550_batch5/candidates/pallets__click-duration-param-type-9f8a40/record.json"
+  },
+  {
+   "instance_id": "pallets__click-group-command-abbreviations-583fa0",
+   "model": "none",
+   "wall_seconds": 41.1,
+   "model_calls": 0,
+   "attempts": 1,
+   "n_input_tokens": 0,
+   "n_output_tokens": 0,
+   "n_cache_tokens": 0,
+   "cost_usd": 0.0,
+   "first_pass_valid": true,
+   "run": "20261114T115550_batch5",
+   "record": "runs/20261114T115550_batch5/candidates/pallets__click-group-command-abbreviations-583fa0/record.json"
+  },
+  {
+   "instance_id": "pallets__click-help-command-sections-56c8e3",
+   "model": "none",
+   "wall_seconds": 52.3,
+   "model_calls": 0,
+   "attempts": 1,
+   "n_input_tokens": 0,
+   "n_output_tokens": 0,
+   "n_cache_tokens": 0,
+   "cost_usd": 0.0,
+   "first_pass_valid": true,
+   "run": "20261114T115550_batch5",
+   "record": "runs/20261114T115550_batch5/candidates/pallets__click-help-command-sections-56c8e3/record.json"
+  },
+  {
+   "instance_id": "pallets__click-option-conflicts-with-921c06",
+   "model": "none",
+   "wall_seconds": 57.4,
+   "model_calls": 0,
+   "attempts": 1,
+   "n_input_tokens": 0,
+   "n_output_tokens": 0,
+   "n_cache_tokens": 0,
+   "cost_usd": 0.0,
+   "first_pass_valid": true,
+   "run": "20261114T115550_batch5",
+   "record": "runs/20261114T115550_batch5/candidates/pallets__click-option-conflicts-with-921c06/record.json"
+  },
+  {
+   "instance_id": "pallets__click-prompt-max-attempts-ac2a26",
+   "model": "none",
+   "wall_seconds": 54.2,
+   "model_calls": 0,
+   "attempts": 1,
+   "n_input_tokens": 0,
+   "n_output_tokens": 0,
+   "n_cache_tokens": 0,
+   "cost_usd": 0.0,
+   "first_pass_valid": true,
+   "run": "20261114T115550_batch5",
+   "record": "runs/20261114T115550_batch5/candidates/pallets__click-prompt-max-attempts-ac2a26/record.json"
+  }
+ ]
+}

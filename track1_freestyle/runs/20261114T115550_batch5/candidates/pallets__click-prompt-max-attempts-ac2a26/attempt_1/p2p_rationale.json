@@ -1,0 +1,206 @@
+{
+ "per_symbol": {
+  "src/click/core.py::Option.__init__": [
+   "tests/test_options.py::test_callback_validates_prompt",
+   "tests/test_options.py::test_dynamic_default_help_text",
+   "tests/test_options.py::test_dynamic_default_help_unset",
+   "tests/test_options.py::test_string_show_default_shows_custom_string_in_prompt",
+   "tests/test_termui.py::test_choices_list_in_prompt",
+   "tests/test_termui.py::test_false_show_default_cause_no_default_display_in_prompt",
+   "tests/test_termui.py::test_flag_value_prompt[--flag-opt_params41-args41---expected41]",
+   "tests/test_termui.py::test_flag_value_prompt[--flag-opt_params42-args42--y-y]",
+   "tests/test_termui.py::test_flag_value_prompt[--flag-opt_params43-args43--n-n]",
+   "tests/test_termui.py::test_flag_value_prompt[--flag-opt_params44-args44--foo-foo]",
+   "tests/test_termui.py::test_flag_value_prompt[--flag-opt_params51-args51---expected51]",
+   "tests/test_termui.py::test_flag_value_prompt[--flag-opt_params52-args52--y-y]"
+  ],
+  "src/click/core.py::Option.prompt_for_value": [
+   "tests/test_options.py::test_string_show_default_shows_custom_string_in_prompt",
+   "tests/test_termui.py::test_false_show_default_cause_no_default_display_in_prompt",
+   "tests/test_termui.py::test_string_show_default_in_prompt[default-is-none]",
+   "tests/test_termui.py::test_string_show_default_in_prompt[default-is-unset]",
+   "tests/test_termui.py::test_string_show_default_in_prompt[empty-string-is-falsy]",
+   "tests/test_termui.py::test_string_show_default_in_prompt[numeric-default]",
+   "tests/test_termui.py::test_string_show_default_in_prompt[simple-string]",
+   "tests/test_termui.py::test_string_show_default_in_prompt[string-with-spaces]",
+   "tests/test_termui.py::test_string_show_default_in_prompt[unicode]",
+   "tests/test_abort_interrupt.py::test_interrupt_while_reporting_abort[prompt-1]",
+   "tests/test_abort_interrupt.py::test_interrupt_while_reporting_abort[prompt-None]",
+   "tests/test_options.py::test_callback_validates_prompt"
+  ],
+  "src/click/termui.py::prompt": [
+   "tests/test_termui.py::test_hide_input_confirmation_prompt_mismatch_unaffected",
+   "tests/test_utils/test_prompt.py::test_prompt_default_validated_by_type",
+   "tests/test_termui.py::test_hide_input_error_message[apostrophe-in-value-uses-double-quote-repr]",
+   "tests/test_termui.py::test_hide_input_error_message[builtin-int-masks-repr-value]",
+   "tests/test_termui.py::test_hide_input_error_message[custom-no-value-shows-message]",
+   "tests/test_termui.py::test_hide_input_error_message[custom-raw-value-masked]",
+   "tests/test_termui.py::test_hide_input_error_message[intrange-numeric-substring-not-masked]",
+   "tests/test_termui.py::test_hide_input_error_message[mixed-quoted-and-raw-both-masked-at-source]",
+   "tests/test_termui.py::test_hide_input_error_message[mixed-quoted-and-raw-mask-both]",
+   "tests/test_termui.py::test_hide_input_error_message[multi-occurrence-raw-mask-all]",
+   "tests/test_termui.py::test_hide_input_error_message[multi-occurrence-repr-mask-all]",
+   "tests/test_termui.py::test_hide_input_error_message[partial-word-match-not-masked]"
+  ],
+  "src/click/termui.py::confirm": [
+   "tests/test_utils/test_confirm.py::test_confirm_repeat",
+   "tests/test_utils/test_confirm.py::test_prompts",
+   "tests/test_termui.py::test_prompt_and_confirm_ansi_respects_color[confirm-color]",
+   "tests/test_termui.py::test_prompt_and_confirm_ansi_respects_color[confirm-no-color]",
+   "tests/test_utils/test_echo.py::test_echo_writing_to_standard_error",
+   "tests/test_utils/test_prompt.py::test_full_prompt_passed_to_readline[confirm]"
+  ]
+ },
+ "why": {
+  "tests/test_abort_interrupt.py::test_interrupt_while_reporting_abort[prompt-1]": [
+   "src/click/core.py::Option.prompt_for_value"
+  ],
+  "tests/test_abort_interrupt.py::test_interrupt_while_reporting_abort[prompt-None]": [
+   "src/click/core.py::Option.prompt_for_value"
+  ],
+  "tests/test_options.py::test_callback_validates_prompt": [
+   "src/click/core.py::Option.__init__",
+   "src/click/core.py::Option.prompt_for_value"
+  ],
+  "tests/test_options.py::test_dynamic_default_help_text": [
+   "src/click/core.py::Option.__init__"
+  ],
+  "tests/test_options.py::test_dynamic_default_help_unset": [
+   "src/click/core.py::Option.__init__"
+  ],
+  "tests/test_options.py::test_string_show_default_shows_custom_string_in_prompt": [
+   "src/click/core.py::Option.__init__",
+   "src/click/core.py::Option.prompt_for_value"
+  ],
+  "tests/test_termui.py::test_choices_list_in_prompt": [
+   "src/click/core.py::Option.__init__"
+  ],
+  "tests/test_termui.py::test_false_show_default_cause_no_default_display_in_prompt": [
+   "src/click/core.py::Option.__init__",
+   "src/click/core.py::Option.prompt_for_value"
+  ],
+  "tests/test_termui.py::test_flag_value_prompt[--flag-opt_params41-args41---expected41]": [
+   "src/click/core.py::Option.__init__"
+  ],
+  "tests/test_termui.py::test_flag_value_prompt[--flag-opt_params42-args42--y-y]": [
+   "src/click/core.py::Option.__init__"
+  ],
+  "tests/test_termui.py::test_flag_value_prompt[--flag-opt_params43-args43--n-n]": [
+   "src/click/core.py::Option.__init__"
+  ],
+  "tests/test_termui.py::test_flag_value_prompt[--flag-opt_params44-args44--foo-foo]": [
+   "src/click/core.py::Option.__init__"
+  ],
+  "tests/test_termui.py::test_flag_value_prompt[--flag-opt_params51-args51---expected51]": [
+   "src/click/core.py::Option.__init__"
+  ],
+  "tests/test_termui.py::test_flag_value_prompt[--flag-opt_params52-args52--y-y]": [
+   "src/click/core.py::Option.__init__"
+  ],
+  "tests/test_termui.py::test_hide_input_confirmation_prompt_mismatch_unaffected": [
+   "src/click/termui.py::prompt"
+  ],
+  "tests/test_termui.py::test_hide_input_error_message[apostrophe-in-value-uses-double-quote-repr]": [
+   "src/click/termui.py::prompt"
+  ],
+  "tests/test_termui.py::test_hide_input_error_message[builtin-int-masks-repr-value]": [
+   "src/click/termui.py::prompt"
+  ],
+  "tests/test_termui.py::test_hide_input_error_message[custom-no-value-shows-message]": [
+   "src/click/termui.py::prompt"
+  ],
+  "tests/test_termui.py::test_hide_input_error_message[custom-raw-value-masked]": [
+   "src/click/termui.py::prompt"
+  ],
+  "tests/test_termui.py::test_hide_input_error_message[intrange-numeric-substring-not-masked]": [
+   "src/click/termui.py::prompt"
+  ],
+  "tests/test_termui.py::test_hide_input_error_message[mixed-quoted-and-raw-both-masked-at-source]": [
+   "src/click/termui.py::prompt"
+  ],
+  "tests/test_termui.py::test_hide_input_error_message[mixed-quoted-and-raw-mask-both]": [
+   "src/click/termui.py::prompt"
+  ],
+  "tests/test_termui.py::test_hide_input_error_message[multi-occurrence-raw-mask-all]": [
+   "src/click/termui.py::prompt"
+  ],
+  "tests/test_termui.py::test_hide_input_error_message[multi-occurrence-repr-mask-all]": [
+   "src/click/termui.py::prompt"
+  ],
+  "tests/test_termui.py::test_hide_input_error_message[partial-word-match-not-masked]": [
+   "src/click/termui.py::prompt"
+  ],
+  "tests/test_termui.py::test_prompt_and_confirm_ansi_respects_color[confirm-color]": [
+   "src/click/termui.py::confirm"
+  ],
+  "tests/test_termui.py::test_prompt_and_confirm_ansi_respects_color[confirm-no-color]": [
+   "src/click/termui.py::confirm"
+  ],
+  "tests/test_termui.py::test_string_show_default_in_prompt[default-is-none]": [
+   "src/click/core.py::Option.prompt_for_value"
+  ],
+  "tests/test_termui.py::test_string_show_default_in_prompt[default-is-unset]": [
+   "src/click/core.py::Option.prompt_for_value"
+  ],
+  "tests/test_termui.py::test_string_show_default_in_prompt[empty-string-is-falsy]": [
+   "src/click/core.py::Option.prompt_for_value"
+  ],
+  "tests/test_termui.py::test_string_show_default_in_prompt[numeric-default]": [
+   "src/click/core.py::Option.prompt_for_value"
+  ],
+  "tests/test_termui.py::test_string_show_default_in_prompt[simple-string]": [
+   "src/click/core.py::Option.prompt_for_value"
+  ],
+  "tests/test_termui.py::test_string_show_default_in_prompt[string-with-spaces]": [
+   "src/click/core.py::Option.prompt_for_value"
+  ],
+  "tests/test_termui.py::test_string_show_default_in_prompt[unicode]": [
+   "src/click/core.py::Option.prompt_for_value"
+  ],
+  "tests/test_utils/test_confirm.py::test_confirm_repeat": [
+   "src/click/termui.py::confirm"
+  ],
+  "tests/test_utils/test_confirm.py::test_prompts": [
+   "src/click/termui.py::confirm"
+  ],
+  "tests/test_utils/test_echo.py::test_echo_writing_to_standard_error": [
+   "src/click/termui.py::confirm"
+  ],
+  "tests/test_utils/test_prompt.py::test_full_prompt_passed_to_readline[confirm]": [
+   "src/click/termui.py::confirm"
+  ],
+  "tests/test_utils/test_prompt.py::test_prompt_default_validated_by_type": [
+   "src/click/termui.py::prompt"
+  ]
+ },
+ "touched": {
+  "src/click/core.py::Option.__init__": {
+   "lines": [
+    2983,
+    3058
+   ],
+   "reason": "encloses gold hunk"
+  },
+  "src/click/core.py::Option.prompt_for_value": {
+   "lines": [
+    3506,
+    3553
+   ],
+   "reason": "encloses gold hunk"
+  },
+  "src/click/termui.py::prompt": {
+   "lines": [
+    168,
+    286
+   ],
+   "reason": "encloses gold hunk"
+  },
+  "src/click/termui.py::confirm": {
+   "lines": [
+    289,
+    345
+   ],
+   "reason": "encloses gold hunk"
+  }
+ }
+}

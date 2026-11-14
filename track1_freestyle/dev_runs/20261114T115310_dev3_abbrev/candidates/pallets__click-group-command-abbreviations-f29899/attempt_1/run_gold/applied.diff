@@ -1,0 +1,66 @@
+diff --git a/src/click/core.py b/src/click/core.py
+index e4b6b57..5f0997d 100644
+--- a/src/click/core.py
++++ b/src/click/core.py
+@@ -1738,6 +1738,7 @@ class Group(Command):
+         subcommand_metavar: str | None = None,
+         chain: bool = False,
+         result_callback: t.Callable[..., t.Any] | None = None,
++        allow_abbreviations: bool = False,
+         **kwargs: t.Any,
+     ) -> None:
+         super().__init__(name, **kwargs)
+@@ -1771,6 +1772,8 @@ class Group(Command):
+ 
+         self.subcommand_metavar = subcommand_metavar
+         self.chain = chain
++        #: Resolve unambiguous prefixes of subcommand names.
++        self.allow_abbreviations = allow_abbreviations
+         # The result callback that is stored. This can be set or
+         # overridden with the :func:`result_callback` decorator.
+         self._result_callback = result_callback
+@@ -2085,6 +2088,34 @@ class Group(Command):
+                     rv.append(sub_ctx.command.invoke(sub_ctx))
+             return _process_result(rv)
+ 
++    def _resolve_abbreviation(
++        self, ctx: Context, token: str
++    ) -> tuple[str, Command | None]:
++        """Resolve ``token`` as a unique prefix of a command name."""
++        normalize = ctx.token_normalize_func
++        matches: list[tuple[str, Command]] = []
++        for name in self.list_commands(ctx):
++            key = normalize(name) if normalize is not None else name
++            if not key.startswith(token):
++                continue
++            cmd = self.get_command(ctx, name)
++            if cmd is None:
++                continue
++            if cmd.hidden:
++                continue
++            matches.append((name, cmd))
++        if len(matches) == 1:
++            return matches[0]
++        if len(matches) > 1 and not ctx.resilient_parsing:
++            names = sorted(n for n, _ in matches)
++            raise UsageError(
++                _("Ambiguous command {name!r}. Could be: {names}.").format(
++                    name=token, names=", ".join(names)
++                ),
++                ctx,
++            )
++        return token, None
++
+     def resolve_command(
+         self, ctx: Context, args: list[str]
+     ) -> tuple[str | None, Command | None, list[str]]:
+@@ -2099,6 +2130,9 @@ class Group(Command):
+             cmd_name = ctx.token_normalize_func(cmd_name)
+             cmd = self.get_command(ctx, cmd_name)
+ 
++        if cmd is None and self.allow_abbreviations and cmd_name:
++            cmd_name, cmd = self._resolve_abbreviation(ctx, cmd_name)
++
+         # If we don't find the command we want to show an error message
+         # to the user that it was not provided.  However, there is
+         # something else we should do: if the first argument looks like

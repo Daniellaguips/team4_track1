@@ -1,0 +1,129 @@
+diff --git a/src/click/__init__.py b/src/click/__init__.py
+index a34ab02..61f8c42 100644
+--- a/src/click/__init__.py
++++ b/src/click/__init__.py
+@@ -56,6 +56,7 @@ from .termui import unstyle as unstyle
+ from .types import BOOL as BOOL
+ from .types import Choice as Choice
+ from .types import DateTime as DateTime
++from .types import Duration as Duration
+ from .types import File as File
+ from .types import FLOAT as FLOAT
+ from .types import FloatRange as FloatRange
+diff --git a/src/click/types.py b/src/click/types.py
+index b6e98a9..80d9b5b 100644
+--- a/src/click/types.py
++++ b/src/click/types.py
+@@ -9,6 +9,7 @@ import sys
+ import typing as t
+ import uuid
+ from datetime import datetime
++from datetime import timedelta
+ from gettext import gettext as _
+ from gettext import ngettext
+ 
+@@ -590,6 +591,104 @@ class DateTime(ParamType[datetime]):
+         return "DateTime"
+ 
+ 
++class DurationInfoDict(ParamTypeInfoDict):
++    min: int | None
++    max: int | None
++
++
++class Duration(ParamType[timedelta]):
++    """Converts strings such as ``1h30m`` into :class:`datetime.timedelta`.
++
++    Components are ``<digits><unit>`` with units ``wdhms``.
++
++    :param min: Inclusive lower bound, or ``None``.
++    :param max: Inclusive upper bound, or ``None``.
++
++    .. versionadded:: 8.6
++    """
++
++    name = "duration"
++
++    UNIT_SECONDS = {"w": 604800, "d": 86400, "h": 3600, "m": 60, "s": 1}
++
++    def __init__(
++        self, min: timedelta | None = None, max: timedelta | None = None
++    ) -> None:
++        self.min = min
++        self.max = max
++
++    def to_info_dict(self) -> DurationInfoDict:
++        return {
++            "min": None if self.min is None else int(self.min.total_seconds()),
++            "max": self.max,
++            **super().to_info_dict(),
++        }
++
++    def _parse(self, text: str) -> int | None:
++        UNIT_ORDER = list(self.UNIT_SECONDS)
++        text = text.strip()
++        if not text:
++            return None
++        if text.isascii() and text.isdigit():
++            return int(text)
++        total = 0
++        seen: list[str] = []
++        pos = 0
++        while pos < len(text):
++            start = pos
++            while pos < len(text) and text[pos] in "0123456789":
++                pos += 1
++            if pos == start or pos >= len(text):
++                return None
++            unit = text[pos]
++            if unit not in self.UNIT_SECONDS:
++                return None
++            if unit in seen:
++                return None
++            seen.append(unit)
++            total += int(text[start:pos]) * self.UNIT_SECONDS[unit]
++            pos += 1
++        return total
++
++    def convert(
++        self, value: t.Any, param: Parameter | None, ctx: Context | None
++    ) -> timedelta:
++        if isinstance(value, timedelta):
++            rv = value
++        else:
++            text = value if isinstance(value, str) else str(value)
++            seconds = self._parse(text)
++            if seconds is None:
++                self.fail(
++                    _("{value!r} is not a valid duration.").format(value=text),
++                    param,
++                    ctx,
++                )
++            rv = timedelta(seconds=seconds)
++
++        n = int(rv.total_seconds())
++        if self.min is not None and rv < self.min:
++            self.fail(
++                _("{n} seconds is below the minimum of {lo} seconds.").format(
++                    n=n, lo=int(self.min.total_seconds())
++                ),
++                param,
++                ctx,
++            )
++        if self.max is not None and rv > self.max:
++            self.fail(
++                _("{n} seconds is above the maximum of {hi} seconds.").format(
++                    n=n, hi=int(self.max.total_seconds())
++                ),
++                param,
++                ctx,
++            )
++        return rv
++
++    def __repr__(self) -> str:
++        return "Duration"
++
++
+ class _NumberParamTypeBase(
+     ParamType[_ValueT_co], t.Generic[_ValueT_contra, _ValueT_co]
+ ):

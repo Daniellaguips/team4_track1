@@ -1,0 +1,9 @@
+{
+ "source_rule_flipped": "uses the other set of counting sources",
+ "defaults_count": "treats any non-None source (incl. defaults) as provided",
+ "string_split_into_chars": "turns a plain string into a tuple of characters",
+ "reports_last_pair": "reports the last conflicting pair instead of the first",
+ "pair_order_swapped": "reports the named parameter before the declaring one",
+ "checked_during_resilient": "runs the check during resilient parsing",
+ "self_reference_not_ignored": "does not ignore a parameter naming itself"
+}

@@ -1,0 +1,35 @@
+# Environment for a pallets/click feature task, pinned to base_commit cf19179e8e2fd54c601378cec9e0d21bb12b6fb1 (tag 8.5.1).
+# Self-contained: public base image, upstream clone, exact checkout, pinned test toolchain.
+FROM docker.io/library/python:3.12-bookworm
+ENV PYTHONDONTWRITEBYTECODE=1 PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_CACHE_DIR=1 DEBIAN_FRONTEND=noninteractive
+
+# tmux is needed by the terminus-2 agent harness; less by the pager tests in the existing suite. The .debs are unpacked without maintainer
+# scripts or chown, so the step also works under rootless single-UID runtimes.
+RUN set -eux; \
+    echo 'APT::Sandbox::User "root";' > /etc/apt/apt.conf.d/99-sandbox; \
+    apt-get update; \
+    cd /tmp; apt-get download tmux libevent-core-2.1-7 libutempter0 less; \
+    for d in /tmp/*.deb; do dpkg-deb --fsys-tarfile "$d" | tar -x --no-same-owner -C /; done; \
+    rm -f /tmp/*.deb; rm -rf /var/lib/apt/lists/*; \
+    ldconfig; tmux -V; less --version | head -1
+
+# Upstream repository at the pinned commit, re-rooted as a fresh git tree so solve.sh and the
+# grader can `git apply` against a clean HEAD.
+RUN set -eux; \
+    git clone --quiet https://github.com/pallets/click.git /tmp/click-src; \
+    git -C /tmp/click-src checkout --quiet cf19179e8e2fd54c601378cec9e0d21bb12b6fb1; \
+    mkdir -p /app; cp -a /tmp/click-src/. /app/; rm -rf /tmp/click-src /app/.git
+WORKDIR /app
+RUN git init --quiet \
+    && git config user.email bench@local && git config user.name bench \
+    && git config core.autocrlf false \
+    && git add -A && git commit --quiet -m "base cf19179e8e2fd54c601378cec9e0d21bb12b6fb1" \
+    && git config --global --add safe.directory /app
+
+RUN python -m venv /app/.venv \
+    && /app/.venv/bin/pip install --quiet "pytest==9.0.2" "pluggy==1.6.0" "iniconfig==2.3.0" "packaging==26.0" "pygments==2.20.0" \
+    && /app/.venv/bin/pip install --quiet --no-deps -e . \
+    && /app/.venv/bin/python -c "import click; print('click import ok')" \
+    && printf '.venv/\n' >> /app/.git/info/exclude
+ENV PATH=/app/.venv/bin:$PATH
+CMD ["/bin/bash"]

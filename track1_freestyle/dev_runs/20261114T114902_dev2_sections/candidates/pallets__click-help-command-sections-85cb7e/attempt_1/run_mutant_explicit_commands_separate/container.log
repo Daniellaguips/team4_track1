@@ -1,0 +1,6 @@
+exit=0 secs=4.2
+--- stdout
+Parsed 1157 test results -> /logs/verifier/output.json
+TEST_SH_EXIT=0
+
+--- stderr

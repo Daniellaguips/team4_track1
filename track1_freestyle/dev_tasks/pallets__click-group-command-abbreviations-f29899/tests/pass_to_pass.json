@@ -1,0 +1,23 @@
+[
+  "tests/test_arguments.py::test_nested_subcommand_help",
+  "tests/test_arguments.py::test_subcommand_help",
+  "tests/test_basic.py::test_basic_group",
+  "tests/test_basic.py::test_group_commands_dict",
+  "tests/test_basic.py::test_group_from_list",
+  "tests/test_chain.py::test_args_and_chain",
+  "tests/test_chain.py::test_basic_chaining",
+  "tests/test_chain.py::test_chaining_with_arguments",
+  "tests/test_chain.py::test_chaining_with_options",
+  "tests/test_chain.py::test_group_arg_behavior",
+  "tests/test_command_decorators.py::test_group_no_parens",
+  "tests/test_commands.py::test_custom_parser",
+  "tests/test_commands.py::test_invoked_subcommand",
+  "tests/test_commands.py::test_object_propagation",
+  "tests/test_commands.py::test_unknown_command",
+  "tests/test_normalization.py::test_command_normalization",
+  "tests/test_shell_completion.py::test_chained",
+  "tests/test_shell_completion.py::test_full_source[bash]",
+  "tests/test_shell_completion.py::test_full_source[fish]",
+  "tests/test_shell_completion.py::test_full_source[zsh]",
+  "tests/test_shell_completion.py::test_full_source_powershell"
+]

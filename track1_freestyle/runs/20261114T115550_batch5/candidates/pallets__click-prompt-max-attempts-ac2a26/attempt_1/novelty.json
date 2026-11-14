@@ -1,0 +1,27 @@
+{
+ "main": "e38188e9e205005d5af5f9e59df51904c984586a",
+ "git": {
+  "max_attempts|prompt_max_attempts|invalid attempts": {
+   "base": [],
+   "main": [],
+   "commits_after_base_touching": []
+  }
+ },
+ "github_prs": [
+  {
+   "query": "max_attempts",
+   "total": 0,
+   "items": []
+  },
+  {
+   "query": "prompt retries",
+   "total": 0,
+   "items": []
+  },
+  {
+   "query": "prompt attempts",
+   "total": 0,
+   "items": []
+  }
+ ]
+}

@@ -1,0 +1,10 @@
+{
+ "off_by_one": "allows one extra attempt",
+ "mismatch_not_counted": "does not count confirmation mismatches",
+ "empty_rule_flipped": "uses the opposite empty-answer rule",
+ "wrong_exhaustion_exception": "raises the other exception type when giving up",
+ "bool_accepted": "accepts True as a budget",
+ "flag_prompt_not_forwarded": "boolean-flag prompts ignore the budget",
+ "message_suppressed_on_last": "gives up before printing the last error",
+ "confirm_not_counted": "confirm() ignores its budget"
+}

@@ -1,0 +1,13 @@
+{
+    "job_name": "2026-11-14__12-07-23",
+    "jobs_dir": "/u/erdos/csga2/yt35/project/track1_freestyle/evidence/demo_selfcheck_runs/pallets__click-help-command-sections-ffd69f/oracle",
+    "environment": {
+        "type": "podman",
+        "delete": false
+    },
+    "tasks": [
+        {
+            "path": "demo_tasks/pallets__click-help-command-sections-ffd69f"
+        }
+    ]
+}

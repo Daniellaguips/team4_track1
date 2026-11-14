@@ -1,0 +1,47 @@
+{
+ "instance_id": "pallets__click-group-command-abbreviations-f29899",
+ "family": "abbrev",
+ "knobs": {
+  "ambiguity": "alphabetical",
+  "hidden": "excluded"
+ },
+ "axes": {
+  "capability": "command dispatch / name resolution",
+  "module": "click.core.Group.resolve_command (+ CommandCollection, chain mode)",
+  "behavior_shape": "lookup precedence chain with ambiguity error",
+  "integration": "token_normalize_func, list_commands/get_command, chain mode, sub-context naming",
+  "novelty_note": "upstream docs/extending-click.md and examples/aliases show a user-land AliasedGroup recipe (subclass overriding get_command); Click itself ships no abbreviation option. This task's built-in opt-in, precedence, normalization, hidden-command, resilient-parsing and ambiguity-order rules are not in that recipe."
+ },
+ "generator": "deterministic blueprint (no LLM)",
+ "model": "none",
+ "model_calls": 0,
+ "n_input_tokens": 0,
+ "n_output_tokens": 0,
+ "n_cache_tokens": 0,
+ "base_commit": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+ "code_version": "a8fa9d414e4bdf74f87cbeaf653047167802558b",
+ "attempts": [
+  {
+   "attempt": 1,
+   "verdict": "rejected",
+   "reason": "failed gates: ['fairness_lint', 'nop']",
+   "gates": {
+    "structure": true,
+    "base_health": true,
+    "grounding": true,
+    "novelty": true,
+    "fairness_lint": false,
+    "isolation": true,
+    "gold": true,
+    "nop": false,
+    "mutation": true,
+    "full_suite_under_gold": true
+   }
+  }
+ ],
+ "repairs": [],
+ "human_edits_after_generation": [],
+ "status": "rejected",
+ "first_pass_valid": false,
+ "wall_seconds": 41.2
+}

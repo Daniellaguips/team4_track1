@@ -1,0 +1,83 @@
+{
+ "run_id": "20261114T115550_batch5",
+ "pipeline": "track1-freestyle/click-blueprint-factory/1.0.0",
+ "base_commit": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+ "image": "localhost/t1-click-env:63288ad38b2a",
+ "candidates": 5,
+ "accepted": 5,
+ "first_pass_valid": 5,
+ "wall_seconds": 271.6,
+ "records": [
+  {
+   "instance_id": "pallets__click-group-command-abbreviations-583fa0",
+   "family": "abbrev",
+   "knobs": {
+    "ambiguity": "alphabetical",
+    "hidden": "included"
+   },
+   "status": "accepted",
+   "first_pass_valid": true,
+   "wall_seconds": 41.1,
+   "attempts": 1,
+   "failed_gates": [],
+   "reason": "all gates passed"
+  },
+  {
+   "instance_id": "pallets__click-help-command-sections-56c8e3",
+   "family": "sections",
+   "knobs": {
+    "default": "last",
+    "order": "alphabetical"
+   },
+   "status": "accepted",
+   "first_pass_valid": true,
+   "wall_seconds": 52.3,
+   "attempts": 1,
+   "failed_gates": [],
+   "reason": "all gates passed"
+  },
+  {
+   "instance_id": "pallets__click-prompt-max-attempts-ac2a26",
+   "family": "attempts",
+   "knobs": {
+    "empty": "free",
+    "exhausted": "usage_error"
+   },
+   "status": "accepted",
+   "first_pass_valid": true,
+   "wall_seconds": 54.2,
+   "attempts": 1,
+   "failed_gates": [],
+   "reason": "all gates passed"
+  },
+  {
+   "instance_id": "pallets__click-option-conflicts-with-921c06",
+   "family": "conflicts",
+   "knobs": {
+    "report": "all",
+    "sources": "explicit"
+   },
+   "status": "accepted",
+   "first_pass_valid": true,
+   "wall_seconds": 57.4,
+   "attempts": 1,
+   "failed_gates": [],
+   "reason": "all gates passed"
+  },
+  {
+   "instance_id": "pallets__click-duration-param-type-9f8a40",
+   "family": "duration",
+   "knobs": {
+    "bare_number": "seconds",
+    "order": "any",
+    "units": "wdhms"
+   },
+   "status": "accepted",
+   "first_pass_valid": true,
+   "wall_seconds": 65.9,
+   "attempts": 1,
+   "failed_gates": [],
+   "reason": "all gates passed"
+  }
+ ]
+}

@@ -1,0 +1,39 @@
+{
+ "main": "e38188e9e205005d5af5f9e59df51904c984586a",
+ "git": {
+  "class Duration\\b": {
+   "base": [],
+   "main": [],
+   "commits_after_base_touching": []
+  },
+  "timedelta": {
+   "base": [],
+   "main": [],
+   "commits_after_base_touching": []
+  }
+ },
+ "github_prs": [
+  {
+   "query": "Duration type",
+   "total": 1,
+   "items": [
+    {
+     "n": 3529,
+     "title": "AI spam",
+     "state": "closed",
+     "merged": false
+    }
+   ]
+  },
+  {
+   "query": "timedelta",
+   "total": 0,
+   "items": []
+  },
+  {
+   "query": "duration param",
+   "total": 0,
+   "items": []
+  }
+ ]
+}

@@ -1,0 +1,12 @@
+[
+  "tests/test_help_sections.py::test_attribute",
+  "tests/test_help_sections.py::test_sections_and_order",
+  "tests/test_help_sections.py::test_rows_per_section_aligned_independently",
+  "tests/test_help_sections.py::test_hidden_only_section_omitted",
+  "tests/test_help_sections.py::test_explicit_commands_section_merges_with_default",
+  "tests/test_help_sections.py::test_case_sensitive_names",
+  "tests/test_help_sections.py::test_only_named_sections",
+  "tests/test_help_sections.py::test_short_help_limit_uses_all_commands",
+  "tests/test_help_sections.py::test_no_sections_output_unchanged",
+  "tests/test_help_sections.py::test_subgroup_section"
+]

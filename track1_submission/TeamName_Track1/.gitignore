@@ -1,0 +1,5 @@
+.venv/
+__pycache__/
+*.pyc
+dev_runs/
+dev_tasks/

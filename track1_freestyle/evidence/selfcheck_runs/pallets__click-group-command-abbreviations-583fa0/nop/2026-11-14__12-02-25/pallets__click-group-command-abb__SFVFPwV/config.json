@@ -1,0 +1,15 @@
+{
+    "task": {
+        "path": "generated_tasks/pallets__click-group-command-abbreviations-583fa0"
+    },
+    "trial_name": "pallets__click-group-command-abb__SFVFPwV",
+    "trials_dir": "/u/erdos/csga2/yt35/project/track1_freestyle/evidence/selfcheck_runs/pallets__click-group-command-abbreviations-583fa0/nop/2026-11-14__12-02-25",
+    "agent": {
+        "name": "nop"
+    },
+    "environment": {
+        "type": "podman",
+        "delete": false
+    },
+    "job_id": "64d49efe-1e3e-485c-bb2b-3c0e4396f9f6"
+}
